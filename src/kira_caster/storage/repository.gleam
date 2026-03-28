@@ -16,6 +16,18 @@ pub type UserData {
   )
 }
 
+pub type SongData {
+  SongData(
+    id: Int,
+    video_id: String,
+    title: String,
+    duration_seconds: Int,
+    requested_by: String,
+    position: Int,
+    created_at: Int,
+  )
+}
+
 pub type Repository {
   Repository(
     get_user: fn(String) -> Result(UserData, StorageError),
@@ -48,6 +60,13 @@ pub type Repository {
       Result(Nil, StorageError),
     get_all_commands_detailed: fn() ->
       Result(List(#(String, String, String, Option(String))), StorageError),
+    get_song_queue: fn() -> Result(List(SongData), StorageError),
+    add_song: fn(String, String, Int, String) -> Result(SongData, StorageError),
+    remove_song: fn(Int) -> Result(Nil, StorageError),
+    clear_song_queue: fn() -> Result(Nil, StorageError),
+    reorder_song: fn(Int, Int) -> Result(Nil, StorageError),
+    get_songs_by_user: fn(String) -> Result(List(SongData), StorageError),
+    has_song_with_video_id: fn(String) -> Result(Bool, StorageError),
   )
 }
 
@@ -85,6 +104,23 @@ pub fn mock_repo(users: List(UserData)) -> Repository {
     get_command_with_type: fn(_name) { Error(NotFound) },
     set_advanced_command: fn(_name, _source, _fallback) { Ok(Nil) },
     get_all_commands_detailed: fn() { Ok([]) },
+    get_song_queue: fn() { Ok([]) },
+    add_song: fn(video_id, title, duration, user) {
+      Ok(SongData(
+        id: 1,
+        video_id: video_id,
+        title: title,
+        duration_seconds: duration,
+        requested_by: user,
+        position: 0,
+        created_at: 0,
+      ))
+    },
+    remove_song: fn(_id) { Ok(Nil) },
+    clear_song_queue: fn() { Ok(Nil) },
+    reorder_song: fn(_id, _pos) { Ok(Nil) },
+    get_songs_by_user: fn(_user) { Ok([]) },
+    has_song_with_video_id: fn(_vid) { Ok(False) },
   )
 }
 

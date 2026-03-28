@@ -8,7 +8,7 @@
 gleam deps download  # 의존성 다운로드
 gleam build          # 빌드
 gleam run            # 실행
-gleam test           # 테스트 (gleeunit, 161개)
+gleam test           # 테스트 (gleeunit, 249개)
 gleam format src test  # 포매팅
 gleam format --check src test  # CI 포맷 검사
 ```
@@ -28,7 +28,7 @@ src/
 │   │   ├── message.gleam        # 메시지 타입 정의
 │   │   ├── permission.gleam     # 권한 체계 (Broadcaster > Moderator > Subscriber > Viewer)
 │   │   └── quiz_data.gleam      # 내장 퀴즈 데이터 (추후 DB 관리 예정)
-│   ├── plugin/                  # 플러그인 (10개)
+│   ├── plugin/                  # 플러그인 (11개)
 │   │   ├── plugin.gleam         # 플러그인 인터페이스 + Event 타입
 │   │   ├── attendance.gleam     # 출석 (하루 1회, 포인트 보상)
 │   │   ├── points.gleam         # 포인트 조회/순위 + PointsChange 핸들
@@ -39,7 +39,8 @@ src/
 │   │   ├── vote.gleam           # 투표 (DB 저장, 중복 방지)
 │   │   ├── roulette.gleam       # 룰렛 (확률 가중치)
 │   │   ├── quiz.gleam           # 퀴즈 (DB 우선, 내장 폴백)
-│   │   └── timer.gleam          # 타이머 (비동기 알림)
+│   │   ├── timer.gleam          # 타이머 (비동기 알림)
+│   │   └── song_request.gleam   # 신청곡 (YouTube 대기열, OBS 플레이어)
 │   ├── platform/                # 플랫폼 어댑터 (외부 의존성 경계)
 │   │   ├── adapter.gleam        # 어댑터 인터페이스 (레코드 + 함수 필드)
 │   │   ├── mock_adapter.gleam   # Mock 어댑터 (개발용)
@@ -47,12 +48,13 @@ src/
 │   │   └── ws.gleam             # WebSocket 상태 머신
 │   ├── storage/                 # 데이터 영속화
 │   │   ├── repository.gleam     # Repository 인터페이스 + mock_repo
-│   │   └── sqlight_repo.gleam   # SQLite 구현체 (마이그레이션 v1/v2)
+│   │   └── sqlight_repo.gleam   # SQLite 구현체 (마이그레이션 v1~v5)
 │   ├── admin/                   # 관리 대시보드 (wisp + mist)
 │   │   ├── router.gleam         # REST API + HTML 프론트엔드
 │   │   └── server.gleam         # HTTP 서버 시작
 │   ├── util/
-│   │   └── time.gleam           # now_ms() 시간 유틸
+│   │   ├── time.gleam           # now_ms() 시간 유틸
+│   │   └── youtube.gleam        # YouTube URL 파서 + Data API v3 클라이언트
 │   ├── config_loader.gleam      # 환경변수 → Config 로더
 │   ├── event_bus.gleam          # OTP actor 이벤트 버스 (쿨다운, 플러그인 ON/OFF 내장)
 │   ├── logger.gleam             # OTP logger 래퍼 (info/warn/error)
@@ -69,7 +71,8 @@ src/
 - **DB**: sqlight (SQLite)
 - **Web**: wisp + mist (관리 대시보드)
 - **HTTP**: gleam_http
-- **미사용 (씨미 API 공개 후)**: stratus (WS), gleam_httpc (HTTP client), glow_auth (OAuth)
+- **HTTP client**: gleam_httpc (YouTube API 호출)
+- **미사용 (씨미 API 공개 후)**: stratus (WS), glow_auth (OAuth)
 
 ## Key Patterns
 
@@ -145,12 +148,12 @@ pub type Plugin {
 
 ## Current State
 
-- **기능 구현 완료**: 플러그인 10개, 관리 대시보드 (REST API + HTML), OTP Supervisor, 플러그인 ON/OFF
+- **기능 구현 완료**: 플러그인 11개, 관리 대시보드 (REST API + HTML), OTP Supervisor, 플러그인 ON/OFF, 신청곡 OBS 플레이어
 - **씨미 API 미공개**: 4~5월 공개 예정. mock_adapter로 개발
 - **Gleam 1.15.2 / OTP 28** 타겟
 - CI: GitHub Actions (`gleam test` + `gleam format --check`)
 - Docker: Dockerfile 포함 (multi-stage build)
-- 테스트: 161개 전체 통과
+- 테스트: 249개 전체 통과
 
 ## Gleam Specifics
 

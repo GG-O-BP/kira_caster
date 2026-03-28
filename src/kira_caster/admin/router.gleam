@@ -20,9 +20,14 @@ pub fn handle_request(
   admin_key: String,
   bus: Option(process.Subject(event_bus.EventBusMessage)),
 ) -> Response {
-  case check_auth(req, admin_key) {
-    False -> wisp.response(401) |> wisp.string_body("Unauthorized")
-    True -> route(req, repo, start_time, bus)
+  case request.path_segments(req) {
+    ["player"] -> handle_player_page()
+    ["songs", ..] -> route_songs(req, repo)
+    _ ->
+      case check_auth(req, admin_key) {
+        False -> wisp.response(401) |> wisp.string_body("Unauthorized")
+        True -> route(req, repo, start_time, bus)
+      }
   }
 }
 
@@ -366,7 +371,7 @@ fn handle_delete_quiz(req: Request, repo: Repository) -> Response {
 fn handle_get_plugins(repo: Repository) -> Response {
   let all_plugins = [
     "attendance", "points", "minigame", "filter", "custom_command", "uptime",
-    "vote", "roulette", "quiz", "timer",
+    "vote", "roulette", "quiz", "timer", "song_request",
   ]
   let disabled = case repo.get_disabled_plugins() {
     Ok(d) -> d
@@ -526,6 +531,7 @@ fn plugin_description(name: String) -> String {
     "roulette" -> "룰렛 (확률 기반 포인트)"
     "quiz" -> "퀴즈 (DB + 내장 문제)"
     "timer" -> "타이머 (비동기 알림)"
+    "song_request" -> "신청곡 (YouTube 대기열)"
     _ -> ""
   }
 }
@@ -579,6 +585,353 @@ fn handle_set_plugin(
       }
     Error(_) -> wisp.bad_request("invalid request body")
   }
+}
+
+// --- Song queue API (public, no auth) ---
+
+fn route_songs(req: Request, repo: Repository) -> Response {
+  case req.method, request.path_segments(req) {
+    http.Get, ["songs"] -> handle_get_songs(repo)
+    http.Post, ["songs"] -> handle_add_song(req, repo)
+    http.Delete, ["songs"] -> handle_remove_song(req, repo)
+    http.Post, ["songs", "reorder"] -> handle_reorder_song(req, repo)
+    http.Get, ["songs", "current"] -> handle_get_current_song(repo)
+    http.Post, ["songs", "next"] -> handle_next_song(repo)
+    http.Post, ["songs", "previous"] -> handle_prev_song(repo)
+    http.Post, ["songs", "replay"] -> handle_replay_song(repo)
+    _, _ -> wisp.not_found()
+  }
+}
+
+fn song_to_json(s: repository.SongData) -> json.Json {
+  json.object([
+    #("id", json.int(s.id)),
+    #("video_id", json.string(s.video_id)),
+    #("title", json.string(s.title)),
+    #("duration_seconds", json.int(s.duration_seconds)),
+    #("requested_by", json.string(s.requested_by)),
+    #("position", json.int(s.position)),
+  ])
+}
+
+fn handle_get_songs(repo: Repository) -> Response {
+  case repo.get_song_queue() {
+    Ok(songs) ->
+      wisp.json_response(json.to_string(json.array(songs, song_to_json)), 200)
+    Error(_) -> wisp.internal_server_error()
+  }
+}
+
+fn handle_add_song(req: Request, repo: Repository) -> Response {
+  use body <- wisp.require_json(req)
+  let decoder = {
+    use video_id <- decode.field("video_id", decode.string)
+    use title <- decode.field("title", decode.string)
+    use duration <- decode.field("duration_seconds", decode.int)
+    use requested_by <- decode.optional_field(
+      "requested_by",
+      "dashboard",
+      decode.string,
+    )
+    decode.success(#(video_id, title, duration, requested_by))
+  }
+  case decode.run(body, decoder) {
+    Ok(#(video_id, title, duration, requested_by)) ->
+      case repo.add_song(video_id, title, duration, requested_by) {
+        Ok(song) -> wisp.json_response(json.to_string(song_to_json(song)), 201)
+        Error(_) -> wisp.internal_server_error()
+      }
+    Error(_) -> wisp.bad_request("invalid request body")
+  }
+}
+
+fn handle_remove_song(req: Request, repo: Repository) -> Response {
+  use body <- wisp.require_json(req)
+  let decoder = decode.field("id", decode.int, fn(id) { decode.success(id) })
+  case decode.run(body, decoder) {
+    Ok(id) ->
+      case repo.remove_song(id) {
+        Ok(Nil) ->
+          wisp.json_response(
+            json.to_string(json.object([#("deleted", json.int(id))])),
+            200,
+          )
+        Error(_) -> wisp.response(404) |> wisp.string_body("song not found")
+      }
+    Error(_) -> wisp.bad_request("invalid request body")
+  }
+}
+
+fn handle_reorder_song(req: Request, repo: Repository) -> Response {
+  use body <- wisp.require_json(req)
+  let decoder = {
+    use id <- decode.field("id", decode.int)
+    use new_position <- decode.field("new_position", decode.int)
+    decode.success(#(id, new_position))
+  }
+  case decode.run(body, decoder) {
+    Ok(#(id, new_position)) ->
+      case repo.reorder_song(id, new_position) {
+        Ok(Nil) ->
+          wisp.json_response(
+            json.to_string(json.object([#("ok", json.bool(True))])),
+            200,
+          )
+        Error(_) -> wisp.response(404) |> wisp.string_body("song not found")
+      }
+    Error(_) -> wisp.bad_request("invalid request body")
+  }
+}
+
+fn handle_get_current_song(repo: Repository) -> Response {
+  let current_id = get_song_setting(repo, "song_current_id", "")
+  let version = get_song_setting(repo, "song_current_version", "0")
+  case current_id {
+    "" ->
+      wisp.json_response(
+        json.to_string(
+          json.object([
+            #("current", json.null()),
+            #("version", json.string(version)),
+          ]),
+        ),
+        200,
+      )
+    _ ->
+      case repo.get_song_queue() {
+        Ok(songs) ->
+          case list.find(songs, fn(s) { int.to_string(s.id) == current_id }) {
+            Ok(s) ->
+              wisp.json_response(
+                json.to_string(
+                  json.object([
+                    #("current", song_to_json(s)),
+                    #("version", json.string(version)),
+                  ]),
+                ),
+                200,
+              )
+            Error(_) ->
+              wisp.json_response(
+                json.to_string(
+                  json.object([
+                    #("current", json.null()),
+                    #("version", json.string(version)),
+                  ]),
+                ),
+                200,
+              )
+          }
+        Error(_) -> wisp.internal_server_error()
+      }
+  }
+}
+
+fn handle_next_song(repo: Repository) -> Response {
+  advance_and_respond(repo, "forward")
+}
+
+fn handle_prev_song(repo: Repository) -> Response {
+  advance_and_respond(repo, "backward")
+}
+
+fn handle_replay_song(repo: Repository) -> Response {
+  let v = get_song_setting(repo, "song_current_version", "0")
+  let next_v = case int.parse(v) {
+    Ok(n) -> int.to_string(n + 1)
+    Error(_) -> "1"
+  }
+  let _ = repo.set_setting("song_current_version", next_v)
+  handle_get_current_song(repo)
+}
+
+fn advance_and_respond(repo: Repository, direction: String) -> Response {
+  case repo.get_song_queue() {
+    Error(_) -> wisp.internal_server_error()
+    Ok(songs) -> {
+      let current_id = get_song_setting(repo, "song_current_id", "")
+      let next = case current_id {
+        "" ->
+          case direction {
+            "forward" -> list.first(songs)
+            _ -> list.last(songs)
+          }
+        _ -> find_adjacent_song(songs, current_id, direction)
+      }
+      case next {
+        Ok(s) -> {
+          let _ = repo.set_setting("song_current_id", int.to_string(s.id))
+          let v = get_song_setting(repo, "song_current_version", "0")
+          let next_v = case int.parse(v) {
+            Ok(n) -> int.to_string(n + 1)
+            Error(_) -> "1"
+          }
+          let _ = repo.set_setting("song_current_version", next_v)
+          wisp.json_response(
+            json.to_string(
+              json.object([
+                #("current", song_to_json(s)),
+                #("version", json.string(next_v)),
+              ]),
+            ),
+            200,
+          )
+        }
+        Error(_) ->
+          wisp.json_response(
+            json.to_string(
+              json.object([
+                #("current", json.null()),
+                #(
+                  "version",
+                  json.string(get_song_setting(
+                    repo,
+                    "song_current_version",
+                    "0",
+                  )),
+                ),
+              ]),
+            ),
+            200,
+          )
+      }
+    }
+  }
+}
+
+fn find_adjacent_song(
+  songs: List(repository.SongData),
+  current_id: String,
+  direction: String,
+) -> Result(repository.SongData, Nil) {
+  do_find_adjacent_song(songs, current_id, direction, option.None)
+}
+
+fn do_find_adjacent_song(
+  songs: List(repository.SongData),
+  current_id: String,
+  direction: String,
+  prev: Option(repository.SongData),
+) -> Result(repository.SongData, Nil) {
+  case songs {
+    [] -> Error(Nil)
+    [s, ..rest] ->
+      case int.to_string(s.id) == current_id {
+        True ->
+          case direction {
+            "forward" ->
+              case rest {
+                [next, ..] -> Ok(next)
+                [] -> Error(Nil)
+              }
+            _ ->
+              case prev {
+                Some(p) -> Ok(p)
+                option.None -> Error(Nil)
+              }
+          }
+        False -> do_find_adjacent_song(rest, current_id, direction, Some(s))
+      }
+  }
+}
+
+fn get_song_setting(repo: Repository, key: String, default: String) -> String {
+  case repo.get_setting(key) {
+    Ok(val) -> val
+    Error(_) -> default
+  }
+}
+
+fn handle_player_page() -> Response {
+  let html = "<!DOCTYPE html>
+<html lang=\"ko\">
+<head>
+  <meta charset=\"UTF-8\">
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+  <title>kira_caster Player</title>
+" <> "<style>" <> player_css() <> "</style>
+</head>" <> player_body() <> "</html>"
+  wisp.html_response(html, 200)
+}
+
+fn player_css() -> String {
+  "
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0e0e10; color:#efeff1; font-family:'Quicksand',sans-serif; overflow:hidden; }
+    #player-wrap { position:relative; width:100vw; height:calc(100vh - 56px); background:#000; }
+    #yt-player { width:100%; height:100%; }
+    .now-bar {
+      height:56px; display:flex; align-items:center; gap:12px;
+      padding:0 16px; background:linear-gradient(92.54deg,#FF608F 5.84%,#FBB35E 95.21%);
+    }
+    .now-title { font-weight:700; font-size:15px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .now-user { font-size:13px; opacity:.85; white-space:nowrap; }
+    .now-bar .icon { width:20px; height:20px; animation:pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .idle-msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:18px; color:#888; }
+  "
+}
+
+fn player_body() -> String {
+  "<body>
+<div id=\"player-wrap\">
+  <div id=\"yt-player\"></div>
+  <div class=\"idle-msg\" id=\"idle\">대기 중...</div>
+</div>
+<div class=\"now-bar\" id=\"now-bar\" style=\"display:none\">
+  <svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"#fff\"><path d=\"M12 3v10.55A4 4 0 1014 17V7h4V3h-6z\"/></svg>
+  <span class=\"now-title\" id=\"now-title\"></span>
+  <span class=\"now-user\" id=\"now-user\"></span>
+</div>
+<script src=\"https://www.youtube.com/iframe_api\"></script>
+<script>
+const base = window.location.origin;
+let player = null;
+let currentVideoId = '';
+let currentVersion = '';
+let ready = false;
+
+function onYouTubeIframeAPIReady() {
+  player = new YT.Player('yt-player', {
+    width: '100%', height: '100%',
+    playerVars: { autoplay:1, controls:0, modestbranding:1, rel:0 },
+    events: {
+      onReady: function() { ready = true; pollCurrent(); },
+      onStateChange: function(e) {
+        if (e.data === YT.PlayerState.ENDED) {
+          fetch(base+'/songs/next',{method:'POST'}).then(function(){});
+        }
+      }
+    }
+  });
+}
+
+function pollCurrent() {
+  setInterval(function() {
+    fetch(base+'/songs/current').then(function(r){return r.json()}).then(function(d) {
+      if (!d.current) {
+        document.getElementById('now-bar').style.display='none';
+        document.getElementById('idle').style.display='';
+        return;
+      }
+      if (d.version !== currentVersion) {
+        currentVersion = d.version;
+        if (d.current.video_id !== currentVideoId) {
+          currentVideoId = d.current.video_id;
+          player.loadVideoById(currentVideoId);
+        } else {
+          player.seekTo(0);
+        }
+        document.getElementById('idle').style.display='none';
+        document.getElementById('now-bar').style.display='flex';
+        document.getElementById('now-title').textContent = d.current.title;
+        document.getElementById('now-user').textContent = d.current.requested_by;
+      }
+    }).catch(function(){});
+  }, 2000);
+}
+</script>
+</body>"
 }
 
 fn handle_dashboard() -> Response {
@@ -680,6 +1033,7 @@ fn dashboard_body() -> String {
     <div class=\"tab\" onclick=\"showTab('votes',this)\">투표</div>
     <div class=\"tab\" onclick=\"showTab('plugins',this)\">플러그인</div>
     <div class=\"tab\" onclick=\"showTab('settings',this)\">설정</div>
+    <div class=\"tab\" onclick=\"showTab('songs',this)\">신청곡</div>
   </div>
   <div id=\"status\" class=\"panel active\"><div id=\"status-info\">로딩중...</div></div>
   <div id=\"users\" class=\"panel\"><div class=\"form-row\"><input id=\"user-search\" placeholder=\"유저 검색...\" oninput=\"filterUsers()\"><button class=\"success\" onclick=\"exportUsers()\">CSV 내보내기</button></div><table id=\"users-table\"><thead><tr><th>유저</th><th>포인트</th><th>출석</th><th>최근출석</th></tr></thead><tbody></tbody></table></div>
@@ -689,6 +1043,30 @@ fn dashboard_body() -> String {
   <div id=\"votes\" class=\"panel\"><div class=\"form-row\"><input id=\"vote-topic\" placeholder=\"투표 주제\"><input id=\"vote-options\" placeholder=\"선택지1,선택지2,...\"><button onclick=\"startVote()\">투표 시작</button></div><div id=\"vote-info\" style=\"margin-top:12px\">로딩중...</div></div>
   <div id=\"plugins\" class=\"panel\"><table id=\"plugins-table\"><thead><tr><th>플러그인</th><th>설명</th><th>상태</th><th></th></tr></thead><tbody></tbody></table></div>
   <div id=\"settings\" class=\"panel\"><div id=\"settings-form\">로딩중...</div></div>
+  <div id=\"songs\" class=\"panel\">
+    <div style=\"margin-bottom:16px\">
+      <h3 style=\"margin-bottom:8px\">현재 재생</h3>
+      <div id=\"song-current\" style=\"padding:10px;background:rgba(253,113,155,.1);border-radius:8px;margin-bottom:8px\">없음</div>
+      <div class=\"form-row\">
+        <button onclick=\"songPrev()\">이전</button>
+        <button onclick=\"songReplay()\">처음부터</button>
+        <button onclick=\"songNext()\">다음</button>
+        <a href=\"/player\" target=\"_blank\" style=\"margin-left:auto;color:var(--color-info);text-decoration:none;font-size:13px\">플레이어 열기</a>
+      </div>
+    </div>
+    <div style=\"margin-bottom:16px\">
+      <h3 style=\"margin-bottom:8px\">곡 추가</h3>
+      <div class=\"form-row\"><input id=\"song-url\" placeholder=\"YouTube URL\"><button onclick=\"addSong()\">추가</button></div>
+    </div>
+    <div style=\"margin-bottom:16px\">
+      <h3 style=\"margin-bottom:8px\">대기열</h3>
+      <table id=\"songs-table\"><thead><tr><th>#</th><th>제목</th><th>신청자</th><th>길이</th><th></th></tr></thead><tbody></tbody></table>
+    </div>
+    <div>
+      <h3 style=\"margin-bottom:8px\">신청곡 설정</h3>
+      <div id=\"song-settings-form\"></div>
+    </div>
+  </div>
   <div id=\"toast-container\" class=\"toast-container\"></div>
   <script>" <> dashboard_js() <> "</script>
 </body>"
@@ -770,7 +1148,7 @@ fn dashboard_js() -> String {
 
     function startAutoRefresh() {
       if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-      var interval = (activeTab === 'status' || activeTab === 'votes') ? 5000 : 15000;
+      var interval = (activeTab === 'status' || activeTab === 'votes' || activeTab === 'songs') ? 5000 : 15000;
       autoRefreshInterval = setInterval(function() { load(activeTab); }, interval);
     }
 
@@ -855,8 +1233,31 @@ fn dashboard_js() -> String {
           return '<div class=\\\"form-row\\\"><label style=\\\"min-width:180px;font-weight:600\\\">' + labels[k] + '</label><input id=\\\"setting-' + k + '\\\" type=\\\"number\\\" value=\\\"' + esc(val) + '\\\" style=\\\"width:100px\\\"><button onclick=\\\"saveSetting(\\'' + k + '\\')\\\">저장</button></div>';
         }).join('');
         document.getElementById('settings-form').innerHTML = html;
+      } else if (tab === 'songs') {
+        var cur = await api('GET', '/songs/current');
+        if (cur.current) {
+          document.getElementById('song-current').innerHTML = '<strong>' + esc(cur.current.title) + '</strong> - ' + esc(cur.current.requested_by) + ' (' + fmtDur(cur.current.duration_seconds) + ')';
+        } else {
+          document.getElementById('song-current').innerHTML = '재생 중인 곡이 없습니다';
+        }
+        var songs = await api('GET', '/songs');
+        var curId = cur.current ? cur.current.id : null;
+        document.querySelector('#songs-table tbody').innerHTML = songs.length ? songs.map(function(s, i) {
+          var playing = s.id === curId ? ' style=\\\"background:rgba(253,113,155,.12)\\\"' : '';
+          return '<tr' + playing + '><td>' + (i+1) + '</td><td>' + esc(s.title) + '</td><td>' + esc(s.requested_by) + '</td><td>' + fmtDur(s.duration_seconds) + '</td><td>'
+            + (i > 0 ? '<button onclick=\\\"songMove(' + s.id + ',' + (s.position-1) + ')\\\">▲</button> ' : '')
+            + (i < songs.length-1 ? '<button onclick=\\\"songMove(' + s.id + ',' + (s.position+1) + ')\\\">▼</button> ' : '')
+            + '<button class=\\\"danger\\\" onclick=\\\"songDel(' + s.id + ')\\\">삭제</button></td></tr>';
+        }).join('') : empty(5);
+        loadSongSettings();
       }
       } catch(e) { }
+    }
+
+    function fmtDur(sec) {
+      if (!sec) return '0:00';
+      var h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+      return h > 0 ? h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0') : m+':'+String(s).padStart(2,'0');
     }
 
     async function addWord() {
@@ -1009,6 +1410,68 @@ fn dashboard_js() -> String {
     }
 
     function exportUsers() { exportCSV(allUsers, ['user_id','points','attendance_count'], ['유저','포인트','출석'], 'users.csv'); }
+
+    // --- Song request functions ---
+    async function songNext() {
+      try { await api('POST', '/songs/next'); toast('다음 곡으로 이동', 'success'); load('songs'); } catch(e) { toast('오류', 'error'); }
+    }
+    async function songPrev() {
+      try { await api('POST', '/songs/previous'); toast('이전 곡으로 이동', 'success'); load('songs'); } catch(e) { toast('오류', 'error'); }
+    }
+    async function songReplay() {
+      try { await api('POST', '/songs/replay'); toast('처음부터 재생', 'success'); load('songs'); } catch(e) { toast('오류', 'error'); }
+    }
+    async function songDel(id) {
+      if (!confirm('이 곡을 삭제할까요?')) return;
+      try { await api('DELETE', '/songs', {id: id}); toast('삭제됨', 'success'); load('songs'); } catch(e) { toast('삭제 실패', 'error'); }
+    }
+    async function songMove(id, newPos) {
+      try { await api('POST', '/songs/reorder', {id: id, new_position: newPos}); load('songs'); } catch(e) { toast('이동 실패', 'error'); }
+    }
+    async function addSong() {
+      var url = document.getElementById('song-url').value.trim();
+      if (!url) { toast('URL을 입력해주세요.', 'error'); return; }
+      var vid = parseVideoId(url);
+      if (!vid) { toast('유효하지 않은 YouTube URL입니다.', 'error'); return; }
+      try {
+        await api('POST', '/songs', {video_id: vid, title: vid, duration_seconds: 0, requested_by: 'dashboard'});
+        document.getElementById('song-url').value = '';
+        toast('곡이 추가되었습니다.', 'success');
+        load('songs');
+      } catch(e) { toast('추가 실패', 'error'); }
+    }
+    function parseVideoId(url) {
+      var m = url.match(/(?:youtube\\.com\\/(?:watch\\?v=|embed\\/)|youtu\\.be\\/)([\\w-]{11})/);
+      if (m) return m[1];
+      if (/^[\\w-]{11}$/.test(url)) return url;
+      return null;
+    }
+    var songSettingsDefs = {
+      song_max_per_user: {label:'유저당 최대 신청 수', def:'1', type:'number'},
+      song_count_playing: {label:'재생 중인 곡도 제한에 포함', def:'false', type:'bool'},
+      song_cost_points: {label:'신청 포인트 비용 (0=무료)', def:'0', type:'number'},
+      song_prevent_duplicate: {label:'중복 곡 방지', def:'false', type:'bool'},
+      song_max_duration: {label:'최대 영상 길이(초, 0=무제한)', def:'0', type:'number'}
+    };
+    async function loadSongSettings() {
+      var d = await api('GET', '/settings');
+      var saved = {};
+      d.forEach(function(s) { saved[s.key] = s.value; });
+      var html = Object.keys(songSettingsDefs).map(function(k) {
+        var def = songSettingsDefs[k];
+        var val = saved[k] || def.def;
+        if (def.type === 'bool') {
+          return '<div class=\\\"form-row\\\"><label style=\\\"min-width:200px;font-weight:600\\\">' + def.label + '</label><select id=\\\"ss-' + k + '\\\" style=\\\"padding:6px;border:1px solid var(--color-border);border-radius:4px\\\"><option value=\\\"false\\\"' + (val !== 'true' ? ' selected' : '') + '>아니오</option><option value=\\\"true\\\"' + (val === 'true' ? ' selected' : '') + '>예</option></select><button onclick=\\\"saveSongSetting(\\'' + k + '\\')\\\">저장</button></div>';
+        }
+        return '<div class=\\\"form-row\\\"><label style=\\\"min-width:200px;font-weight:600\\\">' + def.label + '</label><input id=\\\"ss-' + k + '\\\" type=\\\"number\\\" value=\\\"' + esc(val) + '\\\" style=\\\"width:100px\\\"><button onclick=\\\"saveSongSetting(\\'' + k + '\\')\\\">저장</button></div>';
+      }).join('');
+      document.getElementById('song-settings-form').innerHTML = html;
+    }
+    async function saveSongSetting(key) {
+      var el = document.getElementById('ss-' + key);
+      var val = el.tagName === 'SELECT' ? el.value : el.value;
+      try { await api('POST', '/settings', {key: key, value: val}); toast('설정 저장됨', 'success'); } catch(e) { toast('저장 실패', 'error'); }
+    }
 
     load('status');
     startAutoRefresh();

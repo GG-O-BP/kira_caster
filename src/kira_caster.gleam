@@ -15,6 +15,7 @@ import kira_caster/plugin/plugin
 import kira_caster/plugin/points
 import kira_caster/plugin/quiz
 import kira_caster/plugin/roulette
+import kira_caster/plugin/song_request
 import kira_caster/plugin/timer
 import kira_caster/plugin/uptime
 import kira_caster/plugin/vote
@@ -84,6 +85,9 @@ fn start() -> Result(Nil, String) {
     |> plugin_registry.register(fn() { roulette.new() })
     |> plugin_registry.register(fn() { quiz.new(repo) })
     |> plugin_registry.register(fn() { timer.new(make_response_handler()) })
+    |> plugin_registry.register(fn() {
+      song_request.new(repo, config.youtube_api_key)
+    })
 
   subscribe_all(bus, registry, make_response_handler)
 

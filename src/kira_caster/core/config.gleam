@@ -12,6 +12,7 @@ pub type Config {
     admin_port: Int,
     admin_key: String,
     secret_key_base: String,
+    youtube_api_key: String,
   )
 }
 
@@ -29,5 +30,6 @@ pub fn default() -> Config {
     admin_port: 8080,
     admin_key: "",
     secret_key_base: "kira_caster_default_secret_key_please_change_in_production",
+    youtube_api_key: "",
   )
 }

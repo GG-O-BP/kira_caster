@@ -1,11 +1,14 @@
 import gleam/dynamic/decode
+import gleam/int
 import gleam/option.{type Option}
+import gleam/order
 import gleam/result
 import gleam/string
 import kira_caster/storage/repository.{
-  type Repository, type StorageError, type UserData, ConnectionError, NotFound,
-  QueryError, Repository, UserData,
+  type Repository, type SongData, type StorageError, type UserData,
+  ConnectionError, NotFound, QueryError, Repository, SongData, UserData,
 }
+import kira_caster/util/time
 import sqlight
 
 pub fn new(db_path: String) -> Result(Repository, StorageError) {
@@ -47,6 +50,15 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
         set_advanced_command_impl(conn, name, source, fallback)
       },
       get_all_commands_detailed: fn() { get_all_commands_detailed_impl(conn) },
+      get_song_queue: fn() { get_song_queue_impl(conn) },
+      add_song: fn(video_id, title, duration, user) {
+        add_song_impl(conn, video_id, title, duration, user)
+      },
+      remove_song: fn(id) { remove_song_impl(conn, id) },
+      clear_song_queue: fn() { clear_song_queue_impl(conn) },
+      reorder_song: fn(id, new_pos) { reorder_song_impl(conn, id, new_pos) },
+      get_songs_by_user: fn(user) { get_songs_by_user_impl(conn, user) },
+      has_song_with_video_id: fn(vid) { has_song_with_video_id_impl(conn, vid) },
     ),
   )
 }
@@ -115,7 +127,7 @@ fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
     False -> Ok(Nil)
   })
   use version4 <- result.try(get_schema_version(conn))
-  case version4 < 4 {
+  use _ <- result.try(case version4 < 4 {
     True -> {
       use _ <- result.try(exec(
         conn,
@@ -126,6 +138,25 @@ fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
         "ALTER TABLE custom_commands ADD COLUMN source_code TEXT",
       ))
       set_schema_version(conn, 4)
+    }
+    False -> Ok(Nil)
+  })
+  use version5 <- result.try(get_schema_version(conn))
+  case version5 < 5 {
+    True -> {
+      use _ <- result.try(exec(
+        conn,
+        "CREATE TABLE IF NOT EXISTS song_queue (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        video_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        duration_seconds INTEGER NOT NULL DEFAULT 0,
+        requested_by TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      )",
+      ))
+      set_schema_version(conn, 5)
     }
     False -> Ok(Nil)
   }
@@ -611,4 +642,224 @@ fn get_all_commands_detailed_impl(
     },
   )
   |> result.map_error(fn(e) { QueryError(e.message) })
+}
+
+// --- Song queue ---
+
+fn song_data_decoder() -> decode.Decoder(SongData) {
+  use id <- decode.field(0, decode.int)
+  use video_id <- decode.field(1, decode.string)
+  use title <- decode.field(2, decode.string)
+  use duration_seconds <- decode.field(3, decode.int)
+  use requested_by <- decode.field(4, decode.string)
+  use position <- decode.field(5, decode.int)
+  use created_at <- decode.field(6, decode.int)
+  decode.success(SongData(
+    id:,
+    video_id:,
+    title:,
+    duration_seconds:,
+    requested_by:,
+    position:,
+    created_at:,
+  ))
+}
+
+fn get_song_queue_impl(
+  conn: sqlight.Connection,
+) -> Result(List(SongData), StorageError) {
+  sqlight.query(
+    "SELECT id, video_id, title, duration_seconds, requested_by, position, created_at FROM song_queue ORDER BY position ASC",
+    on: conn,
+    with: [],
+    expecting: song_data_decoder(),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+}
+
+fn add_song_impl(
+  conn: sqlight.Connection,
+  video_id: String,
+  title: String,
+  duration: Int,
+  user: String,
+) -> Result(SongData, StorageError) {
+  use max_rows <- result.try(
+    sqlight.query(
+      "SELECT COALESCE(MAX(position), -1) FROM song_queue",
+      on: conn,
+      with: [],
+      expecting: decode.field(0, decode.int, fn(v) { decode.success(v) }),
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  let next_pos = case max_rows {
+    [m, ..] -> m + 1
+    [] -> 0
+  }
+  let now = time.now_ms()
+  use _ <- result.try(
+    sqlight.query(
+      "INSERT INTO song_queue (video_id, title, duration_seconds, requested_by, position, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+      on: conn,
+      with: [
+        sqlight.text(video_id),
+        sqlight.text(title),
+        sqlight.int(duration),
+        sqlight.text(user),
+        sqlight.int(next_pos),
+        sqlight.int(now),
+      ],
+      expecting: decode.success(Nil),
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  use id_rows <- result.try(
+    sqlight.query(
+      "SELECT last_insert_rowid()",
+      on: conn,
+      with: [],
+      expecting: decode.field(0, decode.int, fn(v) { decode.success(v) }),
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  let new_id = case id_rows {
+    [id, ..] -> id
+    [] -> 0
+  }
+  Ok(SongData(
+    id: new_id,
+    video_id:,
+    title:,
+    duration_seconds: duration,
+    requested_by: user,
+    position: next_pos,
+    created_at: now,
+  ))
+}
+
+fn remove_song_impl(
+  conn: sqlight.Connection,
+  id: Int,
+) -> Result(Nil, StorageError) {
+  use pos_rows <- result.try(
+    sqlight.query(
+      "SELECT position FROM song_queue WHERE id = ?",
+      on: conn,
+      with: [sqlight.int(id)],
+      expecting: decode.field(0, decode.int, fn(v) { decode.success(v) }),
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  case pos_rows {
+    [pos, ..] -> {
+      use _ <- result.try(
+        sqlight.query(
+          "DELETE FROM song_queue WHERE id = ?",
+          on: conn,
+          with: [sqlight.int(id)],
+          expecting: decode.success(Nil),
+        )
+        |> result.map_error(fn(e) { QueryError(e.message) }),
+      )
+      sqlight.query(
+        "UPDATE song_queue SET position = position - 1 WHERE position > ?",
+        on: conn,
+        with: [sqlight.int(pos)],
+        expecting: decode.success(Nil),
+      )
+      |> result.map_error(fn(e) { QueryError(e.message) })
+      |> result.replace(Nil)
+    }
+    [] -> Error(NotFound)
+  }
+}
+
+fn clear_song_queue_impl(conn: sqlight.Connection) -> Result(Nil, StorageError) {
+  exec(conn, "DELETE FROM song_queue")
+}
+
+fn reorder_song_impl(
+  conn: sqlight.Connection,
+  id: Int,
+  new_pos: Int,
+) -> Result(Nil, StorageError) {
+  use pos_rows <- result.try(
+    sqlight.query(
+      "SELECT position FROM song_queue WHERE id = ?",
+      on: conn,
+      with: [sqlight.int(id)],
+      expecting: decode.field(0, decode.int, fn(v) { decode.success(v) }),
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  case pos_rows {
+    [old_pos, ..] -> {
+      case old_pos == new_pos {
+        True -> Ok(Nil)
+        False -> {
+          let #(shift_sql, shift_params) = case int.compare(new_pos, old_pos) {
+            order.Lt -> #(
+              "UPDATE song_queue SET position = position + 1 WHERE position >= ? AND position < ?",
+              [sqlight.int(new_pos), sqlight.int(old_pos)],
+            )
+            _ -> #(
+              "UPDATE song_queue SET position = position - 1 WHERE position > ? AND position <= ?",
+              [sqlight.int(old_pos), sqlight.int(new_pos)],
+            )
+          }
+          use _ <- result.try(
+            sqlight.query(
+              shift_sql,
+              on: conn,
+              with: shift_params,
+              expecting: decode.success(Nil),
+            )
+            |> result.map_error(fn(e) { QueryError(e.message) }),
+          )
+          sqlight.query(
+            "UPDATE song_queue SET position = ? WHERE id = ?",
+            on: conn,
+            with: [sqlight.int(new_pos), sqlight.int(id)],
+            expecting: decode.success(Nil),
+          )
+          |> result.map_error(fn(e) { QueryError(e.message) })
+          |> result.replace(Nil)
+        }
+      }
+    }
+    [] -> Error(NotFound)
+  }
+}
+
+fn get_songs_by_user_impl(
+  conn: sqlight.Connection,
+  user: String,
+) -> Result(List(SongData), StorageError) {
+  sqlight.query(
+    "SELECT id, video_id, title, duration_seconds, requested_by, position, created_at FROM song_queue WHERE requested_by = ? ORDER BY position ASC",
+    on: conn,
+    with: [sqlight.text(user)],
+    expecting: song_data_decoder(),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+}
+
+fn has_song_with_video_id_impl(
+  conn: sqlight.Connection,
+  video_id: String,
+) -> Result(Bool, StorageError) {
+  use rows <- result.try(
+    sqlight.query(
+      "SELECT COUNT(*) FROM song_queue WHERE video_id = ?",
+      on: conn,
+      with: [sqlight.text(video_id)],
+      expecting: decode.field(0, decode.int, fn(v) { decode.success(v) }),
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  case rows {
+    [count, ..] -> Ok(count > 0)
+    [] -> Ok(False)
+  }
 }

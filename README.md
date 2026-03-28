@@ -17,7 +17,8 @@
 | 투표 | 채팅으로 투표할 수 있어! 다 같이 정하자~! |
 | 룰렛 | `!룰렛` 돌려서 운 시험해봐! 대박 나면 +100포인트! |
 | 퀴즈 | 퀴즈 맞추면 포인트 GET! 누가 제일 빠를까~? |
-| 관리 대시보드 | 웹에서 유저 정보, 금칙어, 명령어, 투표 관리할 수 있어! |
+| 타이머 | `!타이머 30` 하면 30초 후에 알려줘! |
+| 관리 대시보드 | 웹 페이지에서 유저, 금칙어, 명령어, 퀴즈, 투표 전부 관리! |
 
 ## 시작하는 방법
 
@@ -27,7 +28,7 @@ Gleam이랑 Erlang/OTP가 설치되어 있어야 해!
 gleam deps download   # 필요한 것들 다운받기
 gleam build           # 빌드하기
 gleam run             # 실행하기!
-gleam test            # 테스트 돌리기 (143개나 있어!)
+gleam test            # 테스트 돌리기 (156개나 있어!)
 ```
 
 실행하면 이렇게 나와!
@@ -73,6 +74,8 @@ Listening on http://127.0.0.1:8080
 | `!투표 결과` | 현재 투표 결과 보기 |
 | `!룰렛` | 룰렛 돌리기! 대박(+100), 좋음(+30), 보통(+10), 꽝(-10) |
 | `!퀴즈 <답>` | 퀴즈 정답 맞추기 |
+| `!타이머 <초>` | N초 후 알림 (1~3600초) |
+| `!타이머 <초> <메시지>` | 커스텀 메시지로 타이머 설정 |
 
 ### 매니저 전용 명령어
 
@@ -113,6 +116,11 @@ curl -X DELETE http://localhost:8080/commands -H "Content-Type: application/json
 curl http://localhost:8080/votes
 curl -X POST http://localhost:8080/votes -H "Content-Type: application/json" -d '{"topic":"좋아하는 색","options":["빨강","파랑"]}'
 curl -X DELETE http://localhost:8080/votes
+
+# 퀴즈 관리
+curl http://localhost:8080/quizzes
+curl -X POST http://localhost:8080/quizzes -H "Content-Type: application/json" -d '{"question":"1+1=?","answer":"2","reward":10}'
+curl -X DELETE http://localhost:8080/quizzes -H "Content-Type: application/json" -d '{"question":"1+1=?"}'
 ```
 
 `KIRA_ADMIN_KEY`를 설정하면 Bearer 토큰 인증이 필요해져!
@@ -131,7 +139,7 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] 설정 외부화 (환경변수로 전부 바꿀 수 있어!)
 - [x] OTP 로깅 (info/warn/error)
 
-### 플러그인 (9개!)
+### 플러그인 (10개!)
 - [x] 출석체크 (`!출석`) - 하루 1회 제한, 포인트 보상
 - [x] 포인트 시스템 (`!포인트`, `!포인트 순위`) - SQLite 저장
 - [x] 미니게임 (`!게임 주사위`, `!게임 가위바위보`) - 포인트 연동
@@ -140,7 +148,8 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] 업타임 (`!업타임`) - 봇 가동 시간 표시
 - [x] 투표 (`!투표 시작/투표/결과/종료`) - DB 저장, 중복 투표 방지
 - [x] 룰렛 (`!룰렛`) - 확률 가중치, 포인트 보상
-- [x] 퀴즈 (`!퀴즈 시작`, `!퀴즈 <답>`) - 내장 퀴즈 15문제, 복수정답 지원, 최초 정답자 보상
+- [x] 퀴즈 (`!퀴즈 시작`, `!퀴즈 <답>`) - 내장 퀴즈 15문제, 복수정답 지원, 최초 정답자 보상, DB 퀴즈 우선 출제
+- [x] 타이머 (`!타이머 <초>`) - 1~3600초, 커스텀 메시지 지원
 
 ### 플랫폼 연결
 - [x] 어댑터 인터페이스 (어떤 플랫폼이든 연결 가능하게!)
@@ -158,7 +167,9 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] Bearer 토큰 인증
 - [x] DB 마이그레이션 버전 관리
 - [x] Docker 지원
-- [x] 테스트 143개! 전부 통과!
+- [x] 대시보드 HTML 프론트엔드
+- [x] 퀴즈 DB 관리 (대시보드)
+- [x] 테스트 156개! 전부 통과!
 
 ## 퀴즈 문제 목록
 
@@ -205,7 +216,7 @@ src/
 │   │   ├── message.gleam        # 메시지 타입
 │   │   ├── permission.gleam     # 권한 체계
 │   │   └── quiz_data.gleam      # 퀴즈 데이터
-│   ├── plugin/                  # 플러그인들! (9개!)
+│   ├── plugin/                  # 플러그인들! (10개!)
 │   │   ├── plugin.gleam         # 플러그인 인터페이스
 │   │   ├── attendance.gleam     # 출석체크
 │   │   ├── points.gleam         # 포인트
@@ -215,7 +226,8 @@ src/
 │   │   ├── uptime.gleam         # 업타임
 │   │   ├── vote.gleam           # 투표
 │   │   ├── roulette.gleam       # 룰렛
-│   │   └── quiz.gleam           # 퀴즈
+│   │   ├── quiz.gleam           # 퀴즈
+│   │   └── timer.gleam          # 타이머
 │   ├── platform/                # 플랫폼 연결
 │   │   ├── adapter.gleam        # 어댑터 인터페이스
 │   │   ├── mock_adapter.gleam   # 연습용

@@ -15,6 +15,7 @@ import kira_caster/plugin/plugin
 import kira_caster/plugin/points
 import kira_caster/plugin/quiz
 import kira_caster/plugin/roulette
+import kira_caster/plugin/timer
 import kira_caster/plugin/uptime
 import kira_caster/plugin/vote
 import kira_caster/plugin_registry.{type PluginRegistry}
@@ -42,6 +43,24 @@ fn start() -> Result(Nil, String) {
     |> result.map_error(fn(_) { "Failed to start supervisor" }),
   )
 
+  let adapter = mock_adapter.new()
+  use _ <- result.try(
+    adapter.connect()
+    |> result.map_error(fn(_) { "Failed to connect adapter" }),
+  )
+
+  let make_response_handler = fn() {
+    fn(event: plugin.Event) {
+      case event {
+        plugin.PluginResponse(_, message) -> {
+          let _ = adapter.send_message(message)
+          Nil
+        }
+        _ -> Nil
+      }
+    }
+  }
+
   let registry =
     plugin_registry.new()
     |> plugin_registry.register(fn() {
@@ -64,24 +83,7 @@ fn start() -> Result(Nil, String) {
     |> plugin_registry.register(fn() { vote.new(repo) })
     |> plugin_registry.register(fn() { roulette.new() })
     |> plugin_registry.register(fn() { quiz.new(repo) })
-
-  let adapter = mock_adapter.new()
-  use _ <- result.try(
-    adapter.connect()
-    |> result.map_error(fn(_) { "Failed to connect adapter" }),
-  )
-
-  let make_response_handler = fn() {
-    fn(event: plugin.Event) {
-      case event {
-        plugin.PluginResponse(_, message) -> {
-          let _ = adapter.send_message(message)
-          Nil
-        }
-        _ -> Nil
-      }
-    }
-  }
+    |> plugin_registry.register(fn() { timer.new(make_response_handler()) })
 
   subscribe_all(bus, registry, make_response_handler)
 

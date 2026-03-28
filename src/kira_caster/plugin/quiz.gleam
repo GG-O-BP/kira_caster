@@ -28,25 +28,29 @@ fn handle_start(repo: Repository, role: permission.Role) -> List(Event) {
       plugin.PluginResponse(plugin: "quiz", message: "권한이 없습니다. (관리자 전용)"),
     ]
     Ok(Nil) -> {
-      let quizzes = quiz_data.all()
-      let idx = int.random(quiz_data.count())
-      let quiz = list_at(quizzes, idx)
-      case quiz {
-        Error(_) -> [
-          plugin.PluginResponse(plugin: "quiz", message: "퀴즈 데이터를 불러올 수 없습니다."),
-        ]
-        Ok(q) -> {
-          let answers_str = join_answers(q.answers)
-          let _ =
-            repo.set_command(
-              "__quiz_answer",
-              answers_str <> "|" <> int.to_string(q.reward),
-            )
-          [
-            plugin.PluginResponse(plugin: "quiz", message: "퀴즈! " <> q.question),
-          ]
-        }
+      // DB 퀴즈가 있으면 DB에서, 없으면 내장 데이터에서 출제
+      let #(question, answers_str, reward) = case repo.get_quiz_count() {
+        Ok(count) if count > 0 ->
+          case repo.get_all_quizzes() {
+            Ok(db_quizzes) -> {
+              let idx = int.random(count)
+              case list_at(db_quizzes, idx) {
+                Ok(#(q, a, r)) -> #(q, a, r)
+                Error(_) -> fallback_quiz()
+              }
+            }
+            Error(_) -> fallback_quiz()
+          }
+        _ -> fallback_quiz()
       }
+      let _ =
+        repo.set_command(
+          "__quiz_answer",
+          answers_str <> "|" <> int.to_string(reward),
+        )
+      [
+        plugin.PluginResponse(plugin: "quiz", message: "퀴즈! " <> question),
+      ]
     }
   }
 }
@@ -80,6 +84,15 @@ fn handle_answer(repo: Repository, user: String, answer: String) -> List(Event) 
           }
         }
       }
+  }
+}
+
+fn fallback_quiz() -> #(String, String, Int) {
+  let quizzes = quiz_data.all()
+  let idx = int.random(quiz_data.count())
+  case list_at(quizzes, idx) {
+    Ok(q) -> #(q.question, join_answers(q.answers), q.reward)
+    Error(_) -> #("1 + 1 = ?", "2", 10)
   }
 }
 

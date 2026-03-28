@@ -32,6 +32,10 @@ pub type Repository {
     get_vote_results: fn() -> Result(List(#(String, Int)), StorageError),
     get_active_vote: fn() -> Result(#(String, List(String)), StorageError),
     end_vote: fn() -> Result(Nil, StorageError),
+    add_quiz: fn(String, String, Int) -> Result(Nil, StorageError),
+    delete_quiz: fn(String) -> Result(Nil, StorageError),
+    get_all_quizzes: fn() -> Result(List(#(String, String, Int)), StorageError),
+    get_quiz_count: fn() -> Result(Int, StorageError),
   )
 }
 
@@ -57,6 +61,10 @@ pub fn mock_repo(users: List(UserData)) -> Repository {
     get_vote_results: fn() { Ok([]) },
     get_active_vote: fn() { Error(NotFound) },
     end_vote: fn() { Ok(Nil) },
+    add_quiz: fn(_q, _a, _r) { Ok(Nil) },
+    delete_quiz: fn(_q) { Ok(Nil) },
+    get_all_quizzes: fn() { Ok([]) },
+    get_quiz_count: fn() { Ok(0) },
   )
 }
 

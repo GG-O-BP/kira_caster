@@ -30,6 +30,10 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
       get_vote_results: fn() { get_vote_results_impl(conn) },
       get_active_vote: fn() { get_active_vote_impl(conn) },
       end_vote: fn() { end_vote_impl(conn) },
+      add_quiz: fn(q, a, r) { add_quiz_impl(conn, q, a, r) },
+      delete_quiz: fn(q) { delete_quiz_impl(conn, q) },
+      get_all_quizzes: fn() { get_all_quizzes_impl(conn) },
+      get_quiz_count: fn() { get_quiz_count_impl(conn) },
     ),
   )
 }
@@ -66,6 +70,10 @@ fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
       use _ <- result.try(exec(
         conn,
         "CREATE TABLE IF NOT EXISTS vote_entries (user_id TEXT NOT NULL, choice TEXT NOT NULL, vote_id INTEGER NOT NULL, UNIQUE(user_id, vote_id))",
+      ))
+      use _ <- result.try(exec(
+        conn,
+        "CREATE TABLE IF NOT EXISTS quizzes (question TEXT PRIMARY KEY, answer TEXT NOT NULL, reward INTEGER NOT NULL DEFAULT 10)",
       ))
       use _ <- result.try(set_schema_version(conn, 1))
       Ok(Nil)
@@ -348,4 +356,67 @@ fn get_active_vote_impl(
 fn end_vote_impl(conn: sqlight.Connection) -> Result(Nil, StorageError) {
   use _ <- result.try(exec(conn, "UPDATE votes SET active = 0 WHERE active = 1"))
   Ok(Nil)
+}
+
+fn add_quiz_impl(
+  conn: sqlight.Connection,
+  question: String,
+  answer: String,
+  reward: Int,
+) -> Result(Nil, StorageError) {
+  sqlight.query(
+    "INSERT OR REPLACE INTO quizzes (question, answer, reward) VALUES (?, ?, ?)",
+    on: conn,
+    with: [sqlight.text(question), sqlight.text(answer), sqlight.int(reward)],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
+}
+
+fn delete_quiz_impl(
+  conn: sqlight.Connection,
+  question: String,
+) -> Result(Nil, StorageError) {
+  sqlight.query(
+    "DELETE FROM quizzes WHERE question = ?",
+    on: conn,
+    with: [sqlight.text(question)],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
+}
+
+fn get_all_quizzes_impl(
+  conn: sqlight.Connection,
+) -> Result(List(#(String, String, Int)), StorageError) {
+  sqlight.query(
+    "SELECT question, answer, reward FROM quizzes",
+    on: conn,
+    with: [],
+    expecting: {
+      use question <- decode.field(0, decode.string)
+      use answer <- decode.field(1, decode.string)
+      use reward <- decode.field(2, decode.int)
+      decode.success(#(question, answer, reward))
+    },
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+}
+
+fn get_quiz_count_impl(conn: sqlight.Connection) -> Result(Int, StorageError) {
+  use rows <- result.try(
+    sqlight.query(
+      "SELECT COUNT(*) FROM quizzes",
+      on: conn,
+      with: [],
+      expecting: decode.field(0, decode.int, fn(c) { decode.success(c) }),
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  case rows {
+    [count, ..] -> Ok(count)
+    [] -> Ok(0)
+  }
 }

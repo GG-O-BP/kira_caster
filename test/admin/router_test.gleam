@@ -142,3 +142,39 @@ pub fn delete_votes_no_active_test() {
     |> handle
   assert response.status == 404
 }
+
+pub fn get_quizzes_test() {
+  let response =
+    simulate.request(http.Get, "/quizzes")
+    |> handle
+  assert response.status == 200
+}
+
+pub fn post_quiz_test() {
+  let response =
+    simulate.request(http.Post, "/quizzes")
+    |> simulate.json_body(
+      json.object([
+        #("question", json.string("1+1=?")),
+        #("answer", json.string("2")),
+        #("reward", json.int(10)),
+      ]),
+    )
+    |> handle
+  assert response.status == 201
+}
+
+pub fn delete_quiz_test() {
+  let response =
+    simulate.request(http.Delete, "/quizzes")
+    |> simulate.json_body(json.object([#("question", json.string("1+1=?"))]))
+    |> handle
+  assert response.status == 200
+}
+
+pub fn get_dashboard_html_test() {
+  let response =
+    simulate.request(http.Get, "/")
+    |> handle
+  assert response.status == 200
+}

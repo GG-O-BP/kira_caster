@@ -1,14 +1,19 @@
+import gleam/list
 import gleam/string
 import kira_caster/plugin/plugin.{type Event, type Plugin, Plugin}
 
-pub fn new() -> Plugin {
-  Plugin(name: "filter", handle_event: handle)
+pub fn new(banned_words: List(String)) -> Plugin {
+  Plugin(name: "filter", handle_event: fn(event) { handle(banned_words, event) })
 }
 
-fn handle(event: Event) -> List(Event) {
+pub fn default() -> Plugin {
+  new(["spam", "홍보", "광고"])
+}
+
+fn handle(banned_words: List(String), event: Event) -> List(Event) {
   case event {
     plugin.ChatMessage(user:, content:, channel: _) ->
-      case contains_banned_word(content) {
+      case contains_banned_word(content, banned_words) {
         True -> [
           plugin.SystemEvent(
             kind: "filter_blocked",
@@ -21,7 +26,7 @@ fn handle(event: Event) -> List(Event) {
   }
 }
 
-fn contains_banned_word(content: String) -> Bool {
+fn contains_banned_word(content: String, banned_words: List(String)) -> Bool {
   let lower = string.lowercase(content)
-  string.contains(lower, "spam")
+  list.any(banned_words, fn(word) { string.contains(lower, word) })
 }

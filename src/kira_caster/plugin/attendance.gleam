@@ -8,7 +8,8 @@ pub fn new(repo: Repository) -> Plugin {
 
 fn handle(repo: Repository, event: Event) -> List(Event) {
   case event {
-    plugin.Command(user:, name: "출석", args: _) -> record_attendance(repo, user)
+    plugin.Command(user:, name: "출석", args: _, role: _) ->
+      record_attendance(repo, user)
     _ -> []
   }
 }

@@ -15,6 +15,9 @@ pub type Repository {
     get_user: fn(String) -> Result(UserData, StorageError),
     save_user: fn(UserData) -> Result(Nil, StorageError),
     get_all_users: fn() -> Result(List(UserData), StorageError),
+    get_banned_words: fn() -> Result(List(String), StorageError),
+    add_banned_word: fn(String) -> Result(Nil, StorageError),
+    remove_banned_word: fn(String) -> Result(Nil, StorageError),
   )
 }
 
@@ -28,5 +31,16 @@ pub fn mock_repo(users: List(UserData)) -> Repository {
     },
     save_user: fn(_user_data) { Ok(Nil) },
     get_all_users: fn() { Ok(users) },
+    get_banned_words: fn() { Ok([]) },
+    add_banned_word: fn(_word) { Ok(Nil) },
+    remove_banned_word: fn(_word) { Ok(Nil) },
   )
+}
+
+pub fn mock_repo_with_words(
+  users: List(UserData),
+  words: List(String),
+) -> Repository {
+  let base = mock_repo(users)
+  Repository(..base, get_banned_words: fn() { Ok(words) })
 }

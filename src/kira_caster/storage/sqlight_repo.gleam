@@ -22,11 +22,23 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
     )
     |> result.map_error(fn(e) { QueryError(e.message) }),
   )
+  use _ <- result.try(
+    sqlight.exec(
+      "CREATE TABLE IF NOT EXISTS banned_words (
+        word TEXT PRIMARY KEY
+      )",
+      on: conn,
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
   Ok(
     Repository(
       get_user: fn(user_id) { get_user_impl(conn, user_id) },
       save_user: fn(user_data) { save_user_impl(conn, user_data) },
       get_all_users: fn() { get_all_users_impl(conn) },
+      get_banned_words: fn() { get_banned_words_impl(conn) },
+      add_banned_word: fn(word) { add_banned_word_impl(conn, word) },
+      remove_banned_word: fn(word) { remove_banned_word_impl(conn, word) },
     ),
   )
 }
@@ -85,4 +97,44 @@ fn get_all_users_impl(
     expecting: user_data_decoder(),
   )
   |> result.map_error(fn(e) { QueryError(e.message) })
+}
+
+fn get_banned_words_impl(
+  conn: sqlight.Connection,
+) -> Result(List(String), StorageError) {
+  sqlight.query(
+    "SELECT word FROM banned_words",
+    on: conn,
+    with: [],
+    expecting: decode.field(0, decode.string, fn(w) { decode.success(w) }),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+}
+
+fn add_banned_word_impl(
+  conn: sqlight.Connection,
+  word: String,
+) -> Result(Nil, StorageError) {
+  sqlight.query(
+    "INSERT OR IGNORE INTO banned_words (word) VALUES (?)",
+    on: conn,
+    with: [sqlight.text(word)],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
+}
+
+fn remove_banned_word_impl(
+  conn: sqlight.Connection,
+  word: String,
+) -> Result(Nil, StorageError) {
+  sqlight.query(
+    "DELETE FROM banned_words WHERE word = ?",
+    on: conn,
+    with: [sqlight.text(word)],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
 }

@@ -1,4 +1,5 @@
 import gleam/erlang/process
+import kira_caster/core/permission
 import kira_caster/event_bus
 import kira_caster/plugin/plugin.{Plugin}
 
@@ -16,7 +17,7 @@ pub fn subscribe_and_dispatch_test() {
   let test_plugin =
     Plugin(name: "test", handle_event: fn(event) {
       case event {
-        plugin.Command(user: _, name: "ping", args: _) -> [
+        plugin.Command(user: _, name: "ping", args: _, role: _) -> [
           plugin.PluginResponse(plugin: "test", message: "pong"),
         ]
         _ -> []
@@ -29,7 +30,15 @@ pub fn subscribe_and_dispatch_test() {
     process.send(test_subject, event)
   })
 
-  event_bus.dispatch(bus, plugin.Command(user: "alice", name: "ping", args: []))
+  event_bus.dispatch(
+    bus,
+    plugin.Command(
+      user: "alice",
+      name: "ping",
+      args: [],
+      role: permission.Viewer,
+    ),
+  )
 
   let assert Ok(response) = process.receive(test_subject, 500)
   let assert plugin.PluginResponse(plugin: "test", message: "pong") = response
@@ -74,7 +83,7 @@ pub fn multiple_plugins_test() {
   let plugin_a =
     Plugin(name: "a", handle_event: fn(event) {
       case event {
-        plugin.Command(_, "test", _) -> [
+        plugin.Command(_, "test", _, _) -> [
           plugin.PluginResponse(plugin: "a", message: "from_a"),
         ]
         _ -> []
@@ -83,7 +92,7 @@ pub fn multiple_plugins_test() {
   let plugin_b =
     Plugin(name: "b", handle_event: fn(event) {
       case event {
-        plugin.Command(_, "test", _) -> [
+        plugin.Command(_, "test", _, _) -> [
           plugin.PluginResponse(plugin: "b", message: "from_b"),
         ]
         _ -> []
@@ -96,7 +105,10 @@ pub fn multiple_plugins_test() {
     process.send(test_subject, event)
   })
 
-  event_bus.dispatch(bus, plugin.Command(user: "u", name: "test", args: []))
+  event_bus.dispatch(
+    bus,
+    plugin.Command(user: "u", name: "test", args: [], role: permission.Viewer),
+  )
 
   let assert Ok(_r1) = process.receive(test_subject, 500)
   let assert Ok(_r2) = process.receive(test_subject, 500)

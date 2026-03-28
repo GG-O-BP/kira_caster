@@ -1,8 +1,11 @@
+import kira_caster/core/permission
+
 pub type Event {
   ChatMessage(user: String, content: String, channel: String)
-  Command(user: String, name: String, args: List(String))
+  Command(user: String, name: String, args: List(String), role: permission.Role)
   PluginResponse(plugin: String, message: String)
   SystemEvent(kind: String, data: String)
+  PointsChange(user: String, amount: Int, reason: String)
 }
 
 pub type Plugin {

@@ -1,3 +1,4 @@
+import kira_caster/core/permission
 import kira_caster/plugin/attendance
 import kira_caster/plugin/plugin
 import kira_caster/storage/repository.{UserData}
@@ -6,7 +7,15 @@ pub fn attendance_new_user_test() {
   let repo = repository.mock_repo([])
   let p = attendance.new(repo)
   let events =
-    plugin.handle(p, plugin.Command(user: "alice", name: "출석", args: []))
+    plugin.handle(
+      p,
+      plugin.Command(
+        user: "alice",
+        name: "출석",
+        args: [],
+        role: permission.Viewer,
+      ),
+    )
   assert events
     == [
       plugin.PluginResponse(
@@ -23,7 +32,10 @@ pub fn attendance_existing_user_test() {
     ])
   let p = attendance.new(repo)
   let events =
-    plugin.handle(p, plugin.Command(user: "bob", name: "출석", args: []))
+    plugin.handle(
+      p,
+      plugin.Command(user: "bob", name: "출석", args: [], role: permission.Viewer),
+    )
   assert events
     == [
       plugin.PluginResponse(

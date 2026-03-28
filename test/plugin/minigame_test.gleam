@@ -1,22 +1,41 @@
 import gleam/list
+import kira_caster/core/permission
 import kira_caster/plugin/minigame
 import kira_caster/plugin/plugin
 
 pub fn dice_game_returns_response_test() {
   let p = minigame.new()
   let events =
-    plugin.handle(p, plugin.Command(user: "alice", name: "게임", args: ["주사위"]))
-  assert list.length(events) == 1
+    plugin.handle(
+      p,
+      plugin.Command(
+        user: "alice",
+        name: "게임",
+        args: ["주사위"],
+        role: permission.Viewer,
+      ),
+    )
+  // Win/loss: 2 events (PluginResponse + PointsChange), draw: 1 event
+  let len = list.length(events)
+  assert len == 1 || len == 2
   case events {
-    [plugin.PluginResponse(plugin: "minigame", message: _)] -> Nil
-    _ -> panic as "Expected PluginResponse from minigame"
+    [plugin.PluginResponse(plugin: "minigame", message: _), ..] -> Nil
+    _ -> panic as "Expected PluginResponse from minigame as first event"
   }
 }
 
 pub fn help_message_test() {
   let p = minigame.new()
   let events =
-    plugin.handle(p, plugin.Command(user: "alice", name: "게임", args: []))
+    plugin.handle(
+      p,
+      plugin.Command(
+        user: "alice",
+        name: "게임",
+        args: [],
+        role: permission.Viewer,
+      ),
+    )
   assert events
     == [
       plugin.PluginResponse(plugin: "minigame", message: "사용법: !게임 주사위"),
@@ -28,7 +47,12 @@ pub fn unknown_game_shows_help_test() {
   let events =
     plugin.handle(
       p,
-      plugin.Command(user: "alice", name: "게임", args: ["unknown"]),
+      plugin.Command(
+        user: "alice",
+        name: "게임",
+        args: ["unknown"],
+        role: permission.Viewer,
+      ),
     )
   assert events
     == [

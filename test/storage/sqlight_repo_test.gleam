@@ -51,3 +51,39 @@ pub fn get_all_users_empty_test() {
   let assert Ok(users) = repo.get_all_users()
   assert users == []
 }
+
+pub fn add_and_get_banned_words_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(Nil) = repo.add_banned_word("spam")
+  let assert Ok(Nil) = repo.add_banned_word("광고")
+  let assert Ok(words) = repo.get_banned_words()
+  assert {
+    case words {
+      [_, _] -> True
+      _ -> False
+    }
+  }
+}
+
+pub fn remove_banned_word_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(Nil) = repo.add_banned_word("spam")
+  let assert Ok(Nil) = repo.add_banned_word("광고")
+  let assert Ok(Nil) = repo.remove_banned_word("spam")
+  let assert Ok(words) = repo.get_banned_words()
+  assert words == ["광고"]
+}
+
+pub fn add_duplicate_banned_word_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(Nil) = repo.add_banned_word("spam")
+  let assert Ok(Nil) = repo.add_banned_word("spam")
+  let assert Ok(words) = repo.get_banned_words()
+  assert words == ["spam"]
+}
+
+pub fn get_banned_words_empty_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(words) = repo.get_banned_words()
+  assert words == []
+}

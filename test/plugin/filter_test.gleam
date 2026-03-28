@@ -1,8 +1,10 @@
+import kira_caster/core/permission
 import kira_caster/plugin/filter
 import kira_caster/plugin/plugin
+import kira_caster/storage/repository
 
 pub fn default_blocks_spam_test() {
-  let p = filter.default()
+  let p = filter.default(repository.mock_repo([]))
   let events =
     plugin.handle(
       p,
@@ -18,7 +20,7 @@ pub fn default_blocks_spam_test() {
 }
 
 pub fn default_blocks_korean_ad_test() {
-  let p = filter.default()
+  let p = filter.default(repository.mock_repo([]))
   let events =
     plugin.handle(
       p,
@@ -34,7 +36,7 @@ pub fn default_blocks_korean_ad_test() {
 }
 
 pub fn clean_message_passes_test() {
-  let p = filter.default()
+  let p = filter.default(repository.mock_repo([]))
   let events =
     plugin.handle(
       p,
@@ -44,7 +46,7 @@ pub fn clean_message_passes_test() {
 }
 
 pub fn case_insensitive_test() {
-  let p = filter.default()
+  let p = filter.default(repository.mock_repo([]))
   let events =
     plugin.handle(
       p,
@@ -60,7 +62,7 @@ pub fn case_insensitive_test() {
 }
 
 pub fn custom_banned_words_test() {
-  let p = filter.new(["bad", "evil"])
+  let p = filter.new(repository.mock_repo([]), ["bad", "evil"])
   let events =
     plugin.handle(
       p,
@@ -80,7 +82,7 @@ pub fn custom_banned_words_test() {
 }
 
 pub fn custom_words_dont_match_default_test() {
-  let p = filter.new(["bad"])
+  let p = filter.new(repository.mock_repo([]), ["bad"])
   let events =
     plugin.handle(
       p,
@@ -89,9 +91,116 @@ pub fn custom_words_dont_match_default_test() {
   assert events == []
 }
 
-pub fn unrelated_event_ignored_test() {
-  let p = filter.default()
+pub fn db_words_checked_test() {
+  let repo = repository.mock_repo_with_words([], ["금칙어"])
+  let p = filter.new(repo, [])
   let events =
-    plugin.handle(p, plugin.Command(user: "alice", name: "test", args: []))
+    plugin.handle(
+      p,
+      plugin.ChatMessage(user: "alice", content: "여기에 금칙어 있음", channel: "main"),
+    )
+  assert events
+    == [
+      plugin.SystemEvent(
+        kind: "filter_blocked",
+        data: "Message from alice blocked",
+      ),
+    ]
+}
+
+pub fn unrelated_event_ignored_test() {
+  let p = filter.default(repository.mock_repo([]))
+  let events =
+    plugin.handle(
+      p,
+      plugin.Command(
+        user: "alice",
+        name: "test",
+        args: [],
+        role: permission.Viewer,
+      ),
+    )
   assert events == []
+}
+
+pub fn moderator_add_word_test() {
+  let p = filter.default(repository.mock_repo([]))
+  let events =
+    plugin.handle(
+      p,
+      plugin.Command(
+        user: "mod",
+        name: "필터",
+        args: ["추가", "나쁜말"],
+        role: permission.Moderator,
+      ),
+    )
+  assert events
+    == [
+      plugin.PluginResponse(plugin: "filter", message: "'나쁜말' 단어를 필터에 추가했습니다."),
+    ]
+}
+
+pub fn viewer_cannot_add_word_test() {
+  let p = filter.default(repository.mock_repo([]))
+  let events =
+    plugin.handle(
+      p,
+      plugin.Command(
+        user: "viewer",
+        name: "필터",
+        args: ["추가", "test"],
+        role: permission.Viewer,
+      ),
+    )
+  assert events
+    == [
+      plugin.PluginResponse(plugin: "filter", message: "권한이 없습니다. (관리자 전용)"),
+    ]
+}
+
+pub fn moderator_remove_word_test() {
+  let p = filter.default(repository.mock_repo([]))
+  let events =
+    plugin.handle(
+      p,
+      plugin.Command(
+        user: "mod",
+        name: "필터",
+        args: ["삭제", "spam"],
+        role: permission.Moderator,
+      ),
+    )
+  assert events
+    == [
+      plugin.PluginResponse(
+        plugin: "filter",
+        message: "'spam' 단어를 필터에서 삭제했습니다.",
+      ),
+    ]
+}
+
+pub fn moderator_list_words_test() {
+  let p = filter.default(repository.mock_repo([]))
+  let events =
+    plugin.handle(
+      p,
+      plugin.Command(
+        user: "mod",
+        name: "필터",
+        args: ["목록"],
+        role: permission.Moderator,
+      ),
+    )
+  case events {
+    [plugin.PluginResponse(plugin: "filter", message: msg)] -> {
+      assert {
+        case msg {
+          "금지어 목록: " <> _ -> True
+          _ -> False
+        }
+      }
+    }
+    _ -> panic as "Expected single PluginResponse"
+  }
 }

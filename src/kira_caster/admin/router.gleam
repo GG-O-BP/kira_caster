@@ -458,6 +458,19 @@ fn handle_dashboard() -> Response {
     .empty { color: #E9EAEE; text-align: center; padding: 20px; }
     .error { color: #F77061; text-align: center; padding: 10px; }
     .loading { color: #54577A; text-align: center; padding: 20px; }
+    .bar-wrap { background: #E9EAEE; border-radius: 6px; height: 20px; margin-top: 4px; overflow: hidden; }
+    .bar-fill { background: linear-gradient(92.54deg, #FD719B 5.84%, #FD9371 95.21%); height: 100%; border-radius: 6px; transition: width .3s; }
+    .vote-result { margin: 8px 0; }
+    .vote-label { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 2px; }
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      .tabs { flex-direction: column; }
+      .tab { text-align: center; }
+      .form-row { flex-direction: column; }
+      .form-row input { width: 100%; }
+      .panel { padding: 12px; overflow-x: auto; }
+      table { font-size: 0.85em; }
+    }
   </style>
 </head>
 <body>
@@ -476,7 +489,7 @@ fn handle_dashboard() -> Response {
   <div id=\"words\" class=\"panel\"><div class=\"form-row\"><input id=\"new-word\" placeholder=\"금칙어\"><button onclick=\"addWord()\">추가</button></div><table id=\"words-table\"><thead><tr><th>단어</th><th></th></tr></thead><tbody></tbody></table></div>
   <div id=\"commands\" class=\"panel\"><div class=\"form-row\"><input id=\"cmd-name\" placeholder=\"이름\"><input id=\"cmd-resp\" placeholder=\"응답\"><button onclick=\"addCmd()\">추가</button></div><table id=\"cmds-table\"><thead><tr><th>명령어</th><th>응답</th><th></th></tr></thead><tbody></tbody></table></div>
   <div id=\"quizzes\" class=\"panel\"><div class=\"form-row\"><input id=\"quiz-q\" placeholder=\"문제\"><input id=\"quiz-a\" placeholder=\"정답1,정답2,...\"><input id=\"quiz-r\" placeholder=\"보상\" type=\"number\" value=\"10\" style=\"width:60px\"><button onclick=\"addQuiz()\">추가</button></div><table id=\"quiz-table\"><thead><tr><th>문제</th><th>정답</th><th>보상</th><th></th></tr></thead><tbody></tbody></table></div>
-  <div id=\"votes\" class=\"panel\"><div id=\"vote-info\">로딩중...</div></div>
+  <div id=\"votes\" class=\"panel\"><div class=\"form-row\"><input id=\"vote-topic\" placeholder=\"투표 주제\"><input id=\"vote-options\" placeholder=\"선택지1,선택지2,...\"><button onclick=\"startVote()\">투표 시작</button></div><div id=\"vote-info\" style=\"margin-top:12px\">로딩중...</div></div>
   <div id=\"plugins\" class=\"panel\"><table id=\"plugins-table\"><thead><tr><th>플러그인</th><th>상태</th><th></th></tr></thead><tbody></tbody></table></div>
   <script>
     const base = '';
@@ -518,10 +531,12 @@ fn handle_dashboard() -> Response {
         document.querySelector('#quiz-table tbody').innerHTML = d.length ? d.map(q => `<tr><td>${q.question}</td><td>${tags(q.answer)}</td><td>${q.reward}pt</td><td><button class=\"danger\" onclick=\"delQuiz('${q.question}')\">삭제</button></td></tr>`).join('') : empty(4);
       } else if (tab === 'votes') {
         const d = await api('GET', '/votes');
-        if (!d.active) { document.getElementById('vote-info').textContent = '진행중인 투표가 없습니다.'; return; }
-        let html = `<strong>${d.topic}</strong><br>`;
-        if (d.results && d.results.length) html += d.results.map(r => `${r.choice}: ${r.count}표`).join('<br>');
-        else html += '아직 투표가 없습니다.';
+        if (!d.active) { document.getElementById('vote-info').innerHTML = '<div class=\"empty\">진행중인 투표가 없습니다.</div>'; return; }
+        const max = d.results && d.results.length ? Math.max(...d.results.map(r => r.count), 1) : 1;
+        let html = `<strong>${d.topic}</strong> <button class=\"danger\" onclick=\"endVote()\">투표 종료</button>`;
+        if (d.results && d.results.length) {
+          html += d.results.map(r => `<div class=\"vote-result\"><div class=\"vote-label\"><span>${r.choice}</span><span>${r.count}표</span></div><div class=\"bar-wrap\"><div class=\"bar-fill\" style=\"width:${Math.round(r.count/max*100)}%\"></div></div></div>`).join('');
+        } else { html += '<div class=\"empty\">아직 투표가 없습니다.</div>'; }
         document.getElementById('vote-info').innerHTML = html;
       } else if (tab === 'plugins') {
         const d = await api('GET', '/plugins');
@@ -536,6 +551,8 @@ fn handle_dashboard() -> Response {
     async function addQuiz() { await api('POST', '/quizzes', {question: document.getElementById('quiz-q').value, answer: document.getElementById('quiz-a').value, reward: parseInt(document.getElementById('quiz-r').value)||10}); document.getElementById('quiz-q').value = ''; document.getElementById('quiz-a').value = ''; load('quizzes'); }
     async function delQuiz(q) { if(!confirm('삭제할까요?')) return; await api('DELETE', '/quizzes', {question: q}); load('quizzes'); }
     async function togglePlugin(n, enabled) { await api('POST', '/plugins', {name: n, enabled: enabled}); load('plugins'); }
+    async function startVote() { const t=document.getElementById('vote-topic').value; const o=document.getElementById('vote-options').value.split(',').map(s=>s.trim()).filter(s=>s); if(!t||o.length<2){alert('주제와 2개 이상의 선택지를 입력해주세요.');return;} await api('POST','/votes',{topic:t,options:o}); document.getElementById('vote-topic').value=''; document.getElementById('vote-options').value=''; load('votes'); }
+    async function endVote() { if(!confirm('투표를 종료할까요?')) return; await api('DELETE','/votes'); load('votes'); }
     load('status');
   </script>
 </body>

@@ -199,3 +199,84 @@ pub fn get_dashboard_html_test() {
     |> handle
   assert response.status == 200
 }
+
+pub fn post_banned_word_malformed_json_test() {
+  let response =
+    simulate.request(http.Post, "/banned-words")
+    |> simulate.json_body(json.object([#("wrong_field", json.string("x"))]))
+    |> handle
+  assert response.status == 400
+}
+
+pub fn post_command_missing_response_test() {
+  let response =
+    simulate.request(http.Post, "/commands")
+    |> simulate.json_body(json.object([#("name", json.string("test"))]))
+    |> handle
+  assert response.status == 400
+}
+
+pub fn post_quiz_missing_fields_test() {
+  let response =
+    simulate.request(http.Post, "/quizzes")
+    |> simulate.json_body(json.object([#("question", json.string("q"))]))
+    |> handle
+  assert response.status == 400
+}
+
+pub fn post_votes_one_option_test() {
+  let response =
+    simulate.request(http.Post, "/votes")
+    |> simulate.json_body(
+      json.object([
+        #("topic", json.string("주제")),
+        #("options", json.array(["A"], json.string)),
+      ]),
+    )
+    |> handle
+  assert response.status == 400
+}
+
+pub fn post_plugin_malformed_test() {
+  let response =
+    simulate.request(http.Post, "/plugins")
+    |> simulate.json_body(json.object([#("name", json.string("x"))]))
+    |> handle
+  assert response.status == 400
+}
+
+pub fn delete_command_malformed_test() {
+  let response =
+    simulate.request(http.Delete, "/commands")
+    |> simulate.json_body(json.object([#("wrong", json.string("x"))]))
+    |> handle
+  assert response.status == 400
+}
+
+pub fn get_settings_test() {
+  let response =
+    simulate.request(http.Get, "/settings")
+    |> handle
+  assert response.status == 200
+}
+
+pub fn post_setting_test() {
+  let response =
+    simulate.request(http.Post, "/settings")
+    |> simulate.json_body(
+      json.object([
+        #("key", json.string("cooldown_ms")),
+        #("value", json.string("3000")),
+      ]),
+    )
+    |> handle
+  assert response.status == 200
+}
+
+pub fn post_setting_malformed_test() {
+  let response =
+    simulate.request(http.Post, "/settings")
+    |> simulate.json_body(json.object([#("key", json.string("x"))]))
+    |> handle
+  assert response.status == 400
+}

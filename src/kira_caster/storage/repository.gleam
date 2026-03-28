@@ -38,6 +38,9 @@ pub type Repository {
     get_quiz_count: fn() -> Result(Int, StorageError),
     get_disabled_plugins: fn() -> Result(List(String), StorageError),
     set_plugin_enabled: fn(String, Bool) -> Result(Nil, StorageError),
+    get_all_settings: fn() -> Result(List(#(String, String)), StorageError),
+    get_setting: fn(String) -> Result(String, StorageError),
+    set_setting: fn(String, String) -> Result(Nil, StorageError),
   )
 }
 
@@ -69,6 +72,9 @@ pub fn mock_repo(users: List(UserData)) -> Repository {
     get_quiz_count: fn() { Ok(0) },
     get_disabled_plugins: fn() { Ok([]) },
     set_plugin_enabled: fn(_name, _enabled) { Ok(Nil) },
+    get_all_settings: fn() { Ok([]) },
+    get_setting: fn(_key) { Error(NotFound) },
+    set_setting: fn(_key, _value) { Ok(Nil) },
   )
 }
 

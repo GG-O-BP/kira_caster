@@ -180,6 +180,22 @@ pub fn moderator_remove_word_test() {
     ]
 }
 
+pub fn multiple_banned_words_single_event_test() {
+  let p = filter.default(repository.mock_repo([]), ["spam", "홍보", "광고"])
+  let events =
+    plugin.handle(
+      p,
+      plugin.ChatMessage(user: "alice", content: "spam 그리고 광고", channel: "main"),
+    )
+  assert events
+    == [
+      plugin.SystemEvent(
+        kind: "filter_blocked",
+        data: "Message from alice blocked",
+      ),
+    ]
+}
+
 pub fn moderator_list_words_test() {
   let p = filter.default(repository.mock_repo([]), ["spam", "홍보", "광고"])
   let events =

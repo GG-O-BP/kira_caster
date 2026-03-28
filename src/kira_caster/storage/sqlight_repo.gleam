@@ -38,6 +38,9 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
       set_plugin_enabled: fn(name, enabled) {
         set_plugin_enabled_impl(conn, name, enabled)
       },
+      get_all_settings: fn() { get_all_settings_impl(conn) },
+      get_setting: fn(key) { get_setting_impl(conn, key) },
+      set_setting: fn(key, value) { set_setting_impl(conn, key, value) },
     ),
   )
 }
@@ -84,13 +87,24 @@ fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
     False -> Ok(Nil)
   })
   use version2 <- result.try(get_schema_version(conn))
-  case version2 < 2 {
+  use _ <- result.try(case version2 < 2 {
     True -> {
       use _ <- result.try(exec(
         conn,
         "CREATE TABLE IF NOT EXISTS plugin_settings (name TEXT PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 1)",
       ))
       set_schema_version(conn, 2)
+    }
+    False -> Ok(Nil)
+  })
+  use version3 <- result.try(get_schema_version(conn))
+  case version3 < 3 {
+    True -> {
+      use _ <- result.try(exec(
+        conn,
+        "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+      ))
+      set_schema_version(conn, 3)
     }
     False -> Ok(Nil)
   }
@@ -460,6 +474,56 @@ fn set_plugin_enabled_impl(
     "INSERT OR REPLACE INTO plugin_settings (name, enabled) VALUES (?, ?)",
     on: conn,
     with: [sqlight.text(name), sqlight.int(val)],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
+}
+
+fn get_all_settings_impl(
+  conn: sqlight.Connection,
+) -> Result(List(#(String, String)), StorageError) {
+  sqlight.query(
+    "SELECT key, value FROM settings",
+    on: conn,
+    with: [],
+    expecting: {
+      use key <- decode.field(0, decode.string)
+      use value <- decode.field(1, decode.string)
+      decode.success(#(key, value))
+    },
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+}
+
+fn get_setting_impl(
+  conn: sqlight.Connection,
+  key: String,
+) -> Result(String, StorageError) {
+  use rows <- result.try(
+    sqlight.query(
+      "SELECT value FROM settings WHERE key = ?",
+      on: conn,
+      with: [sqlight.text(key)],
+      expecting: decode.field(0, decode.string, fn(v) { decode.success(v) }),
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  case rows {
+    [value, ..] -> Ok(value)
+    [] -> Error(NotFound)
+  }
+}
+
+fn set_setting_impl(
+  conn: sqlight.Connection,
+  key: String,
+  value: String,
+) -> Result(Nil, StorageError) {
+  sqlight.query(
+    "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+    on: conn,
+    with: [sqlight.text(key), sqlight.text(value)],
     expecting: decode.success(Nil),
   )
   |> result.map_error(fn(e) { QueryError(e.message) })

@@ -74,6 +74,85 @@ pub fn unsubscribe_removes_plugin_test() {
   event_bus.shutdown(bus)
 }
 
+pub fn disabled_plugin_not_called_test() {
+  let assert Ok(started) = event_bus.start()
+  let bus = started.data
+
+  let test_subject = process.new_subject()
+  let test_plugin =
+    Plugin(name: "disableable", handle_event: fn(_event) {
+      [
+        plugin.PluginResponse(
+          plugin: "disableable",
+          message: "should not appear",
+        ),
+      ]
+    })
+
+  event_bus.subscribe(bus, test_plugin)
+  event_bus.set_response_handler(bus, fn(event) {
+    process.send(test_subject, event)
+  })
+
+  event_bus.set_disabled_plugins(bus, ["disableable"])
+
+  event_bus.dispatch(
+    bus,
+    plugin.ChatMessage(user: "a", content: "hi", channel: "c"),
+  )
+
+  let result = process.receive(test_subject, 100)
+  assert result == Error(Nil)
+
+  event_bus.shutdown(bus)
+}
+
+pub fn re_enable_plugin_receives_events_test() {
+  let assert Ok(started) = event_bus.start()
+  let bus = started.data
+
+  let test_subject = process.new_subject()
+  let test_plugin =
+    Plugin(name: "toggle", handle_event: fn(event) {
+      case event {
+        plugin.ChatMessage(_, _, _) -> [
+          plugin.PluginResponse(plugin: "toggle", message: "got it"),
+        ]
+        _ -> []
+      }
+    })
+
+  event_bus.subscribe(bus, test_plugin)
+  event_bus.set_response_handler(bus, fn(event) {
+    process.send(test_subject, event)
+  })
+
+  // Disable
+  event_bus.set_disabled_plugins(bus, ["toggle"])
+
+  event_bus.dispatch(
+    bus,
+    plugin.ChatMessage(user: "a", content: "hi", channel: "c"),
+  )
+
+  let disabled_result = process.receive(test_subject, 100)
+  assert disabled_result == Error(Nil)
+
+  // Re-enable
+  event_bus.set_disabled_plugins(bus, [])
+
+  event_bus.dispatch(
+    bus,
+    plugin.ChatMessage(user: "a", content: "hello", channel: "c"),
+  )
+
+  let assert Ok(response) = process.receive(test_subject, 500)
+  let assert plugin.PluginResponse(plugin: "toggle", message: "got it") =
+    response
+
+  event_bus.shutdown(bus)
+}
+
 pub fn multiple_plugins_test() {
   let assert Ok(started) = event_bus.start()
   let bus = started.data

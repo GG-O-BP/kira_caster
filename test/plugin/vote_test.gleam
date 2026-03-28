@@ -178,3 +178,41 @@ pub fn unrelated_event_ignored_test() {
     )
   assert events == []
 }
+
+pub fn start_vote_one_option_rejected_test() {
+  let repo = repository.mock_repo([])
+  let p = vote.new(repo)
+  let events =
+    plugin.handle(
+      p,
+      plugin.Command(
+        user: "mod",
+        name: "투표",
+        args: ["시작", "주제", "A"],
+        role: permission.Moderator,
+      ),
+    )
+  assert events
+    == [
+      plugin.PluginResponse(plugin: "vote", message: "선택지를 2개 이상 입력해주세요."),
+    ]
+}
+
+pub fn viewer_cannot_end_vote_test() {
+  let repo = repository.mock_repo_with_vote([], "주제", ["A", "B"], [#("A", 1)])
+  let p = vote.new(repo)
+  let events =
+    plugin.handle(
+      p,
+      plugin.Command(
+        user: "viewer",
+        name: "투표",
+        args: ["종료"],
+        role: permission.Viewer,
+      ),
+    )
+  assert events
+    == [
+      plugin.PluginResponse(plugin: "vote", message: "권한이 없습니다. (관리자 전용)"),
+    ]
+}

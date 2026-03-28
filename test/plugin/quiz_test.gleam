@@ -143,3 +143,27 @@ pub fn unrelated_event_ignored_test() {
     )
   assert events == []
 }
+
+pub fn quiz_answer_case_insensitive_test() {
+  let repo =
+    repository.mock_repo_with_commands([], [#("__quiz_answer", "Seoul|20")])
+  let p = quiz.new(repo)
+  let events =
+    plugin.handle(
+      p,
+      plugin.Command(
+        user: "alice",
+        name: "퀴즈",
+        args: ["SEOUL"],
+        role: permission.Viewer,
+      ),
+    )
+  case events {
+    [
+      plugin.PluginResponse(plugin: "quiz", message: _),
+      plugin.PointsChange(user: "alice", amount: 20, reason: "quiz"),
+    ] -> Nil
+    _ ->
+      panic as "Expected case-insensitive match with PluginResponse + PointsChange"
+  }
+}

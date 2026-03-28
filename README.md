@@ -12,7 +12,8 @@
 | 포인트 | 출석하면 포인트가 쌓여! `!포인트`로 확인, `!포인트 순위`로 랭킹! |
 | 미니게임 | 주사위 굴리기, 가위바위보 할 수 있어! 이기면 포인트 UP! |
 | 채팅 필터 | 나쁜 말은 자동으로 걸러줘! 착한 채팅만~ |
-| 커스텀 명령 | 매니저가 직접 명령어를 만들 수 있어! |
+| 커스텀 명령 | 매니저가 직접 명령어를 만들 수 있어! 템플릿 변수도 지원! |
+| 고급 명령 | 방송자가 Gleam 코드로 프로그래밍 가능한 명령어를 만들 수 있어! |
 | 업타임 | `!업타임`으로 봇이 얼마나 켜져있었는지 알 수 있어! |
 | 투표 | 채팅으로 투표할 수 있어! 다 같이 정하자~! |
 | 룰렛 | `!룰렛` 돌려서 운 시험해봐! 대박 나면 +100포인트! |
@@ -28,7 +29,7 @@ Gleam이랑 Erlang/OTP가 설치되어 있어야 해!
 gleam deps download   # 필요한 것들 다운받기
 gleam build           # 빌드하기
 gleam run             # 실행하기!
-gleam test            # 테스트 돌리기 (161개나 있어!)
+gleam test            # 테스트 돌리기 (215개나 있어!)
 ```
 
 실행하면 이렇게 나와!
@@ -84,12 +85,75 @@ Listening on http://127.0.0.1:8080
 | `!필터 추가 <단어>` | 금칙어 추가 |
 | `!필터 삭제 <단어>` | 금칙어 삭제 |
 | `!필터 목록` | 금칙어 목록 보기 |
-| `!명령 추가 <이름> <응답>` | 커스텀 명령어 만들기 |
+| `!명령 추가 <이름> <응답>` | 커스텀 명령어 만들기 (템플릿 지원!) |
 | `!명령 삭제 <이름>` | 커스텀 명령어 삭제 |
 | `!명령 목록` | 커스텀 명령어 목록 보기 |
+
+### 방송자 전용 명령어
+
+| 명령어 | 설명 |
+|--------|------|
+| `!명령 고급추가 <이름> <Gleam코드>` | Gleam으로 프로그래밍 가능한 고급 명령어 등록 |
+| `!명령 고급삭제 <이름>` | 고급 명령어 삭제 |
 | `!투표 시작 <주제> <선택지1> <선택지2> ...` | 투표 시작하기 |
 | `!투표 종료` | 투표 끝내고 결과 발표! |
 | `!퀴즈 시작` | 랜덤 퀴즈 출제 |
+
+## 커스텀 명령어
+
+### 텍스트/템플릿 명령어
+
+매니저가 `!명령 추가 인사 안녕하세요!` 처럼 단순 텍스트 응답을 등록할 수 있어! 그리고 `{{변수}}` 문법으로 동적 응답도 가능해!
+
+```
+!명령 추가 인사 {{user}}님 안녕하세요!
+!명령 추가 내정보 {{user}} — {{points}}pt, 출석 {{attendance}}회
+!명령 추가 환영 {{if args}}{{args}}에 오신 {{user}}님 환영!{{else}}{{user}}님 환영합니다!{{end}}
+```
+
+**사용 가능한 변수:**
+
+| 변수 | 설명 |
+|------|------|
+| `{{user}}` | 명령어를 실행한 유저 이름 |
+| `{{args}}` | 전체 인자 (공백으로 연결) |
+| `{{args.0}}`, `{{args.1}}` | 개별 인자 (0번째, 1번째, ...) |
+| `{{points}}` | 유저의 현재 포인트 |
+| `{{attendance}}` | 유저의 출석 횟수 |
+| `{{command}}` | 실행된 명령어 이름 |
+
+**조건문:**
+
+```
+{{if 변수}}변수가 있을 때 출력{{end}}
+{{if 변수}}있을 때{{else}}없을 때{{end}}
+```
+
+기존 일반 텍스트 명령어(`안녕하세요!`)도 그대로 동작해!
+
+### 고급 명령어 (Gleam)
+
+방송자가 Gleam 코드로 프로그래밍 가능한 명령어를 만들 수 있어! 대시보드에서 CodeMirror 6 에디터로 편하게 작성하고 실시간 컴파일!
+
+```gleam
+import gleam/string
+import gleam/list
+
+pub fn handle(user: String, args: List(String)) -> String {
+  case args {
+    ["안녕"] -> user <> "님 반가워요!"
+    [first, ..rest] ->
+      user <> "님이 " <> first <> " 외 "
+      <> int.to_string(list.length(rest)) <> "개를 선택했어요!"
+    _ -> "사용법: !인사 안녕"
+  }
+}
+```
+
+- `pub fn handle(user: String, args: List(String)) -> String` 시그니처를 맞춰야 해!
+- `gleam_stdlib` 모듈 (`gleam/string`, `gleam/list`, `gleam/int` 등) 사용 가능!
+- 런타임에 컴파일 + BEAM 핫로드되니까 봇 재시작 없이 바로 적용!
+- 대시보드의 "재컴파일" 버튼으로 수정 후 즉시 반영!
 
 ## 관리 대시보드 API
 
@@ -109,8 +173,12 @@ curl -X DELETE http://localhost:8080/banned-words -H "Content-Type: application/
 
 # 커스텀 명령어 관리
 curl http://localhost:8080/commands
-curl -X POST http://localhost:8080/commands -H "Content-Type: application/json" -d '{"name":"인사","response":"안녕!"}'
+curl -X POST http://localhost:8080/commands -H "Content-Type: application/json" -d '{"name":"인사","response":"{{user}}님 안녕!"}'
 curl -X DELETE http://localhost:8080/commands -H "Content-Type: application/json" -d '{"name":"인사"}'
+
+# 고급 명령어 (Gleam)
+curl -X POST http://localhost:8080/commands/advanced -H "Content-Type: application/json" -d '{"name":"greet","source_code":"pub fn handle(user: String, _args: List(String)) -> String { user <> \"님!\" }"}'
+curl -X POST http://localhost:8080/commands/compile -H "Content-Type: application/json" -d '{"name":"greet"}'
 
 # 투표 관리
 curl http://localhost:8080/votes
@@ -148,7 +216,8 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] 포인트 시스템 (`!포인트`, `!포인트 순위`) - SQLite 저장
 - [x] 미니게임 (`!게임 주사위`, `!게임 가위바위보`) - 포인트 연동
 - [x] 채팅 필터 (`!필터 추가/삭제/목록`) - DB 영속화, 매니저 관리
-- [x] 커스텀 명령 (`!명령 추가/삭제/목록`) - 매니저가 직접 만드는 명령어
+- [x] 커스텀 명령 (`!명령 추가/삭제/목록`) - 템플릿 DSL 지원 (`{{user}}`, `{{if}}`)
+- [x] 고급 명령 (`!명령 고급추가/고급삭제`) - Gleam 런타임 컴파일 + BEAM 핫로드
 - [x] 업타임 (`!업타임`) - 봇 가동 시간 표시
 - [x] 투표 (`!투표 시작/투표/결과/종료`) - DB 저장, 중복 투표 방지
 - [x] 룰렛 (`!룰렛`) - 확률 가중치, 포인트 보상
@@ -174,7 +243,8 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] 대시보드 HTML 프론트엔드
 - [x] 퀴즈 DB 관리 (대시보드)
 - [x] 플러그인 ON/OFF (대시보드)
-- [x] 테스트 161개! 전부 통과!
+- [x] 대시보드 CodeMirror 6 에디터 (Gleam 문법 하이라이팅)
+- [x] 테스트 215개! 전부 통과!
 
 ## 퀴즈 문제 목록
 
@@ -220,14 +290,16 @@ src/
 │   │   ├── cooldown.gleam       # 쿨다운 관리
 │   │   ├── message.gleam        # 메시지 타입
 │   │   ├── permission.gleam     # 권한 체계
-│   │   └── quiz_data.gleam      # 퀴즈 데이터
+│   │   ├── quiz_data.gleam      # 퀴즈 데이터
+│   │   └── template.gleam       # 템플릿 DSL 엔진
 │   ├── plugin/                  # 플러그인들! (10개!)
 │   │   ├── plugin.gleam         # 플러그인 인터페이스
 │   │   ├── attendance.gleam     # 출석체크
 │   │   ├── points.gleam         # 포인트
 │   │   ├── minigame.gleam       # 미니게임
 │   │   ├── filter.gleam         # 채팅 필터
-│   │   ├── custom_command.gleam # 커스텀 명령
+│   │   ├── custom_command.gleam # 커스텀 명령 (템플릿 + 고급)
+│   │   ├── advanced_command.gleam # 고급 명령 Gleam 컴파일러
 │   │   ├── uptime.gleam         # 업타임
 │   │   ├── vote.gleam           # 투표
 │   │   ├── roulette.gleam       # 룰렛

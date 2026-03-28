@@ -1,25 +1,10 @@
 import gleam/int
-import gleam/string
+import gleetube/util as gleetube_util
 
 pub fn parse_iso8601_duration(duration: String) -> Int {
-  let s = case string.starts_with(duration, "PT") {
-    True -> string.drop_start(duration, 2)
-    False -> duration
-  }
-  let #(hours, rest) = extract_component(s, "H")
-  let #(minutes, rest2) = extract_component(rest, "M")
-  let #(seconds, _) = extract_component(rest2, "S")
-  hours * 3600 + minutes * 60 + seconds
-}
-
-fn extract_component(s: String, marker: String) -> #(Int, String) {
-  case string.split(s, marker) {
-    [num_str, rest] ->
-      case int.parse(num_str) {
-        Ok(n) -> #(n, rest)
-        Error(_) -> #(0, s)
-      }
-    _ -> #(0, s)
+  case gleetube_util.parse_duration(duration) {
+    Ok(seconds) -> seconds
+    Error(_) -> 0
   }
 }
 

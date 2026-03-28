@@ -11,7 +11,9 @@ pub fn start(
   config: Config,
   start_time: Int,
 ) -> Result(Nil, String) {
-  let handler = fn(req) { router.handle_request(req, repo, start_time) }
+  let handler = fn(req) {
+    router.handle_request(req, repo, start_time, config.admin_key)
+  }
 
   case
     handler

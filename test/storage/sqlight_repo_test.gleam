@@ -7,7 +7,13 @@ pub fn new_opens_database_test() {
 
 pub fn save_and_get_user_test() {
   let assert Ok(repo) = sqlight_repo.new(":memory:")
-  let user = UserData(user_id: "alice", points: 100, attendance_count: 5)
+  let user =
+    UserData(
+      user_id: "alice",
+      points: 100,
+      attendance_count: 5,
+      last_attendance: 0,
+    )
   let assert Ok(Nil) = repo.save_user(user)
   let assert Ok(found) = repo.get_user("alice")
   assert found.user_id == "alice"
@@ -22,9 +28,21 @@ pub fn get_user_not_found_test() {
 
 pub fn save_user_upsert_test() {
   let assert Ok(repo) = sqlight_repo.new(":memory:")
-  let user1 = UserData(user_id: "bob", points: 50, attendance_count: 1)
+  let user1 =
+    UserData(
+      user_id: "bob",
+      points: 50,
+      attendance_count: 1,
+      last_attendance: 0,
+    )
   let assert Ok(Nil) = repo.save_user(user1)
-  let user2 = UserData(user_id: "bob", points: 200, attendance_count: 3)
+  let user2 =
+    UserData(
+      user_id: "bob",
+      points: 200,
+      attendance_count: 3,
+      last_attendance: 0,
+    )
   let assert Ok(Nil) = repo.save_user(user2)
   let assert Ok(found) = repo.get_user("bob")
   assert found.points == 200
@@ -34,9 +52,19 @@ pub fn save_user_upsert_test() {
 pub fn get_all_users_test() {
   let assert Ok(repo) = sqlight_repo.new(":memory:")
   let assert Ok(Nil) =
-    repo.save_user(UserData(user_id: "alice", points: 100, attendance_count: 1))
+    repo.save_user(UserData(
+      user_id: "alice",
+      points: 100,
+      attendance_count: 1,
+      last_attendance: 0,
+    ))
   let assert Ok(Nil) =
-    repo.save_user(UserData(user_id: "bob", points: 50, attendance_count: 2))
+    repo.save_user(UserData(
+      user_id: "bob",
+      points: 50,
+      attendance_count: 2,
+      last_attendance: 0,
+    ))
   let assert Ok(users) = repo.get_all_users()
   assert {
     case users {

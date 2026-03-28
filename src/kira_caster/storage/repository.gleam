@@ -7,7 +7,12 @@ pub type StorageError {
 }
 
 pub type UserData {
-  UserData(user_id: String, points: Int, attendance_count: Int)
+  UserData(
+    user_id: String,
+    points: Int,
+    attendance_count: Int,
+    last_attendance: Int,
+  )
 }
 
 pub type Repository {

@@ -20,6 +20,7 @@ pub fn load() -> Config {
       d.max_reconnect_attempts,
     ),
     admin_port: get_int("KIRA_ADMIN_PORT", d.admin_port),
+    admin_key: get_string("KIRA_ADMIN_KEY", d.admin_key),
   )
 }
 

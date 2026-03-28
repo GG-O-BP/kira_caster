@@ -6,7 +6,12 @@ import kira_caster/storage/repository.{UserData}
 pub fn check_balance_test() {
   let repo =
     repository.mock_repo([
-      UserData(user_id: "alice", points: 150, attendance_count: 3),
+      UserData(
+        user_id: "alice",
+        points: 150,
+        attendance_count: 3,
+        last_attendance: 0,
+      ),
     ])
   let p = points.new(repo)
   let events =
@@ -47,8 +52,18 @@ pub fn check_balance_unknown_user_test() {
 pub fn ranking_test() {
   let repo =
     repository.mock_repo([
-      UserData(user_id: "alice", points: 100, attendance_count: 1),
-      UserData(user_id: "bob", points: 200, attendance_count: 2),
+      UserData(
+        user_id: "alice",
+        points: 100,
+        attendance_count: 1,
+        last_attendance: 0,
+      ),
+      UserData(
+        user_id: "bob",
+        points: 200,
+        attendance_count: 2,
+        last_attendance: 0,
+      ),
     ])
   let p = points.new(repo)
   let events =
@@ -77,7 +92,12 @@ pub fn ranking_test() {
 pub fn points_change_adds_points_test() {
   let repo =
     repository.mock_repo([
-      UserData(user_id: "alice", points: 100, attendance_count: 1),
+      UserData(
+        user_id: "alice",
+        points: 100,
+        attendance_count: 1,
+        last_attendance: 0,
+      ),
     ])
   let p = points.new(repo)
   let events =
@@ -103,7 +123,12 @@ pub fn points_change_new_user_test() {
 pub fn points_change_negative_floors_at_zero_test() {
   let repo =
     repository.mock_repo([
-      UserData(user_id: "alice", points: 10, attendance_count: 0),
+      UserData(
+        user_id: "alice",
+        points: 10,
+        attendance_count: 0,
+        last_attendance: 0,
+      ),
     ])
   let p = points.new(repo)
   let events =

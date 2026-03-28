@@ -1,4 +1,4 @@
-import gleam/erlang/process.{type Name, type Subject}
+import gleam/erlang/process.{type Name, type Pid, type Subject}
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -14,6 +14,7 @@ pub type EventBusMessage {
   Unsubscribe(plugin_name: String)
   SetResponseHandler(handler: fn(Event) -> Nil)
   SetCooldown(ms: Int)
+  Ping(reply: Subject(Pid))
   Shutdown
 }
 
@@ -107,6 +108,10 @@ pub fn shutdown(bus: Subject(EventBusMessage)) -> Nil {
   process.send(bus, Shutdown)
 }
 
+pub fn get_pid(bus: Subject(EventBusMessage)) -> Pid {
+  process.call(bus, 1000, Ping)
+}
+
 fn handle_message(
   state: EventBusState,
   message: EventBusMessage,
@@ -125,6 +130,10 @@ fn handle_message(
     SetResponseHandler(handler) ->
       actor.continue(EventBusState(..state, on_response: Some(handler)))
     SetCooldown(ms) -> actor.continue(EventBusState(..state, cooldown_ms: ms))
+    Ping(reply) -> {
+      process.send(reply, process.self())
+      actor.continue(state)
+    }
     Shutdown -> actor.stop()
   }
 }

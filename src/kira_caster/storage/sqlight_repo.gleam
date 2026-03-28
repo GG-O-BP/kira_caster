@@ -16,7 +16,8 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
       "CREATE TABLE IF NOT EXISTS users (
         user_id TEXT PRIMARY KEY,
         points INTEGER NOT NULL DEFAULT 0,
-        attendance_count INTEGER NOT NULL DEFAULT 0
+        attendance_count INTEGER NOT NULL DEFAULT 0,
+        last_attendance INTEGER NOT NULL DEFAULT 0
       )",
       on: conn,
     )
@@ -61,7 +62,13 @@ fn user_data_decoder() -> decode.Decoder(UserData) {
   use user_id <- decode.field(0, decode.string)
   use points <- decode.field(1, decode.int)
   use attendance_count <- decode.field(2, decode.int)
-  decode.success(UserData(user_id:, points:, attendance_count:))
+  use last_attendance <- decode.field(3, decode.int)
+  decode.success(UserData(
+    user_id:,
+    points:,
+    attendance_count:,
+    last_attendance:,
+  ))
 }
 
 fn get_user_impl(
@@ -70,7 +77,7 @@ fn get_user_impl(
 ) -> Result(UserData, StorageError) {
   use rows <- result.try(
     sqlight.query(
-      "SELECT user_id, points, attendance_count FROM users WHERE user_id = ?",
+      "SELECT user_id, points, attendance_count, last_attendance FROM users WHERE user_id = ?",
       on: conn,
       with: [sqlight.text(user_id)],
       expecting: user_data_decoder(),
@@ -88,12 +95,13 @@ fn save_user_impl(
   user_data: UserData,
 ) -> Result(Nil, StorageError) {
   sqlight.query(
-    "INSERT OR REPLACE INTO users (user_id, points, attendance_count) VALUES (?, ?, ?)",
+    "INSERT OR REPLACE INTO users (user_id, points, attendance_count, last_attendance) VALUES (?, ?, ?, ?)",
     on: conn,
     with: [
       sqlight.text(user_data.user_id),
       sqlight.int(user_data.points),
       sqlight.int(user_data.attendance_count),
+      sqlight.int(user_data.last_attendance),
     ],
     expecting: decode.success(Nil),
   )
@@ -105,7 +113,7 @@ fn get_all_users_impl(
   conn: sqlight.Connection,
 ) -> Result(List(UserData), StorageError) {
   sqlight.query(
-    "SELECT user_id, points, attendance_count FROM users",
+    "SELECT user_id, points, attendance_count, last_attendance FROM users",
     on: conn,
     with: [],
     expecting: user_data_decoder(),

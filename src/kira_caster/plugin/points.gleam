@@ -40,7 +40,13 @@ fn apply_points_change(
 ) -> List(Event) {
   let current = case repo.get_user(user) {
     Ok(data) -> data
-    Error(_) -> UserData(user_id: user, points: 0, attendance_count: 0)
+    Error(_) ->
+      UserData(
+        user_id: user,
+        points: 0,
+        attendance_count: 0,
+        last_attendance: 0,
+      )
   }
   let new_points = int.max(0, current.points + amount)
   let updated = UserData(..current, points: new_points)

@@ -10,6 +10,7 @@ pub type Config {
     rps_loss_points: Int,
     max_reconnect_attempts: Int,
     admin_port: Int,
+    admin_key: String,
   )
 }
 
@@ -25,5 +26,6 @@ pub fn default() -> Config {
     rps_loss_points: -10,
     max_reconnect_attempts: 5,
     admin_port: 8080,
+    admin_key: "",
   )
 }

@@ -14,6 +14,7 @@ pub type EventBusMessage {
   Unsubscribe(plugin_name: String)
   SetResponseHandler(handler: fn(Event) -> Nil)
   SetCooldown(ms: Int)
+  SetDisabledPlugins(names: List(String))
   Ping(reply: Subject(Pid))
   Shutdown
 }
@@ -25,6 +26,7 @@ pub type EventBusState {
     on_response: Option(fn(Event) -> Nil),
     cooldowns: CooldownMap,
     cooldown_ms: Int,
+    disabled_plugins: List(String),
   )
 }
 
@@ -38,6 +40,7 @@ fn init_state(
     on_response: None,
     cooldowns: cooldown.new(),
     cooldown_ms: cooldown_ms,
+    disabled_plugins: [],
   )
 }
 
@@ -104,6 +107,13 @@ pub fn set_cooldown(bus: Subject(EventBusMessage), ms: Int) -> Nil {
   process.send(bus, SetCooldown(ms))
 }
 
+pub fn set_disabled_plugins(
+  bus: Subject(EventBusMessage),
+  names: List(String),
+) -> Nil {
+  process.send(bus, SetDisabledPlugins(names))
+}
+
 pub fn shutdown(bus: Subject(EventBusMessage)) -> Nil {
   process.send(bus, Shutdown)
 }
@@ -130,6 +140,8 @@ fn handle_message(
     SetResponseHandler(handler) ->
       actor.continue(EventBusState(..state, on_response: Some(handler)))
     SetCooldown(ms) -> actor.continue(EventBusState(..state, cooldown_ms: ms))
+    SetDisabledPlugins(names) ->
+      actor.continue(EventBusState(..state, disabled_plugins: names))
     Ping(reply) -> {
       process.send(reply, process.self())
       actor.continue(state)
@@ -148,7 +160,8 @@ fn handle_dispatch(
       let now = time.now_ms()
       case cooldown.check(state.cooldowns, key, now, state.cooldown_ms) {
         Ok(Nil) -> {
-          let responses = collect_responses(state.plugins, event)
+          let responses =
+            collect_responses(state.plugins, state.disabled_plugins, event)
           deliver_responses(state, responses)
           let new_cooldowns = cooldown.record_use(state.cooldowns, key, now)
           actor.continue(EventBusState(..state, cooldowns: new_cooldowns))
@@ -169,15 +182,36 @@ fn handle_dispatch(
       }
     }
     _ -> {
-      let responses = collect_responses(state.plugins, event)
+      let responses =
+        collect_responses(state.plugins, state.disabled_plugins, event)
       deliver_responses(state, responses)
       actor.continue(state)
     }
   }
 }
 
-fn collect_responses(plugins: List(Plugin), event: Event) -> List(Event) {
-  list.flat_map(plugins, fn(p) { plugin.handle(p, event) })
+fn collect_responses(
+  plugins: List(Plugin),
+  disabled: List(String),
+  event: Event,
+) -> List(Event) {
+  list.flat_map(plugins, fn(p) {
+    case is_disabled(p.name, disabled) {
+      True -> []
+      False -> plugin.handle(p, event)
+    }
+  })
+}
+
+fn is_disabled(name: String, disabled: List(String)) -> Bool {
+  case disabled {
+    [] -> False
+    [first, ..rest] ->
+      case first == name {
+        True -> True
+        False -> is_disabled(name, rest)
+      }
+  }
 }
 
 fn deliver_responses(state: EventBusState, responses: List(Event)) -> Nil {

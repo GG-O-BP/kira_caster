@@ -87,6 +87,12 @@ fn start() -> Result(Nil, String) {
 
   subscribe_all(bus, registry, make_response_handler)
 
+  // Load disabled plugins from DB
+  case repo.get_disabled_plugins() {
+    Ok(disabled) -> event_bus.set_disabled_plugins(bus, disabled)
+    Error(_) -> Nil
+  }
+
   let bus_pid = event_bus.get_pid(bus)
   process.spawn(fn() {
     watch_bus(bus_pid, bus_name, registry, make_response_handler)

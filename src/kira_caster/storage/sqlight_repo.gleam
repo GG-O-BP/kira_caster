@@ -34,6 +34,10 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
       delete_quiz: fn(q) { delete_quiz_impl(conn, q) },
       get_all_quizzes: fn() { get_all_quizzes_impl(conn) },
       get_quiz_count: fn() { get_quiz_count_impl(conn) },
+      get_disabled_plugins: fn() { get_disabled_plugins_impl(conn) },
+      set_plugin_enabled: fn(name, enabled) {
+        set_plugin_enabled_impl(conn, name, enabled)
+      },
     ),
   )
 }
@@ -44,7 +48,7 @@ fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
     "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)",
   ))
   use version <- result.try(get_schema_version(conn))
-  case version < 1 {
+  use _ <- result.try(case version < 1 {
     True -> {
       use _ <- result.try(exec(
         conn,
@@ -75,8 +79,18 @@ fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
         conn,
         "CREATE TABLE IF NOT EXISTS quizzes (question TEXT PRIMARY KEY, answer TEXT NOT NULL, reward INTEGER NOT NULL DEFAULT 10)",
       ))
-      use _ <- result.try(set_schema_version(conn, 1))
-      Ok(Nil)
+      set_schema_version(conn, 1)
+    }
+    False -> Ok(Nil)
+  })
+  use version2 <- result.try(get_schema_version(conn))
+  case version2 < 2 {
+    True -> {
+      use _ <- result.try(exec(
+        conn,
+        "CREATE TABLE IF NOT EXISTS plugin_settings (name TEXT PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 1)",
+      ))
+      set_schema_version(conn, 2)
     }
     False -> Ok(Nil)
   }
@@ -419,4 +433,35 @@ fn get_quiz_count_impl(conn: sqlight.Connection) -> Result(Int, StorageError) {
     [count, ..] -> Ok(count)
     [] -> Ok(0)
   }
+}
+
+fn get_disabled_plugins_impl(
+  conn: sqlight.Connection,
+) -> Result(List(String), StorageError) {
+  sqlight.query(
+    "SELECT name FROM plugin_settings WHERE enabled = 0",
+    on: conn,
+    with: [],
+    expecting: decode.field(0, decode.string, fn(n) { decode.success(n) }),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+}
+
+fn set_plugin_enabled_impl(
+  conn: sqlight.Connection,
+  name: String,
+  enabled: Bool,
+) -> Result(Nil, StorageError) {
+  let val = case enabled {
+    True -> 1
+    False -> 0
+  }
+  sqlight.query(
+    "INSERT OR REPLACE INTO plugin_settings (name, enabled) VALUES (?, ?)",
+    on: conn,
+    with: [sqlight.text(name), sqlight.int(val)],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
 }

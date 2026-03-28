@@ -194,3 +194,24 @@ pub fn quiz_upsert_test() {
     _ -> panic as "Expected upserted quiz with reward 20"
   }
 }
+
+pub fn plugin_disabled_empty_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(disabled) = repo.get_disabled_plugins()
+  assert disabled == []
+}
+
+pub fn set_plugin_disabled_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(Nil) = repo.set_plugin_enabled("attendance", False)
+  let assert Ok(disabled) = repo.get_disabled_plugins()
+  assert disabled == ["attendance"]
+}
+
+pub fn set_plugin_reenabled_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(Nil) = repo.set_plugin_enabled("attendance", False)
+  let assert Ok(Nil) = repo.set_plugin_enabled("attendance", True)
+  let assert Ok(disabled) = repo.get_disabled_plugins()
+  assert disabled == []
+}

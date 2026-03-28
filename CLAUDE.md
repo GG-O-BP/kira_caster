@@ -105,6 +105,7 @@ pub type Plugin {
 - Result 타입으로 에러 처리. panic/assert는 테스트에서만 사용
 - 새 플러그인 추가 시 반드시 해당 테스트 모듈도 함께 작성
 - 패턴 매칭 적극 활용, case 표현식 선호
+- 웹 UI(대시보드 등) 스타일링 시 [references/COLOR_PALETTE.md](./references/COLOR_PALETTE.md)의 컬러 팔레트를 따를 것
 
 ### DO NOT
 

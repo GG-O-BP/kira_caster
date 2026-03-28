@@ -28,7 +28,7 @@ Gleam이랑 Erlang/OTP가 설치되어 있어야 해!
 gleam deps download   # 필요한 것들 다운받기
 gleam build           # 빌드하기
 gleam run             # 실행하기!
-gleam test            # 테스트 돌리기 (156개나 있어!)
+gleam test            # 테스트 돌리기 (161개나 있어!)
 ```
 
 실행하면 이렇게 나와!
@@ -121,6 +121,10 @@ curl -X DELETE http://localhost:8080/votes
 curl http://localhost:8080/quizzes
 curl -X POST http://localhost:8080/quizzes -H "Content-Type: application/json" -d '{"question":"1+1=?","answer":"2","reward":10}'
 curl -X DELETE http://localhost:8080/quizzes -H "Content-Type: application/json" -d '{"question":"1+1=?"}'
+
+# 플러그인 관리
+curl http://localhost:8080/plugins
+curl -X POST http://localhost:8080/plugins -H "Content-Type: application/json" -d '{"name":"attendance","enabled":false}'
 ```
 
 `KIRA_ADMIN_KEY`를 설정하면 Bearer 토큰 인증이 필요해져!
@@ -169,7 +173,8 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] Docker 지원
 - [x] 대시보드 HTML 프론트엔드
 - [x] 퀴즈 DB 관리 (대시보드)
-- [x] 테스트 156개! 전부 통과!
+- [x] 플러그인 ON/OFF (대시보드)
+- [x] 테스트 161개! 전부 통과!
 
 ## 퀴즈 문제 목록
 

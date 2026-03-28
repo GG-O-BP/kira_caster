@@ -172,6 +172,26 @@ pub fn delete_quiz_test() {
   assert response.status == 200
 }
 
+pub fn get_plugins_test() {
+  let response =
+    simulate.request(http.Get, "/plugins")
+    |> handle
+  assert response.status == 200
+}
+
+pub fn set_plugin_enabled_test() {
+  let response =
+    simulate.request(http.Post, "/plugins")
+    |> simulate.json_body(
+      json.object([
+        #("name", json.string("attendance")),
+        #("enabled", json.bool(False)),
+      ]),
+    )
+    |> handle
+  assert response.status == 200
+}
+
 pub fn get_dashboard_html_test() {
   let response =
     simulate.request(http.Get, "/")

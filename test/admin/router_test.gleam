@@ -1,17 +1,18 @@
 import gleam/http
 import gleam/json
+import gleam/option.{None}
 import kira_caster/admin/router
 import kira_caster/storage/repository
 import wisp/simulate
 
 fn handle(req) {
   let repo = repository.mock_repo([])
-  router.handle_request(req, repo, 0, "")
+  router.handle_request(req, repo, 0, "", None)
 }
 
 fn handle_with_key(req) {
   let repo = repository.mock_repo([])
-  router.handle_request(req, repo, 0, "secret123")
+  router.handle_request(req, repo, 0, "secret123", None)
 }
 
 pub fn get_status_test() {

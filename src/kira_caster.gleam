@@ -98,7 +98,7 @@ fn start() -> Result(Nil, String) {
     watch_bus(bus_pid, bus_name, registry, make_response_handler)
   })
 
-  case admin_server.start(repo, config, start_time) {
+  case admin_server.start(repo, config, start_time, bus) {
     Ok(Nil) -> Nil
     Error(e) -> logger.warn("Admin dashboard failed: " <> e)
   }

@@ -1,9 +1,12 @@
 import gleam/dynamic/decode
+import gleam/erlang/process
 import gleam/http
 import gleam/http/request
 import gleam/json
 import gleam/list
+import gleam/option.{type Option, None, Some}
 import gleam/string
+import kira_caster/event_bus
 import kira_caster/storage/repository.{type Repository}
 import kira_caster/util/time
 import wisp.{type Request, type Response}
@@ -13,10 +16,11 @@ pub fn handle_request(
   repo: Repository,
   start_time: Int,
   admin_key: String,
+  bus: Option(process.Subject(event_bus.EventBusMessage)),
 ) -> Response {
   case check_auth(req, admin_key) {
     False -> wisp.response(401) |> wisp.string_body("Unauthorized")
-    True -> route(req, repo, start_time)
+    True -> route(req, repo, start_time, bus)
   }
 }
 
@@ -32,7 +36,12 @@ fn check_auth(req: Request, admin_key: String) -> Bool {
   }
 }
 
-fn route(req: Request, repo: Repository, start_time: Int) -> Response {
+fn route(
+  req: Request,
+  repo: Repository,
+  start_time: Int,
+  bus: Option(process.Subject(event_bus.EventBusMessage)),
+) -> Response {
   case req.method, request.path_segments(req) {
     http.Get, ["status"] -> handle_status(start_time)
     http.Get, ["users"] -> handle_users(repo)
@@ -49,7 +58,7 @@ fn route(req: Request, repo: Repository, start_time: Int) -> Response {
     http.Post, ["quizzes"] -> handle_add_quiz(req, repo)
     http.Delete, ["quizzes"] -> handle_delete_quiz(req, repo)
     http.Get, ["plugins"] -> handle_get_plugins(repo)
-    http.Post, ["plugins"] -> handle_set_plugin(req, repo)
+    http.Post, ["plugins"] -> handle_set_plugin(req, repo, bus)
     http.Get, [] -> handle_dashboard()
     _, _ -> wisp.not_found()
   }
@@ -371,7 +380,11 @@ fn is_in_list(item: String, items: List(String)) -> Bool {
   }
 }
 
-fn handle_set_plugin(req: Request, repo: Repository) -> Response {
+fn handle_set_plugin(
+  req: Request,
+  repo: Repository,
+  bus: Option(process.Subject(event_bus.EventBusMessage)),
+) -> Response {
   use body <- wisp.require_json(req)
   let decoder = {
     use name <- decode.field("name", decode.string)
@@ -381,7 +394,16 @@ fn handle_set_plugin(req: Request, repo: Repository) -> Response {
   case decode.run(body, decoder) {
     Ok(#(name, enabled)) ->
       case repo.set_plugin_enabled(name, enabled) {
-        Ok(Nil) ->
+        Ok(Nil) -> {
+          // 이벤트 버스에 즉시 반영
+          case bus {
+            Some(b) ->
+              case repo.get_disabled_plugins() {
+                Ok(disabled) -> event_bus.set_disabled_plugins(b, disabled)
+                Error(_) -> Nil
+              }
+            None -> Nil
+          }
           wisp.json_response(
             json.to_string(
               json.object([
@@ -391,6 +413,7 @@ fn handle_set_plugin(req: Request, repo: Repository) -> Response {
             ),
             200,
           )
+        }
         Error(_) -> wisp.internal_server_error()
       }
     Error(_) -> wisp.bad_request("invalid request body")
@@ -431,6 +454,10 @@ fn handle_dashboard() -> Response {
     #status-info { font-size: 1.1em; font-family: 'Roboto', sans-serif; }
     td .on { color: #00C199; font-weight: 600; }
     td .off { color: #F77061; font-weight: 600; }
+    .tag { display: inline-block; padding: 2px 8px; margin: 2px; background: rgba(253,113,155,0.15); color: #FD719B; border-radius: 10px; font-size: 0.85em; }
+    .empty { color: #E9EAEE; text-align: center; padding: 20px; }
+    .error { color: #F77061; text-align: center; padding: 10px; }
+    .loading { color: #54577A; text-align: center; padding: 20px; }
   </style>
 </head>
 <body>
@@ -463,9 +490,14 @@ fn handle_dashboard() -> Response {
     async function api(method, path, body) {
       const opts = {method, headers: {'Content-Type': 'application/json'}};
       if (body) opts.body = JSON.stringify(body);
-      return fetch(base + path, opts).then(r => r.json());
+      const r = await fetch(base + path, opts);
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
     }
+    function tags(csv) { return csv.split(',').map(t => `<span class=\"tag\">${t.trim()}</span>`).join(''); }
+    function empty(cols) { return `<tr><td colspan=\"${cols}\" class=\"empty\">데이터가 없습니다</td></tr>`; }
     async function load(tab) {
+      try {
       if (tab === 'status') {
         const d = await api('GET', '/status');
         const h = Math.floor(d.uptime_seconds / 3600);
@@ -474,16 +506,16 @@ fn handle_dashboard() -> Response {
         document.getElementById('status-info').innerHTML = `상태: ${d.status}<br>가동 시간: ${h}시간 ${m}분 ${s}초`;
       } else if (tab === 'users') {
         const d = await api('GET', '/users');
-        document.querySelector('#users-table tbody').innerHTML = d.map(u => `<tr><td>${u.user_id}</td><td>${u.points}</td><td>${u.attendance_count}</td></tr>`).join('');
+        document.querySelector('#users-table tbody').innerHTML = d.length ? d.map(u => `<tr><td>${u.user_id}</td><td>${u.points}</td><td>${u.attendance_count}</td></tr>`).join('') : empty(3);
       } else if (tab === 'words') {
         const d = await api('GET', '/banned-words');
-        document.querySelector('#words-table tbody').innerHTML = d.map(w => `<tr><td>${w}</td><td><button class=\"danger\" onclick=\"delWord('${w}')\">삭제</button></td></tr>`).join('');
+        document.querySelector('#words-table tbody').innerHTML = d.length ? d.map(w => `<tr><td>${w}</td><td><button class=\"danger\" onclick=\"delWord('${w}')\">삭제</button></td></tr>`).join('') : empty(2);
       } else if (tab === 'commands') {
         const d = await api('GET', '/commands');
-        document.querySelector('#cmds-table tbody').innerHTML = d.map(c => `<tr><td>!${c.name}</td><td>${c.response}</td><td><button class=\"danger\" onclick=\"delCmd('${c.name}')\">삭제</button></td></tr>`).join('');
+        document.querySelector('#cmds-table tbody').innerHTML = d.length ? d.map(c => `<tr><td>!${c.name}</td><td>${c.response}</td><td><button class=\"danger\" onclick=\"delCmd('${c.name}')\">삭제</button></td></tr>`).join('') : empty(3);
       } else if (tab === 'quizzes') {
         const d = await api('GET', '/quizzes');
-        document.querySelector('#quiz-table tbody').innerHTML = d.map(q => `<tr><td>${q.question}</td><td>${q.answer}</td><td>${q.reward}pt</td><td><button class=\"danger\" onclick=\"delQuiz('${q.question}')\">삭제</button></td></tr>`).join('');
+        document.querySelector('#quiz-table tbody').innerHTML = d.length ? d.map(q => `<tr><td>${q.question}</td><td>${tags(q.answer)}</td><td>${q.reward}pt</td><td><button class=\"danger\" onclick=\"delQuiz('${q.question}')\">삭제</button></td></tr>`).join('') : empty(4);
       } else if (tab === 'votes') {
         const d = await api('GET', '/votes');
         if (!d.active) { document.getElementById('vote-info').textContent = '진행중인 투표가 없습니다.'; return; }
@@ -495,6 +527,7 @@ fn handle_dashboard() -> Response {
         const d = await api('GET', '/plugins');
         document.querySelector('#plugins-table tbody').innerHTML = d.map(p => `<tr><td>${p.name}</td><td><span class=\"${p.enabled ? 'on' : 'off'}\">${p.enabled ? 'ON' : 'OFF'}</span></td><td><button class=\"${p.enabled ? 'danger' : 'success'}\" onclick=\"togglePlugin('${p.name}', ${!p.enabled})\">${p.enabled ? '비활성화' : '활성화'}</button></td></tr>`).join('');
       }
+      } catch(e) { const el = document.getElementById(tab); if(el) el.innerHTML += '<div class=\"error\">데이터를 불러올 수 없습니다.</div>'; }
     }
     async function addWord() { await api('POST', '/banned-words', {word: document.getElementById('new-word').value}); document.getElementById('new-word').value = ''; load('words'); }
     async function delWord(w) { if(!confirm('삭제할까요?')) return; await api('DELETE', '/banned-words', {word: w}); load('words'); }

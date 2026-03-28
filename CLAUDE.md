@@ -5,53 +5,71 @@
 ## Quick Start
 
 ```sh
+gleam deps download  # 의존성 다운로드
 gleam build          # 빌드
 gleam run            # 실행
-gleam test           # 테스트 (gleeunit)
+gleam test           # 테스트 (gleeunit, 161개)
 gleam format src test  # 포매팅
 gleam format --check src test  # CI 포맷 검사
-gleam deps download  # 의존성 다운로드
 ```
 
 ## Architecture
 
-플랫폼 어댑터 패턴 + OTP actor 기반 이벤트 버스 + 플러그인 시스템.
+플랫폼 어댑터 패턴 + OTP actor 기반 이벤트 버스 + 플러그인 시스템 + 관리 대시보드.
 
 ```
 src/
-├── kira_caster.gleam        # 엔트리포인트
-├── core/                    # 도메인 로직 (순수 함수 중심)
-│   ├── message.gleam        # 메시지 타입 정의
-│   ├── command.gleam        # 명령어 파서
-│   ├── cooldown.gleam       # 쿨다운 관리
-│   └── permission.gleam     # 권한 체계
-├── platform/                # 플랫폼 어댑터 (외부 의존성 경계)
-│   ├── adapter.gleam        # 어댑터 인터페이스 (레코드 + 함수 필드)
-│   ├── mock_adapter.gleam   # Mock 어댑터 (API 없이 개발용)
-│   ├── cime_adapter.gleam   # 씨미 어댑터 (API 공개 후 구현)
-│   └── ws.gleam             # WebSocket 연결 관리
-├── storage/                 # 데이터 영속화
-│   ├── repository.gleam     # Repository 인터페이스
-│   └── sqlight_repo.gleam   # SQLite 구현체
-├── plugin/                  # 플러그인 모듈
-│   ├── plugin.gleam         # 플러그인 인터페이스
-│   ├── attendance.gleam     # 출석
-│   ├── points.gleam         # 포인트
-│   ├── minigame.gleam       # 미니게임
-│   └── filter.gleam         # 채팅 필터
-└── event_bus.gleam          # OTP actor 기반 이벤트 버스
+├── kira_caster.gleam            # 엔트리포인트
+├── kira_caster/
+│   ├── core/                    # 도메인 로직 (순수 함수, 외부 의존 없음)
+│   │   ├── config.gleam         # 설정 타입 + default()
+│   │   ├── command.gleam        # 명령어 파서
+│   │   ├── cooldown.gleam       # 쿨다운 관리
+│   │   ├── message.gleam        # 메시지 타입 정의
+│   │   ├── permission.gleam     # 권한 체계 (Broadcaster > Moderator > Subscriber > Viewer)
+│   │   └── quiz_data.gleam      # 내장 퀴즈 데이터 (추후 DB 관리 예정)
+│   ├── plugin/                  # 플러그인 (10개)
+│   │   ├── plugin.gleam         # 플러그인 인터페이스 + Event 타입
+│   │   ├── attendance.gleam     # 출석 (하루 1회, 포인트 보상)
+│   │   ├── points.gleam         # 포인트 조회/순위 + PointsChange 핸들
+│   │   ├── minigame.gleam       # 주사위 + 가위바위보
+│   │   ├── filter.gleam         # 채팅 필터 (DB 금칙어 + 모더레이터 관리)
+│   │   ├── custom_command.gleam # 커스텀 명령 (DB 저장)
+│   │   ├── uptime.gleam         # 봇 가동 시간
+│   │   ├── vote.gleam           # 투표 (DB 저장, 중복 방지)
+│   │   ├── roulette.gleam       # 룰렛 (확률 가중치)
+│   │   ├── quiz.gleam           # 퀴즈 (DB 우선, 내장 폴백)
+│   │   └── timer.gleam          # 타이머 (비동기 알림)
+│   ├── platform/                # 플랫폼 어댑터 (외부 의존성 경계)
+│   │   ├── adapter.gleam        # 어댑터 인터페이스 (레코드 + 함수 필드)
+│   │   ├── mock_adapter.gleam   # Mock 어댑터 (개발용)
+│   │   ├── cime_adapter.gleam   # 씨미 어댑터 (API 공개 후 구현)
+│   │   └── ws.gleam             # WebSocket 상태 머신
+│   ├── storage/                 # 데이터 영속화
+│   │   ├── repository.gleam     # Repository 인터페이스 + mock_repo
+│   │   └── sqlight_repo.gleam   # SQLite 구현체 (마이그레이션 v1/v2)
+│   ├── admin/                   # 관리 대시보드 (wisp + mist)
+│   │   ├── router.gleam         # REST API + HTML 프론트엔드
+│   │   └── server.gleam         # HTTP 서버 시작
+│   ├── util/
+│   │   └── time.gleam           # now_ms() 시간 유틸
+│   ├── config_loader.gleam      # 환경변수 → Config 로더
+│   ├── event_bus.gleam          # OTP actor 이벤트 버스 (쿨다운, 플러그인 ON/OFF 내장)
+│   ├── logger.gleam             # OTP logger 래퍼 (info/warn/error)
+│   ├── plugin_registry.gleam    # 플러그인 팩토리 레지스트리
+│   └── supervisor.gleam         # OTP static supervisor (OneForOne)
+└── kira_caster_ffi.erl          # Erlang FFI (now_ms, get_env, log_*)
 ```
 
 ## Stack
 
-- **Runtime**: BEAM/OTP (Erlang 타겟)
-- **WS**: stratus
-- **HTTP**: gleam_httpc
+- **Runtime**: BEAM/OTP (Erlang 타겟), Gleam 1.15.2 / OTP 28
 - **JSON**: gleam_json
-- **Auth**: glow_auth (OAuth)
 - **Concurrency**: gleam_otp (actors, supervisors)
 - **DB**: sqlight (SQLite)
-- **Web**: wisp + mist (관리 대시보드용)
+- **Web**: wisp + mist (관리 대시보드)
+- **HTTP**: gleam_http
+- **미사용 (씨미 API 공개 후)**: stratus (WS), gleam_httpc (HTTP client), glow_auth (OAuth)
 
 ## Key Patterns
 
@@ -60,7 +78,6 @@ src/
 모든 플랫폼 통신은 adapter 인터페이스를 통해 추상화. 씨미 API가 미공개 상태이므로 mock_adapter로 개발하고, API 공개 시 cime_adapter만 추가하면 됨.
 
 ```gleam
-// adapter.gleam - 인터페이스 정의
 pub type Adapter {
   Adapter(
     send_message: fn(String) -> Result(Nil, AdapterError),
@@ -72,20 +89,22 @@ pub type Adapter {
 
 ### OTP Actor 이벤트 버스
 
-플러그인 간 통신은 이벤트 버스(gleam_otp actor)를 통해 처리. 플러그인이 직접 서로를 호출하지 않음.
+플러그인 간 통신은 이벤트 버스(gleam_otp actor)를 통해 처리. 쿨다운 내장, 플러그인 ON/OFF 지원.
 
 ```gleam
 // 이벤트 흐름: Platform → EventBus → Plugin(s) → EventBus → Platform
 pub type Event {
-  ChatMessage(user: String, content: String)
-  Command(user: String, name: String, args: List(String))
+  ChatMessage(user: String, content: String, channel: String)
+  Command(user: String, name: String, args: List(String), role: permission.Role)
   PluginResponse(plugin: String, message: String)
+  SystemEvent(kind: String, data: String)
+  PointsChange(user: String, amount: Int, reason: String)
 }
 ```
 
 ### 플러그인 구조
 
-플러그인은 독립적 모듈. 이벤트를 받아 처리하고 응답 이벤트를 발행.
+플러그인은 독립적 모듈. 이벤트를 받아 처리하고 응답 이벤트를 발행. PluginRegistry로 팩토리 관리, Supervisor 재시작 시 자동 재구독.
 
 ```gleam
 pub type Plugin {
@@ -95,6 +114,14 @@ pub type Plugin {
   )
 }
 ```
+
+### 설정 외부화
+
+모든 설정은 `core/config.gleam`에 타입 정의, `config_loader.gleam`에서 환경변수로 오버라이드. 환경변수 없으면 기본값 사용.
+
+### DB 마이그레이션
+
+`sqlight_repo.gleam`의 `run_migrations`에서 `schema_version` 테이블로 버전 관리. v1(기본 테이블), v2(plugin_settings) 순차 실행.
 
 ## Rules
 
@@ -118,10 +145,12 @@ pub type Plugin {
 
 ## Current State
 
-- **초기 개발 단계**: 스캐폴딩만 완료, 아키텍처 구현 진행 중
+- **기능 구현 완료**: 플러그인 10개, 관리 대시보드 (REST API + HTML), OTP Supervisor, 플러그인 ON/OFF
 - **씨미 API 미공개**: 4~5월 공개 예정. mock_adapter로 개발
 - **Gleam 1.15.2 / OTP 28** 타겟
 - CI: GitHub Actions (`gleam test` + `gleam format --check`)
+- Docker: Dockerfile 포함 (multi-stage build)
+- 테스트: 161개 전체 통과
 
 ## Gleam Specifics
 

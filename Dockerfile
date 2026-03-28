@@ -10,7 +10,7 @@ RUN gleam deps download
 COPY src/ src/
 RUN gleam build
 
-FROM erlang:28-alpine AS runtime
+FROM ghcr.io/gleam-lang/gleam:v1.15.2-erlang-alpine AS runtime
 
 RUN apk add --no-cache sqlite-libs
 

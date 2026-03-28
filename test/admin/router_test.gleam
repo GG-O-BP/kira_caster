@@ -280,3 +280,19 @@ pub fn post_setting_malformed_test() {
     |> handle
   assert response.status == 400
 }
+
+pub fn post_advanced_command_malformed_test() {
+  let response =
+    simulate.request(http.Post, "/commands/advanced")
+    |> simulate.json_body(json.object([#("name", json.string("x"))]))
+    |> handle
+  assert response.status == 400
+}
+
+pub fn post_compile_not_found_test() {
+  let response =
+    simulate.request(http.Post, "/commands/compile")
+    |> simulate.json_body(json.object([#("name", json.string("없는명령"))]))
+    |> handle
+  assert response.status == 404
+}

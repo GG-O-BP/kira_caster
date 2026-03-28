@@ -1,4 +1,5 @@
 import gleam/dynamic/decode
+import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 import kira_caster/storage/repository.{
@@ -41,6 +42,11 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
       get_all_settings: fn() { get_all_settings_impl(conn) },
       get_setting: fn(key) { get_setting_impl(conn, key) },
       set_setting: fn(key, value) { set_setting_impl(conn, key, value) },
+      get_command_with_type: fn(name) { get_command_with_type_impl(conn, name) },
+      set_advanced_command: fn(name, source, fallback) {
+        set_advanced_command_impl(conn, name, source, fallback)
+      },
+      get_all_commands_detailed: fn() { get_all_commands_detailed_impl(conn) },
     ),
   )
 }
@@ -98,13 +104,28 @@ fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
     False -> Ok(Nil)
   })
   use version3 <- result.try(get_schema_version(conn))
-  case version3 < 3 {
+  use _ <- result.try(case version3 < 3 {
     True -> {
       use _ <- result.try(exec(
         conn,
         "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
       ))
       set_schema_version(conn, 3)
+    }
+    False -> Ok(Nil)
+  })
+  use version4 <- result.try(get_schema_version(conn))
+  case version4 < 4 {
+    True -> {
+      use _ <- result.try(exec(
+        conn,
+        "ALTER TABLE custom_commands ADD COLUMN command_type TEXT NOT NULL DEFAULT 'text'",
+      ))
+      use _ <- result.try(exec(
+        conn,
+        "ALTER TABLE custom_commands ADD COLUMN source_code TEXT",
+      ))
+      set_schema_version(conn, 4)
     }
     False -> Ok(Nil)
   }
@@ -528,4 +549,66 @@ fn set_setting_impl(
   )
   |> result.map_error(fn(e) { QueryError(e.message) })
   |> result.replace(Nil)
+}
+
+fn get_command_with_type_impl(
+  conn: sqlight.Connection,
+  name: String,
+) -> Result(#(String, String, Option(String)), StorageError) {
+  use rows <- result.try(
+    sqlight.query(
+      "SELECT response, command_type, source_code FROM custom_commands WHERE name = ?",
+      on: conn,
+      with: [sqlight.text(name)],
+      expecting: {
+        use response <- decode.field(0, decode.string)
+        use command_type <- decode.field(1, decode.string)
+        use source_code <- decode.field(2, decode.optional(decode.string))
+        decode.success(#(response, command_type, source_code))
+      },
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  case rows {
+    [row, ..] -> Ok(row)
+    [] -> Error(NotFound)
+  }
+}
+
+fn set_advanced_command_impl(
+  conn: sqlight.Connection,
+  name: String,
+  source_code: String,
+  fallback_response: String,
+) -> Result(Nil, StorageError) {
+  sqlight.query(
+    "INSERT OR REPLACE INTO custom_commands (name, response, command_type, source_code) VALUES (?, ?, 'gleam', ?)",
+    on: conn,
+    with: [
+      sqlight.text(name),
+      sqlight.text(fallback_response),
+      sqlight.text(source_code),
+    ],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
+}
+
+fn get_all_commands_detailed_impl(
+  conn: sqlight.Connection,
+) -> Result(List(#(String, String, String, Option(String))), StorageError) {
+  sqlight.query(
+    "SELECT name, response, command_type, source_code FROM custom_commands",
+    on: conn,
+    with: [],
+    expecting: {
+      use name <- decode.field(0, decode.string)
+      use response <- decode.field(1, decode.string)
+      use command_type <- decode.field(2, decode.string)
+      use source_code <- decode.field(3, decode.optional(decode.string))
+      decode.success(#(name, response, command_type, source_code))
+    },
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
 }

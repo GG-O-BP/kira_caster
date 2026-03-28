@@ -1,4 +1,5 @@
 import gleam/list
+import gleam/option.{type Option, None}
 
 pub type StorageError {
   NotFound
@@ -41,6 +42,12 @@ pub type Repository {
     get_all_settings: fn() -> Result(List(#(String, String)), StorageError),
     get_setting: fn(String) -> Result(String, StorageError),
     set_setting: fn(String, String) -> Result(Nil, StorageError),
+    get_command_with_type: fn(String) ->
+      Result(#(String, String, Option(String)), StorageError),
+    set_advanced_command: fn(String, String, String) ->
+      Result(Nil, StorageError),
+    get_all_commands_detailed: fn() ->
+      Result(List(#(String, String, String, Option(String))), StorageError),
   )
 }
 
@@ -75,6 +82,9 @@ pub fn mock_repo(users: List(UserData)) -> Repository {
     get_all_settings: fn() { Ok([]) },
     get_setting: fn(_key) { Error(NotFound) },
     set_setting: fn(_key, _value) { Ok(Nil) },
+    get_command_with_type: fn(_name) { Error(NotFound) },
+    set_advanced_command: fn(_name, _source, _fallback) { Ok(Nil) },
+    get_all_commands_detailed: fn() { Ok([]) },
   )
 }
 
@@ -100,6 +110,12 @@ pub fn mock_repo_with_commands(
       }
     },
     get_all_commands: fn() { Ok(commands) },
+    get_command_with_type: fn(name) {
+      case list.find(commands, fn(c) { c.0 == name }) {
+        Ok(#(_, response)) -> Ok(#(response, "text", None))
+        Error(_) -> Error(NotFound)
+      }
+    },
   )
 }
 

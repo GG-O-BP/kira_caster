@@ -8,6 +8,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
 import kira_caster/event_bus
+import kira_caster/plugin/advanced_command
 import kira_caster/storage/repository.{type Repository}
 import kira_caster/util/time
 import wisp.{type Request, type Response}
@@ -62,6 +63,9 @@ fn route(
     http.Post, ["plugins"] -> handle_set_plugin(req, repo, bus)
     http.Get, ["settings"] -> handle_get_settings(repo)
     http.Post, ["settings"] -> handle_set_setting(req, repo, bus)
+    http.Post, ["commands", "advanced"] ->
+      handle_add_advanced_command(req, repo)
+    http.Post, ["commands", "compile"] -> handle_compile_command(req, repo)
     http.Get, [] -> handle_dashboard()
     _, _ -> wisp.not_found()
   }
@@ -106,13 +110,18 @@ fn handle_banned_words(repo: Repository) -> Response {
 }
 
 fn handle_commands(repo: Repository) -> Response {
-  case repo.get_all_commands() {
+  case repo.get_all_commands_detailed() {
     Ok(commands) -> {
       let body =
         json.array(commands, fn(c) {
           json.object([
             #("name", json.string(c.0)),
             #("response", json.string(c.1)),
+            #("type", json.string(c.2)),
+            #("source_code", case c.3 {
+              Some(src) -> json.string(src)
+              None -> json.null()
+            }),
           ])
         })
       wisp.json_response(json.to_string(body), 200)
@@ -374,6 +383,82 @@ fn handle_get_plugins(repo: Repository) -> Response {
   wisp.json_response(json.to_string(body), 200)
 }
 
+fn handle_add_advanced_command(req: Request, repo: Repository) -> Response {
+  use body <- wisp.require_json(req)
+  let decoder = {
+    use name <- decode.field("name", decode.string)
+    use source_code <- decode.field("source_code", decode.string)
+    decode.success(#(name, source_code))
+  }
+  case decode.run(body, decoder) {
+    Ok(#(name, source_code)) ->
+      case repo.set_advanced_command(name, source_code, "실행 오류") {
+        Ok(Nil) ->
+          case advanced_command.compile_and_load(name, source_code) {
+            Ok(Nil) ->
+              wisp.json_response(
+                json.to_string(
+                  json.object([
+                    #("name", json.string(name)),
+                    #("compiled", json.bool(True)),
+                  ]),
+                ),
+                201,
+              )
+            Error(e) ->
+              wisp.json_response(
+                json.to_string(
+                  json.object([
+                    #("name", json.string(name)),
+                    #("compiled", json.bool(False)),
+                    #("error", json.string(advanced_command.error_to_string(e))),
+                  ]),
+                ),
+                201,
+              )
+          }
+        Error(_) -> wisp.internal_server_error()
+      }
+    Error(_) -> wisp.bad_request("invalid request body")
+  }
+}
+
+fn handle_compile_command(req: Request, repo: Repository) -> Response {
+  use body <- wisp.require_json(req)
+  let decoder = decode.field("name", decode.string, fn(n) { decode.success(n) })
+  case decode.run(body, decoder) {
+    Ok(name) ->
+      case repo.get_command_with_type(name) {
+        Ok(#(_, "gleam", Some(source_code))) ->
+          case advanced_command.compile_and_load(name, source_code) {
+            Ok(Nil) ->
+              wisp.json_response(
+                json.to_string(
+                  json.object([
+                    #("name", json.string(name)),
+                    #("compiled", json.bool(True)),
+                  ]),
+                ),
+                200,
+              )
+            Error(e) ->
+              wisp.json_response(
+                json.to_string(
+                  json.object([
+                    #("compiled", json.bool(False)),
+                    #("error", json.string(advanced_command.error_to_string(e))),
+                  ]),
+                ),
+                200,
+              )
+          }
+        Ok(_) -> wisp.bad_request("command is not an advanced command")
+        Error(_) -> wisp.response(404) |> wisp.string_body("command not found")
+      }
+    Error(_) -> wisp.bad_request("invalid request body")
+  }
+}
+
 fn handle_get_settings(repo: Repository) -> Response {
   case repo.get_all_settings() {
     Ok(settings) -> {
@@ -505,7 +590,8 @@ fn handle_dashboard() -> Response {
   <title>kira_caster 관리 대시보드</title>
   <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
   <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
-  <link href=\"https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Roboto:wght@400;500&display=swap\" rel=\"stylesheet\">" <> "<style>" <> dashboard_css() <> "</style>
+  <link href=\"https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Roboto:wght@400;500&display=swap\" rel=\"stylesheet\">
+" <> "<style>" <> dashboard_css() <> "</style>
 </head>" <> dashboard_body() <> "</html>"
   wisp.html_response(html, 200)
 }
@@ -514,12 +600,9 @@ fn dashboard_css() -> String {
   "
     :root {
       --color-primary: #FD719B;
-      --color-secondary: #FD9371;
-      --color-pink-light: #FD99B8;
       --gradient-main: linear-gradient(92.54deg, #FF608F 5.84%, #FBB35E 95.21%);
       --gradient-secondary: linear-gradient(92.54deg, #FD719B 5.84%, #FD9371 95.21%);
       --color-success: #00C199;
-      --color-warning: #F8C03A;
       --color-error: #F77061;
       --color-info: #3B9FFA;
       --color-text: #54577A;
@@ -557,7 +640,6 @@ fn dashboard_css() -> String {
     .tag { display: inline-block; padding: 2px 8px; margin: 2px; background: rgba(253,113,155,0.15); color: var(--color-primary); border-radius: 10px; font-size: 0.85em; }
     .empty { color: var(--color-border); text-align: center; padding: 20px; }
     .error { color: var(--color-error); text-align: center; padding: 10px; }
-    .loading { color: var(--color-text); text-align: center; padding: 20px; }
     .bar-wrap { background: var(--color-border); border-radius: 6px; height: 20px; margin-top: 4px; overflow: hidden; }
     .bar-fill { background: var(--gradient-secondary); height: 100%; border-radius: 6px; transition: width .3s; }
     .vote-result { margin: 8px 0; }
@@ -568,6 +650,9 @@ fn dashboard_css() -> String {
     .toast.success { background: var(--color-success); }
     .toast.error { background: var(--color-error); }
     .toast.info { background: var(--color-info); }
+    .cm-editor { border: 1px solid var(--color-border); border-radius: var(--radius-input); font-size: 0.85em; min-height: 120px; max-height: 300px; overflow: auto; }
+    .cm-editor.cm-focused { outline: none; border-color: var(--color-primary); }
+    .cm-editor .cm-scroller { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     @media (max-width: 600px) {
       body { padding: 10px; }
       .tabs { flex-direction: row; overflow-x: auto; flex-wrap: nowrap; position: sticky; top: 0; background: var(--color-bg); z-index: 10; padding-bottom: 8px; }
@@ -599,7 +684,7 @@ fn dashboard_body() -> String {
   <div id=\"status\" class=\"panel active\"><div id=\"status-info\">로딩중...</div></div>
   <div id=\"users\" class=\"panel\"><div class=\"form-row\"><input id=\"user-search\" placeholder=\"유저 검색...\" oninput=\"filterUsers()\"><button class=\"success\" onclick=\"exportUsers()\">CSV 내보내기</button></div><table id=\"users-table\"><thead><tr><th>유저</th><th>포인트</th><th>출석</th><th>최근출석</th></tr></thead><tbody></tbody></table></div>
   <div id=\"words\" class=\"panel\"><div class=\"form-row\"><input id=\"new-word\" placeholder=\"금칙어\"><button onclick=\"addWord()\">추가</button></div><table id=\"words-table\"><thead><tr><th>단어</th><th></th></tr></thead><tbody></tbody></table></div>
-  <div id=\"commands\" class=\"panel\"><div class=\"form-row\"><input id=\"cmd-name\" placeholder=\"이름\"><input id=\"cmd-resp\" placeholder=\"응답\"><button onclick=\"addCmd()\">추가</button></div><table id=\"cmds-table\"><thead><tr><th>명령어</th><th>응답</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div id=\"commands\" class=\"panel\"><div class=\"form-row\"><select id=\"cmd-type\" onchange=\"toggleCmdType()\" style=\"padding:8px;border:1px solid var(--color-border);border-radius:var(--radius-input);font-family:inherit\"><option value=\"text\">텍스트/템플릿</option><option value=\"gleam\">고급 (Gleam)</option></select><input id=\"cmd-name\" placeholder=\"이름\"></div><div id=\"cmd-text-form\" class=\"form-row\"><input id=\"cmd-resp\" placeholder=\"응답 ({{user}}, {{args}} 사용 가능)\" style=\"flex:1\"><button onclick=\"addCmd()\">추가</button></div><div id=\"cmd-gleam-form\" style=\"display:none;margin-top:10px\"><div id=\"cmd-editor\"></div></div><div id=\"cmd-gleam-form2\" class=\"form-row\" style=\"display:none\"><button onclick=\"addAdvancedCmd()\">컴파일 및 추가</button></div><table id=\"cmds-table\"><thead><tr><th>명령어</th><th>유형</th><th>응답/소스</th><th></th></tr></thead><tbody></tbody></table></div>
   <div id=\"quizzes\" class=\"panel\"><div class=\"form-row\"><input id=\"quiz-q\" placeholder=\"문제\"><input id=\"quiz-a\" placeholder=\"정답1,정답2,...\"><input id=\"quiz-r\" placeholder=\"보상\" type=\"number\" value=\"10\" style=\"width:60px\"><button onclick=\"addQuiz()\">추가</button></div><table id=\"quiz-table\"><thead><tr><th>문제</th><th>정답</th><th>보상</th><th></th></tr></thead><tbody></tbody></table></div>
   <div id=\"votes\" class=\"panel\"><div class=\"form-row\"><input id=\"vote-topic\" placeholder=\"투표 주제\"><input id=\"vote-options\" placeholder=\"선택지1,선택지2,...\"><button onclick=\"startVote()\">투표 시작</button></div><div id=\"vote-info\" style=\"margin-top:12px\">로딩중...</div></div>
   <div id=\"plugins\" class=\"panel\"><table id=\"plugins-table\"><thead><tr><th>플러그인</th><th>설명</th><th>상태</th><th></th></tr></thead><tbody></tbody></table></div>
@@ -615,6 +700,50 @@ fn dashboard_js() -> String {
     let activeTab = 'status';
     let autoRefreshInterval = null;
     let allUsers = [];
+    var gleamEditor = null;
+    var gleamEditorReady = false;
+
+    // Load CM6 + Gleam language via ESM
+    async function initGleamEditor(container, initialValue) {
+      if (gleamEditorReady) return;
+      try {
+        var [cmView, cmState, cmLang, cmGleam] = await Promise.all([
+          import('https://esm.sh/@codemirror/view@6'),
+          import('https://esm.sh/@codemirror/state@6'),
+          import('https://esm.sh/@codemirror/language@6'),
+          import('https://esm.sh/@exercism/codemirror-lang-gleam@2')
+        ]);
+        var cmCmds = await import('https://esm.sh/@codemirror/commands@6');
+        var cmSearch = await import('https://esm.sh/@codemirror/search@6');
+
+        gleamEditor = new cmView.EditorView({
+          doc: initialValue,
+          extensions: [
+            cmView.lineNumbers(),
+            cmView.highlightActiveLine(),
+            cmView.highlightSpecialChars(),
+            cmView.drawSelection(),
+            cmView.keymap.of([
+              ...cmCmds.defaultKeymap,
+              cmCmds.indentWithTab,
+            ]),
+            cmState.EditorState.tabSize.of(2),
+            cmLang.indentOnInput(),
+            cmLang.bracketMatching(),
+            cmGleam.gleam(),
+            cmView.EditorView.theme({
+              '&': { fontSize: '0.9em' },
+              '.cm-content': { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' },
+              '.cm-gutters': { background: '#f8f8f8', borderRight: '1px solid var(--color-border)' },
+            }),
+          ],
+          parent: container,
+        });
+        gleamEditorReady = true;
+      } catch(e) {
+        toast('Gleam 에디터 로드에 실패했습니다.', 'error');
+      }
+    }
 
     function toast(message, type) {
       type = type || 'success';
@@ -688,7 +817,13 @@ fn dashboard_js() -> String {
         document.querySelector('#words-table tbody').innerHTML = d.length ? d.map(function(w) { return '<tr><td>' + esc(w) + '</td><td><button class=\\\"danger\\\" onclick=\\\"delWord(\\'' + esc(w) + '\\')\\\">삭제</button></td></tr>'; }).join('') : empty(2);
       } else if (tab === 'commands') {
         const d = await api('GET', '/commands');
-        document.querySelector('#cmds-table tbody').innerHTML = d.length ? d.map(function(c) { return '<tr><td>!' + esc(c.name) + '</td><td>' + esc(c.response) + '</td><td><button class=\\\"danger\\\" onclick=\\\"delCmd(\\'' + esc(c.name) + '\\')\\\">삭제</button></td></tr>'; }).join('') : empty(3);
+        document.querySelector('#cmds-table tbody').innerHTML = d.length ? d.map(function(c) {
+          var typeLabel = c.type === 'gleam' ? '<span class=\\\"tag\\\" style=\\\"background:var(--color-info);color:#fff\\\">Gleam</span>' : '<span class=\\\"tag\\\">텍스트</span>';
+          var content = c.type === 'gleam' ? '<code style=\\\"font-size:0.8em\\\">' + esc(c.source_code || '').substring(0, 50) + '...</code>' : esc(c.response);
+          var actions = '<button class=\\\"danger\\\" onclick=\\\"delCmd(\\'' + esc(c.name) + '\\')\\\">삭제</button>';
+          if (c.type === 'gleam') actions = '<button class=\\\"success\\\" onclick=\\\"compileCmd(\\'' + esc(c.name) + '\\')\\\">재컴파일</button> ' + actions;
+          return '<tr><td>!' + esc(c.name) + '</td><td>' + typeLabel + '</td><td>' + content + '</td><td>' + actions + '</td></tr>';
+        }).join('') : empty(4);
       } else if (tab === 'quizzes') {
         const d = await api('GET', '/quizzes');
         document.querySelector('#quiz-table tbody').innerHTML = d.length ? d.map(function(q) { return '<tr><td>' + esc(q.question) + '</td><td>' + tags(q.answer) + '</td><td>' + q.reward + 'pt</td><td><button class=\\\"danger\\\" onclick=\\\"delQuiz(\\'' + esc(q.question) + '\\')\\\">삭제</button></td></tr>'; }).join('') : empty(4);
@@ -810,6 +945,45 @@ fn dashboard_js() -> String {
         toast('투표가 종료되었습니다.', 'success');
         load('votes');
       } catch(e) { toast('투표 종료에 실패했습니다.', 'error'); }
+    }
+
+    function toggleCmdType() {
+      var type = document.getElementById('cmd-type').value;
+      document.getElementById('cmd-text-form').style.display = type === 'text' ? 'flex' : 'none';
+      document.getElementById('cmd-gleam-form').style.display = type === 'gleam' ? 'block' : 'none';
+      document.getElementById('cmd-gleam-form2').style.display = type === 'gleam' ? 'flex' : 'none';
+      if (type === 'gleam' && !gleamEditorReady) {
+        var defaultCode = 'import gleam/string\\n\\npub fn handle(user: String, args: List(String)) -> String {\\n  case args {\\n    _ -> user <> \"님 안녕!\"\\n  }\\n}\\n';
+        initGleamEditor(document.getElementById('cmd-editor'), defaultCode);
+      }
+    }
+
+    async function addAdvancedCmd() {
+      try {
+        var n = document.getElementById('cmd-name').value.trim();
+        var src = gleamEditor.state.doc.toString();
+        if (!n || !src.trim()) { toast('이름과 소스 코드를 입력해주세요.', 'error'); return; }
+        var result = await api('POST', '/commands/advanced', {name: n, source_code: src});
+        if (result.compiled) {
+          toast('고급 명령 \\'' + n + '\\' 컴파일 및 등록 완료!', 'success');
+        } else {
+          toast('저장됨, 컴파일 실패: ' + (result.error || ''), 'error');
+        }
+        document.getElementById('cmd-name').value = '';
+        if (gleamEditor) gleamEditor.dispatch({changes: {from: 0, to: gleamEditor.state.doc.length, insert: ''}});
+        load('commands');
+      } catch(e) { toast('고급 명령 추가에 실패했습니다.', 'error'); }
+    }
+
+    async function compileCmd(n) {
+      try {
+        var result = await api('POST', '/commands/compile', {name: n});
+        if (result.compiled) {
+          toast(n + ' 재컴파일 성공!', 'success');
+        } else {
+          toast('재컴파일 실패: ' + (result.error || ''), 'error');
+        }
+      } catch(e) { toast('재컴파일에 실패했습니다.', 'error'); }
     }
 
     async function saveSetting(key) {

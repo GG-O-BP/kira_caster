@@ -124,7 +124,7 @@ pub type Plugin {
 
 ## Gleam Specifics
 
-Gleam 문법 상세 레퍼런스는 [./docs/gleam_language_tour.md](./docs/gleam_language_tour.md) 참고.
+Gleam 문법 상세 레퍼런스는 [./references/gleam_language_tour.md](./references/gleam_language_tour.md) 참고.
 
 - `use` 표현식은 콜백 체이닝에 활용 (`result.try`, `result.map` 등)
 - `echo` 키워드로 타입 무관 디버그 출력 (`echo value` — 개발 중 자유롭게 사용, 커밋 전 제거)

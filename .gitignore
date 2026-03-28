@@ -15,14 +15,10 @@ erl_crash.dump
 .DS_Store
 Thumbs.db
 
-# Docs
-/docs
-
-# GitHub
-/.github
-
-# Claude Code
+# Claude Code (로컬 설정, 플랜, 메모리 제외 / settings.json, rules 등은 추적)
 .claude/settings.local.json
+.claude/plans/
+.claude/memory/
 
 # Editor
 *.swp

@@ -39,36 +39,69 @@ fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
     conn,
     "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)",
   ))
-  use _ <- result.try(exec(
-    conn,
-    "CREATE TABLE IF NOT EXISTS users (
-    user_id TEXT PRIMARY KEY,
-    points INTEGER NOT NULL DEFAULT 0,
-    attendance_count INTEGER NOT NULL DEFAULT 0,
-    last_attendance INTEGER NOT NULL DEFAULT 0
-  )",
-  ))
-  use _ <- result.try(exec(
-    conn,
-    "CREATE TABLE IF NOT EXISTS banned_words (word TEXT PRIMARY KEY)",
-  ))
-  use _ <- result.try(exec(
-    conn,
-    "CREATE TABLE IF NOT EXISTS custom_commands (name TEXT PRIMARY KEY, response TEXT NOT NULL)",
-  ))
-  use _ <- result.try(exec(
-    conn,
-    "CREATE TABLE IF NOT EXISTS votes (id INTEGER PRIMARY KEY, topic TEXT NOT NULL, options TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1)",
-  ))
-  use _ <- result.try(exec(
-    conn,
-    "CREATE TABLE IF NOT EXISTS vote_entries (user_id TEXT NOT NULL, choice TEXT NOT NULL, vote_id INTEGER NOT NULL, UNIQUE(user_id, vote_id))",
-  ))
-  use _ <- result.try(exec(
-    conn,
-    "INSERT OR IGNORE INTO schema_version (version) VALUES (1)",
-  ))
-  Ok(Nil)
+  use version <- result.try(get_schema_version(conn))
+  case version < 1 {
+    True -> {
+      use _ <- result.try(exec(
+        conn,
+        "CREATE TABLE IF NOT EXISTS users (
+        user_id TEXT PRIMARY KEY,
+        points INTEGER NOT NULL DEFAULT 0,
+        attendance_count INTEGER NOT NULL DEFAULT 0,
+        last_attendance INTEGER NOT NULL DEFAULT 0
+      )",
+      ))
+      use _ <- result.try(exec(
+        conn,
+        "CREATE TABLE IF NOT EXISTS banned_words (word TEXT PRIMARY KEY)",
+      ))
+      use _ <- result.try(exec(
+        conn,
+        "CREATE TABLE IF NOT EXISTS custom_commands (name TEXT PRIMARY KEY, response TEXT NOT NULL)",
+      ))
+      use _ <- result.try(exec(
+        conn,
+        "CREATE TABLE IF NOT EXISTS votes (id INTEGER PRIMARY KEY, topic TEXT NOT NULL, options TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1)",
+      ))
+      use _ <- result.try(exec(
+        conn,
+        "CREATE TABLE IF NOT EXISTS vote_entries (user_id TEXT NOT NULL, choice TEXT NOT NULL, vote_id INTEGER NOT NULL, UNIQUE(user_id, vote_id))",
+      ))
+      use _ <- result.try(set_schema_version(conn, 1))
+      Ok(Nil)
+    }
+    False -> Ok(Nil)
+  }
+}
+
+fn get_schema_version(conn: sqlight.Connection) -> Result(Int, StorageError) {
+  use rows <- result.try(
+    sqlight.query(
+      "SELECT version FROM schema_version ORDER BY version DESC LIMIT 1",
+      on: conn,
+      with: [],
+      expecting: decode.field(0, decode.int, fn(v) { decode.success(v) }),
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  case rows {
+    [v, ..] -> Ok(v)
+    [] -> Ok(0)
+  }
+}
+
+fn set_schema_version(
+  conn: sqlight.Connection,
+  version: Int,
+) -> Result(Nil, StorageError) {
+  sqlight.query(
+    "INSERT OR IGNORE INTO schema_version (version) VALUES (?)",
+    on: conn,
+    with: [sqlight.int(version)],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
 }
 
 fn exec(conn: sqlight.Connection, sql: String) -> Result(Nil, StorageError) {

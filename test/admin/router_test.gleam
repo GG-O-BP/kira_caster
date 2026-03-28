@@ -115,3 +115,30 @@ pub fn delete_command_test() {
     |> handle
   assert response.status == 200
 }
+
+pub fn get_votes_no_active_test() {
+  let response =
+    simulate.request(http.Get, "/votes")
+    |> handle
+  assert response.status == 200
+}
+
+pub fn post_votes_test() {
+  let response =
+    simulate.request(http.Post, "/votes")
+    |> simulate.json_body(
+      json.object([
+        #("topic", json.string("좋아하는 색")),
+        #("options", json.array(["빨강", "파랑"], json.string)),
+      ]),
+    )
+    |> handle
+  assert response.status == 201
+}
+
+pub fn delete_votes_no_active_test() {
+  let response =
+    simulate.request(http.Delete, "/votes")
+    |> handle
+  assert response.status == 404
+}

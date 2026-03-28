@@ -2,7 +2,7 @@
 
 씨미(ci.me) 방송에서 쓸 수 있는 챗봇이야~!
 
-채팅창에 명령어를 치면 키라캐스터가 대답해주는 거야! 출석체크도 하고, 포인트도 모으고, 미니게임도 하고, 투표도 할 수 있어!! 진짜 재밌겠지?!
+채팅창에 명령어를 치면 키라캐스터가 대답해주는 거야! 출석체크도 하고, 포인트도 모으고, 미니게임도 하고, 투표도 하고, 룰렛도 돌리고, 퀴즈도 풀 수 있어!! 진짜 재밌겠지?!
 
 ## 이런 걸 할 수 있어!
 
@@ -15,7 +15,9 @@
 | 커스텀 명령 | 매니저가 직접 명령어를 만들 수 있어! |
 | 업타임 | `!업타임`으로 봇이 얼마나 켜져있었는지 알 수 있어! |
 | 투표 | 채팅으로 투표할 수 있어! 다 같이 정하자~! |
-| 관리 대시보드 | 웹에서 유저 정보, 금칙어, 명령어 관리할 수 있어! |
+| 룰렛 | `!룰렛` 돌려서 운 시험해봐! 대박 나면 +100포인트! |
+| 퀴즈 | 퀴즈 맞추면 포인트 GET! 누가 제일 빠를까~? |
+| 관리 대시보드 | 웹에서 유저 정보, 금칙어, 명령어, 투표 관리할 수 있어! |
 
 ## 시작하는 방법
 
@@ -25,7 +27,7 @@ Gleam이랑 Erlang/OTP가 설치되어 있어야 해!
 gleam deps download   # 필요한 것들 다운받기
 gleam build           # 빌드하기
 gleam run             # 실행하기!
-gleam test            # 테스트 돌리기 (130개나 있어!)
+gleam test            # 테스트 돌리기 (143개나 있어!)
 ```
 
 실행하면 이렇게 나와!
@@ -69,6 +71,8 @@ Listening on http://127.0.0.1:8080
 | `!업타임` | 봇 가동 시간 확인 |
 | `!투표 <선택지>` | 진행중인 투표에 참여하기 |
 | `!투표 결과` | 현재 투표 결과 보기 |
+| `!룰렛` | 룰렛 돌리기! 대박(+100), 좋음(+30), 보통(+10), 꽝(-10) |
+| `!퀴즈 <답>` | 퀴즈 정답 맞추기 |
 
 ### 매니저 전용 명령어
 
@@ -82,6 +86,7 @@ Listening on http://127.0.0.1:8080
 | `!명령 목록` | 커스텀 명령어 목록 보기 |
 | `!투표 시작 <주제> <선택지1> <선택지2> ...` | 투표 시작하기 |
 | `!투표 종료` | 투표 끝내고 결과 발표! |
+| `!퀴즈 시작` | 랜덤 퀴즈 출제 |
 
 ## 관리 대시보드 API
 
@@ -103,6 +108,11 @@ curl -X DELETE http://localhost:8080/banned-words -H "Content-Type: application/
 curl http://localhost:8080/commands
 curl -X POST http://localhost:8080/commands -H "Content-Type: application/json" -d '{"name":"인사","response":"안녕!"}'
 curl -X DELETE http://localhost:8080/commands -H "Content-Type: application/json" -d '{"name":"인사"}'
+
+# 투표 관리
+curl http://localhost:8080/votes
+curl -X POST http://localhost:8080/votes -H "Content-Type: application/json" -d '{"topic":"좋아하는 색","options":["빨강","파랑"]}'
+curl -X DELETE http://localhost:8080/votes
 ```
 
 `KIRA_ADMIN_KEY`를 설정하면 Bearer 토큰 인증이 필요해져!
@@ -121,7 +131,7 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] 설정 외부화 (환경변수로 전부 바꿀 수 있어!)
 - [x] OTP 로깅 (info/warn/error)
 
-### 플러그인 (7개!)
+### 플러그인 (9개!)
 - [x] 출석체크 (`!출석`) - 하루 1회 제한, 포인트 보상
 - [x] 포인트 시스템 (`!포인트`, `!포인트 순위`) - SQLite 저장
 - [x] 미니게임 (`!게임 주사위`, `!게임 가위바위보`) - 포인트 연동
@@ -129,6 +139,8 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] 커스텀 명령 (`!명령 추가/삭제/목록`) - 매니저가 직접 만드는 명령어
 - [x] 업타임 (`!업타임`) - 봇 가동 시간 표시
 - [x] 투표 (`!투표 시작/투표/결과/종료`) - DB 저장, 중복 투표 방지
+- [x] 룰렛 (`!룰렛`) - 확률 가중치, 포인트 보상
+- [x] 퀴즈 (`!퀴즈 시작`, `!퀴즈 <답>`) - 내장 퀴즈 10문제, 최초 정답자 보상
 
 ### 플랫폼 연결
 - [x] 어댑터 인터페이스 (어떤 플랫폼이든 연결 가능하게!)
@@ -144,7 +156,9 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] SQLite 데이터 저장 (마이그레이션 포함)
 - [x] 관리 대시보드 (wisp + mist REST API)
 - [x] Bearer 토큰 인증
-- [x] 테스트 130개! 전부 통과!
+- [x] DB 마이그레이션 버전 관리
+- [x] Docker 지원
+- [x] 테스트 143개! 전부 통과!
 
 ## 기술 스택
 
@@ -165,8 +179,9 @@ src/
 │   │   ├── command.gleam        # 명령어 파서
 │   │   ├── cooldown.gleam       # 쿨다운 관리
 │   │   ├── message.gleam        # 메시지 타입
-│   │   └── permission.gleam     # 권한 체계
-│   ├── plugin/                  # 플러그인들! (7개!)
+│   │   ├── permission.gleam     # 권한 체계
+│   │   └── quiz_data.gleam      # 퀴즈 데이터
+│   ├── plugin/                  # 플러그인들! (9개!)
 │   │   ├── plugin.gleam         # 플러그인 인터페이스
 │   │   ├── attendance.gleam     # 출석체크
 │   │   ├── points.gleam         # 포인트
@@ -174,7 +189,9 @@ src/
 │   │   ├── filter.gleam         # 채팅 필터
 │   │   ├── custom_command.gleam # 커스텀 명령
 │   │   ├── uptime.gleam         # 업타임
-│   │   └── vote.gleam           # 투표
+│   │   ├── vote.gleam           # 투표
+│   │   ├── roulette.gleam       # 룰렛
+│   │   └── quiz.gleam           # 퀴즈
 │   ├── platform/                # 플랫폼 연결
 │   │   ├── adapter.gleam        # 어댑터 인터페이스
 │   │   ├── mock_adapter.gleam   # 연습용

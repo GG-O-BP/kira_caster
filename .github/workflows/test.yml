@@ -1,0 +1,40 @@
+name: test
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "28"
+          gleam-version: "1.15.2"
+          rebar3-version: "3"
+
+      - name: Install SQLite development files
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            build
+            ~/.cache/rebar3
+          key: gleam-build-${{ runner.os }}-${{ hashFiles('gleam.toml', 'manifest.toml') }}
+          restore-keys: |
+            gleam-build-${{ runner.os }}-
+
+      - run: gleam deps download
+
+      - run: gleam test
+        env:
+          ESQLITE_USE_SYSTEM: "1"
+
+      - run: gleam format --check src test

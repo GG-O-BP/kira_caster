@@ -11,6 +11,7 @@ pub type Config {
     max_reconnect_attempts: Int,
     admin_port: Int,
     admin_key: String,
+    secret_key_base: String,
   )
 }
 
@@ -27,5 +28,6 @@ pub fn default() -> Config {
     max_reconnect_attempts: 5,
     admin_port: 8080,
     admin_key: "",
+    secret_key_base: "kira_caster_default_secret_key_please_change_in_production",
   )
 }

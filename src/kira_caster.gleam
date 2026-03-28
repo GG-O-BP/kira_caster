@@ -14,6 +14,7 @@ import kira_caster/plugin/minigame
 import kira_caster/plugin/plugin
 import kira_caster/plugin/points
 import kira_caster/plugin/uptime
+import kira_caster/plugin/vote
 import kira_caster/plugin_registry.{type PluginRegistry}
 import kira_caster/storage/sqlight_repo
 import kira_caster/supervisor
@@ -58,6 +59,7 @@ fn start() -> Result(Nil, String) {
     })
     |> plugin_registry.register(fn() { custom_command.new(repo) })
     |> plugin_registry.register(fn() { uptime.new(start_time) })
+    |> plugin_registry.register(fn() { vote.new(repo) })
 
   let adapter = mock_adapter.new()
   use _ <- result.try(

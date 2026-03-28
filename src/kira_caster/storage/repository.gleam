@@ -27,6 +27,11 @@ pub type Repository {
     set_command: fn(String, String) -> Result(Nil, StorageError),
     delete_command: fn(String) -> Result(Nil, StorageError),
     get_all_commands: fn() -> Result(List(#(String, String)), StorageError),
+    start_vote: fn(String, List(String)) -> Result(Nil, StorageError),
+    cast_vote: fn(String, String) -> Result(Nil, StorageError),
+    get_vote_results: fn() -> Result(List(#(String, Int)), StorageError),
+    get_active_vote: fn() -> Result(#(String, List(String)), StorageError),
+    end_vote: fn() -> Result(Nil, StorageError),
   )
 }
 
@@ -47,6 +52,11 @@ pub fn mock_repo(users: List(UserData)) -> Repository {
     set_command: fn(_name, _response) { Ok(Nil) },
     delete_command: fn(_name) { Ok(Nil) },
     get_all_commands: fn() { Ok([]) },
+    start_vote: fn(_topic, _options) { Ok(Nil) },
+    cast_vote: fn(_user, _choice) { Ok(Nil) },
+    get_vote_results: fn() { Ok([]) },
+    get_active_vote: fn() { Error(NotFound) },
+    end_vote: fn() { Ok(Nil) },
   )
 }
 
@@ -72,5 +82,19 @@ pub fn mock_repo_with_commands(
       }
     },
     get_all_commands: fn() { Ok(commands) },
+  )
+}
+
+pub fn mock_repo_with_vote(
+  users: List(UserData),
+  topic: String,
+  options: List(String),
+  results: List(#(String, Int)),
+) -> Repository {
+  let base = mock_repo(users)
+  Repository(
+    ..base,
+    get_active_vote: fn() { Ok(#(topic, options)) },
+    get_vote_results: fn() { Ok(results) },
   )
 }

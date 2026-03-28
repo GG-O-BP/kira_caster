@@ -21,6 +21,7 @@ pub fn load() -> Config {
     ),
     admin_port: get_int("KIRA_ADMIN_PORT", d.admin_port),
     admin_key: get_string("KIRA_ADMIN_KEY", d.admin_key),
+    secret_key_base: get_string("KIRA_SECRET_KEY", d.secret_key_base),
   )
 }
 

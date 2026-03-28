@@ -1,3 +1,4 @@
+import gleam/dynamic/decode
 import gleam/http
 import gleam/http/request
 import gleam/json
@@ -22,8 +23,7 @@ fn check_auth(req: Request, admin_key: String) -> Bool {
   case admin_key {
     "" -> True
     key -> {
-      let auth = request.get_header(req, "authorization")
-      case auth {
+      case request.get_header(req, "authorization") {
         Ok(value) -> value == "Bearer " <> key
         Error(_) -> False
       }
@@ -37,11 +37,10 @@ fn route(req: Request, repo: Repository, start_time: Int) -> Response {
     http.Get, ["users"] -> handle_users(repo)
     http.Get, ["banned-words"] -> handle_banned_words(repo)
     http.Get, ["commands"] -> handle_commands(repo)
-    http.Post, ["banned-words", word] -> handle_add_banned_word(repo, word)
-    http.Delete, ["banned-words", word] -> handle_remove_banned_word(repo, word)
-    http.Post, ["commands", name, response] ->
-      handle_set_command(repo, name, response)
-    http.Delete, ["commands", name] -> handle_delete_command(repo, name)
+    http.Post, ["banned-words"] -> handle_add_banned_word(req, repo)
+    http.Delete, ["banned-words"] -> handle_remove_banned_word(req, repo)
+    http.Post, ["commands"] -> handle_set_command(req, repo)
+    http.Delete, ["commands"] -> handle_delete_command(req, repo)
     _, _ -> wisp.not_found()
   }
 }
@@ -99,50 +98,79 @@ fn handle_commands(repo: Repository) -> Response {
   }
 }
 
-fn handle_add_banned_word(repo: Repository, word: String) -> Response {
-  case repo.add_banned_word(string.lowercase(word)) {
-    Ok(Nil) -> {
-      let body = json.object([#("added", json.string(word))])
-      wisp.json_response(json.to_string(body), 201)
-    }
-    Error(_) -> wisp.internal_server_error()
+fn handle_add_banned_word(req: Request, repo: Repository) -> Response {
+  use body <- wisp.require_json(req)
+  let decoder = decode.field("word", decode.string, fn(w) { decode.success(w) })
+  case decode.run(body, decoder) {
+    Ok(word) ->
+      case repo.add_banned_word(string.lowercase(word)) {
+        Ok(Nil) ->
+          wisp.json_response(
+            json.to_string(json.object([#("added", json.string(word))])),
+            201,
+          )
+        Error(_) -> wisp.internal_server_error()
+      }
+    Error(_) -> wisp.bad_request("invalid request body")
   }
 }
 
-fn handle_remove_banned_word(repo: Repository, word: String) -> Response {
-  case repo.remove_banned_word(string.lowercase(word)) {
-    Ok(Nil) -> {
-      let body = json.object([#("removed", json.string(word))])
-      wisp.json_response(json.to_string(body), 200)
-    }
-    Error(_) -> wisp.internal_server_error()
+fn handle_remove_banned_word(req: Request, repo: Repository) -> Response {
+  use body <- wisp.require_json(req)
+  let decoder = decode.field("word", decode.string, fn(w) { decode.success(w) })
+  case decode.run(body, decoder) {
+    Ok(word) ->
+      case repo.remove_banned_word(string.lowercase(word)) {
+        Ok(Nil) ->
+          wisp.json_response(
+            json.to_string(json.object([#("removed", json.string(word))])),
+            200,
+          )
+        Error(_) -> wisp.internal_server_error()
+      }
+    Error(_) -> wisp.bad_request("invalid request body")
   }
 }
 
-fn handle_set_command(
-  repo: Repository,
-  name: String,
-  response: String,
-) -> Response {
-  case repo.set_command(name, response) {
-    Ok(Nil) -> {
-      let body =
-        json.object([
-          #("name", json.string(name)),
-          #("response", json.string(response)),
-        ])
-      wisp.json_response(json.to_string(body), 201)
-    }
-    Error(_) -> wisp.internal_server_error()
+fn handle_set_command(req: Request, repo: Repository) -> Response {
+  use body <- wisp.require_json(req)
+  let decoder = {
+    use name <- decode.field("name", decode.string)
+    use response <- decode.field("response", decode.string)
+    decode.success(#(name, response))
+  }
+  case decode.run(body, decoder) {
+    Ok(#(name, response)) ->
+      case repo.set_command(name, response) {
+        Ok(Nil) ->
+          wisp.json_response(
+            json.to_string(
+              json.object([
+                #("name", json.string(name)),
+                #("response", json.string(response)),
+              ]),
+            ),
+            201,
+          )
+        Error(_) -> wisp.internal_server_error()
+      }
+    Error(_) -> wisp.bad_request("invalid request body")
   }
 }
 
-fn handle_delete_command(repo: Repository, name: String) -> Response {
-  case repo.delete_command(name) {
-    Ok(Nil) -> {
-      let body = json.object([#("deleted", json.string(name))])
-      wisp.json_response(json.to_string(body), 200)
-    }
-    Error(_) -> wisp.internal_server_error()
+fn handle_delete_command(req: Request, repo: Repository) -> Response {
+  use body <- wisp.require_json(req)
+  let decoder = decode.field("name", decode.string, fn(n) { decode.success(n) })
+  case decode.run(body, decoder) {
+    Ok(name) ->
+      case repo.delete_command(name) {
+        Ok(Nil) ->
+          wisp.json_response(
+            json.to_string(json.object([#("deleted", json.string(name))])),
+            200,
+          )
+        Error(_) -> wisp.internal_server_error()
+      }
+    Error(_) -> wisp.bad_request("invalid request body")
   }
 }

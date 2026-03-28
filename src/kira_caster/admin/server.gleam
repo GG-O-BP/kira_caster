@@ -17,7 +17,7 @@ pub fn start(
 
   case
     handler
-    |> wisp_mist.handler("kira_caster_secret_key_base_change_me")
+    |> wisp_mist.handler(config.secret_key_base)
     |> mist.new
     |> mist.port(config.admin_port)
     |> mist.start

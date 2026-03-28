@@ -1,5 +1,6 @@
 import gleam/dynamic/decode
 import gleam/result
+import gleam/string
 import kira_caster/storage/repository.{
   type Repository, type StorageError, type UserData, ConnectionError, NotFound,
   QueryError, Repository, UserData,
@@ -11,37 +12,7 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
     sqlight.open(db_path)
     |> result.map_error(fn(e) { ConnectionError(e.message) }),
   )
-  use _ <- result.try(
-    sqlight.exec(
-      "CREATE TABLE IF NOT EXISTS users (
-        user_id TEXT PRIMARY KEY,
-        points INTEGER NOT NULL DEFAULT 0,
-        attendance_count INTEGER NOT NULL DEFAULT 0,
-        last_attendance INTEGER NOT NULL DEFAULT 0
-      )",
-      on: conn,
-    )
-    |> result.map_error(fn(e) { QueryError(e.message) }),
-  )
-  use _ <- result.try(
-    sqlight.exec(
-      "CREATE TABLE IF NOT EXISTS banned_words (
-        word TEXT PRIMARY KEY
-      )",
-      on: conn,
-    )
-    |> result.map_error(fn(e) { QueryError(e.message) }),
-  )
-  use _ <- result.try(
-    sqlight.exec(
-      "CREATE TABLE IF NOT EXISTS custom_commands (
-        name TEXT PRIMARY KEY,
-        response TEXT NOT NULL
-      )",
-      on: conn,
-    )
-    |> result.map_error(fn(e) { QueryError(e.message) }),
-  )
+  use _ <- result.try(run_migrations(conn))
   Ok(
     Repository(
       get_user: fn(user_id) { get_user_impl(conn, user_id) },
@@ -54,8 +25,55 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
       set_command: fn(name, response) { set_command_impl(conn, name, response) },
       delete_command: fn(name) { delete_command_impl(conn, name) },
       get_all_commands: fn() { get_all_commands_impl(conn) },
+      start_vote: fn(topic, options) { start_vote_impl(conn, topic, options) },
+      cast_vote: fn(user, choice) { cast_vote_impl(conn, user, choice) },
+      get_vote_results: fn() { get_vote_results_impl(conn) },
+      get_active_vote: fn() { get_active_vote_impl(conn) },
+      end_vote: fn() { end_vote_impl(conn) },
     ),
   )
+}
+
+fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
+  use _ <- result.try(exec(
+    conn,
+    "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)",
+  ))
+  use _ <- result.try(exec(
+    conn,
+    "CREATE TABLE IF NOT EXISTS users (
+    user_id TEXT PRIMARY KEY,
+    points INTEGER NOT NULL DEFAULT 0,
+    attendance_count INTEGER NOT NULL DEFAULT 0,
+    last_attendance INTEGER NOT NULL DEFAULT 0
+  )",
+  ))
+  use _ <- result.try(exec(
+    conn,
+    "CREATE TABLE IF NOT EXISTS banned_words (word TEXT PRIMARY KEY)",
+  ))
+  use _ <- result.try(exec(
+    conn,
+    "CREATE TABLE IF NOT EXISTS custom_commands (name TEXT PRIMARY KEY, response TEXT NOT NULL)",
+  ))
+  use _ <- result.try(exec(
+    conn,
+    "CREATE TABLE IF NOT EXISTS votes (id INTEGER PRIMARY KEY, topic TEXT NOT NULL, options TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1)",
+  ))
+  use _ <- result.try(exec(
+    conn,
+    "CREATE TABLE IF NOT EXISTS vote_entries (user_id TEXT NOT NULL, choice TEXT NOT NULL, vote_id INTEGER NOT NULL, UNIQUE(user_id, vote_id))",
+  ))
+  use _ <- result.try(exec(
+    conn,
+    "INSERT OR IGNORE INTO schema_version (version) VALUES (1)",
+  ))
+  Ok(Nil)
+}
+
+fn exec(conn: sqlight.Connection, sql: String) -> Result(Nil, StorageError) {
+  sqlight.exec(sql, on: conn)
+  |> result.map_error(fn(e) { QueryError(e.message) })
 }
 
 fn user_data_decoder() -> decode.Decoder(UserData) {
@@ -223,4 +241,78 @@ fn get_all_commands_impl(
     },
   )
   |> result.map_error(fn(e) { QueryError(e.message) })
+}
+
+fn start_vote_impl(
+  conn: sqlight.Connection,
+  topic: String,
+  options: List(String),
+) -> Result(Nil, StorageError) {
+  use _ <- result.try(exec(conn, "UPDATE votes SET active = 0 WHERE active = 1"))
+  sqlight.query(
+    "INSERT INTO votes (topic, options, active) VALUES (?, ?, 1)",
+    on: conn,
+    with: [sqlight.text(topic), sqlight.text(string.join(options, "|"))],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
+}
+
+fn cast_vote_impl(
+  conn: sqlight.Connection,
+  user_id: String,
+  choice: String,
+) -> Result(Nil, StorageError) {
+  sqlight.query(
+    "INSERT OR REPLACE INTO vote_entries (user_id, choice, vote_id) SELECT ?, ?, id FROM votes WHERE active = 1",
+    on: conn,
+    with: [sqlight.text(user_id), sqlight.text(choice)],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
+}
+
+fn get_vote_results_impl(
+  conn: sqlight.Connection,
+) -> Result(List(#(String, Int)), StorageError) {
+  sqlight.query(
+    "SELECT ve.choice, COUNT(*) as cnt FROM vote_entries ve JOIN votes v ON ve.vote_id = v.id WHERE v.active = 1 GROUP BY ve.choice ORDER BY cnt DESC",
+    on: conn,
+    with: [],
+    expecting: {
+      use choice <- decode.field(0, decode.string)
+      use count <- decode.field(1, decode.int)
+      decode.success(#(choice, count))
+    },
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+}
+
+fn get_active_vote_impl(
+  conn: sqlight.Connection,
+) -> Result(#(String, List(String)), StorageError) {
+  use rows <- result.try(
+    sqlight.query(
+      "SELECT topic, options FROM votes WHERE active = 1 LIMIT 1",
+      on: conn,
+      with: [],
+      expecting: {
+        use topic <- decode.field(0, decode.string)
+        use options_str <- decode.field(1, decode.string)
+        decode.success(#(topic, string.split(options_str, "|")))
+      },
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  case rows {
+    [vote, ..] -> Ok(vote)
+    [] -> Error(NotFound)
+  }
+}
+
+fn end_vote_impl(conn: sqlight.Connection) -> Result(Nil, StorageError) {
+  use _ <- result.try(exec(conn, "UPDATE votes SET active = 0 WHERE active = 1"))
+  Ok(Nil)
 }

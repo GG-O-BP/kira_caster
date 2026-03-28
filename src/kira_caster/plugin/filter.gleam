@@ -10,8 +10,8 @@ pub fn new(repo: Repository, default_words: List(String)) -> Plugin {
   })
 }
 
-pub fn default(repo: Repository) -> Plugin {
-  new(repo, ["spam", "홍보", "광고"])
+pub fn default(repo: Repository, default_words: List(String)) -> Plugin {
+  new(repo, default_words)
 }
 
 fn handle(

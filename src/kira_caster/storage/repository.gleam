@@ -18,6 +18,10 @@ pub type Repository {
     get_banned_words: fn() -> Result(List(String), StorageError),
     add_banned_word: fn(String) -> Result(Nil, StorageError),
     remove_banned_word: fn(String) -> Result(Nil, StorageError),
+    get_command: fn(String) -> Result(String, StorageError),
+    set_command: fn(String, String) -> Result(Nil, StorageError),
+    delete_command: fn(String) -> Result(Nil, StorageError),
+    get_all_commands: fn() -> Result(List(#(String, String)), StorageError),
   )
 }
 
@@ -34,6 +38,10 @@ pub fn mock_repo(users: List(UserData)) -> Repository {
     get_banned_words: fn() { Ok([]) },
     add_banned_word: fn(_word) { Ok(Nil) },
     remove_banned_word: fn(_word) { Ok(Nil) },
+    get_command: fn(_name) { Error(NotFound) },
+    set_command: fn(_name, _response) { Ok(Nil) },
+    delete_command: fn(_name) { Ok(Nil) },
+    get_all_commands: fn() { Ok([]) },
   )
 }
 
@@ -43,4 +51,21 @@ pub fn mock_repo_with_words(
 ) -> Repository {
   let base = mock_repo(users)
   Repository(..base, get_banned_words: fn() { Ok(words) })
+}
+
+pub fn mock_repo_with_commands(
+  users: List(UserData),
+  commands: List(#(String, String)),
+) -> Repository {
+  let base = mock_repo(users)
+  Repository(
+    ..base,
+    get_command: fn(name) {
+      case list.find(commands, fn(c) { c.0 == name }) {
+        Ok(#(_, response)) -> Ok(response)
+        Error(_) -> Error(NotFound)
+      }
+    },
+    get_all_commands: fn() { Ok(commands) },
+  )
 }

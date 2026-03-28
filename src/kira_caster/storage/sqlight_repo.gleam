@@ -31,6 +31,16 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
     )
     |> result.map_error(fn(e) { QueryError(e.message) }),
   )
+  use _ <- result.try(
+    sqlight.exec(
+      "CREATE TABLE IF NOT EXISTS custom_commands (
+        name TEXT PRIMARY KEY,
+        response TEXT NOT NULL
+      )",
+      on: conn,
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
   Ok(
     Repository(
       get_user: fn(user_id) { get_user_impl(conn, user_id) },
@@ -39,6 +49,10 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
       get_banned_words: fn() { get_banned_words_impl(conn) },
       add_banned_word: fn(word) { add_banned_word_impl(conn, word) },
       remove_banned_word: fn(word) { remove_banned_word_impl(conn, word) },
+      get_command: fn(name) { get_command_impl(conn, name) },
+      set_command: fn(name, response) { set_command_impl(conn, name, response) },
+      delete_command: fn(name) { delete_command_impl(conn, name) },
+      get_all_commands: fn() { get_all_commands_impl(conn) },
     ),
   )
 }
@@ -54,15 +68,15 @@ fn get_user_impl(
   conn: sqlight.Connection,
   user_id: String,
 ) -> Result(UserData, StorageError) {
-  let result =
+  use rows <- result.try(
     sqlight.query(
       "SELECT user_id, points, attendance_count FROM users WHERE user_id = ?",
       on: conn,
       with: [sqlight.text(user_id)],
       expecting: user_data_decoder(),
     )
-    |> result.map_error(fn(e) { QueryError(e.message) })
-  use rows <- result.try(result)
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
   case rows {
     [user, ..] -> Ok(user)
     [] -> Error(NotFound)
@@ -137,4 +151,68 @@ fn remove_banned_word_impl(
   )
   |> result.map_error(fn(e) { QueryError(e.message) })
   |> result.replace(Nil)
+}
+
+fn get_command_impl(
+  conn: sqlight.Connection,
+  name: String,
+) -> Result(String, StorageError) {
+  use rows <- result.try(
+    sqlight.query(
+      "SELECT response FROM custom_commands WHERE name = ?",
+      on: conn,
+      with: [sqlight.text(name)],
+      expecting: decode.field(0, decode.string, fn(r) { decode.success(r) }),
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) }),
+  )
+  case rows {
+    [response, ..] -> Ok(response)
+    [] -> Error(NotFound)
+  }
+}
+
+fn set_command_impl(
+  conn: sqlight.Connection,
+  name: String,
+  response: String,
+) -> Result(Nil, StorageError) {
+  sqlight.query(
+    "INSERT OR REPLACE INTO custom_commands (name, response) VALUES (?, ?)",
+    on: conn,
+    with: [sqlight.text(name), sqlight.text(response)],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
+}
+
+fn delete_command_impl(
+  conn: sqlight.Connection,
+  name: String,
+) -> Result(Nil, StorageError) {
+  sqlight.query(
+    "DELETE FROM custom_commands WHERE name = ?",
+    on: conn,
+    with: [sqlight.text(name)],
+    expecting: decode.success(Nil),
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
+}
+
+fn get_all_commands_impl(
+  conn: sqlight.Connection,
+) -> Result(List(#(String, String)), StorageError) {
+  sqlight.query(
+    "SELECT name, response FROM custom_commands",
+    on: conn,
+    with: [],
+    expecting: {
+      use name <- decode.field(0, decode.string)
+      use response <- decode.field(1, decode.string)
+      decode.success(#(name, response))
+    },
+  )
+  |> result.map_error(fn(e) { QueryError(e.message) })
 }

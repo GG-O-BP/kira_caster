@@ -5,7 +5,7 @@ import kira_caster/storage/repository.{UserData}
 
 pub fn attendance_new_user_test() {
   let repo = repository.mock_repo([])
-  let p = attendance.new(repo)
+  let p = attendance.new(repo, 10)
   let events =
     plugin.handle(
       p,
@@ -30,7 +30,7 @@ pub fn attendance_existing_user_test() {
     repository.mock_repo([
       UserData(user_id: "bob", points: 50, attendance_count: 5),
     ])
-  let p = attendance.new(repo)
+  let p = attendance.new(repo, 10)
   let events =
     plugin.handle(
       p,
@@ -47,7 +47,7 @@ pub fn attendance_existing_user_test() {
 
 pub fn unrelated_event_ignored_test() {
   let repo = repository.mock_repo([])
-  let p = attendance.new(repo)
+  let p = attendance.new(repo, 10)
   let events =
     plugin.handle(
       p,

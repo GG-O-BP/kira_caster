@@ -87,3 +87,43 @@ pub fn get_banned_words_empty_test() {
   let assert Ok(words) = repo.get_banned_words()
   assert words == []
 }
+
+pub fn set_and_get_command_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(Nil) = repo.set_command("인사", "안녕하세요!")
+  let assert Ok(response) = repo.get_command("인사")
+  assert response == "안녕하세요!"
+}
+
+pub fn get_command_not_found_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Error(repository.NotFound) = repo.get_command("없음")
+}
+
+pub fn delete_command_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(Nil) = repo.set_command("인사", "안녕!")
+  let assert Ok(Nil) = repo.delete_command("인사")
+  let assert Error(repository.NotFound) = repo.get_command("인사")
+}
+
+pub fn get_all_commands_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(Nil) = repo.set_command("인사", "안녕!")
+  let assert Ok(Nil) = repo.set_command("규칙", "규칙을 지켜주세요")
+  let assert Ok(commands) = repo.get_all_commands()
+  assert {
+    case commands {
+      [_, _] -> True
+      _ -> False
+    }
+  }
+}
+
+pub fn set_command_upsert_test() {
+  let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(Nil) = repo.set_command("인사", "안녕!")
+  let assert Ok(Nil) = repo.set_command("인사", "반가워요!")
+  let assert Ok(response) = repo.get_command("인사")
+  assert response == "반가워요!"
+}

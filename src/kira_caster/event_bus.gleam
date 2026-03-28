@@ -6,6 +6,7 @@ import gleam/otp/actor
 import gleam/otp/supervision
 import kira_caster/core/cooldown.{type CooldownMap}
 import kira_caster/plugin/plugin.{type Event, type Plugin}
+import kira_caster/util/time
 
 pub type EventBusMessage {
   Dispatch(event: Event)
@@ -26,20 +27,25 @@ pub type EventBusState {
   )
 }
 
-@external(erlang, "kira_caster_ffi", "now_ms")
-fn now_ms() -> Int
+fn init_state(
+  subject: Subject(EventBusMessage),
+  cooldown_ms: Int,
+) -> EventBusState {
+  EventBusState(
+    plugins: [],
+    bus_subject: subject,
+    on_response: None,
+    cooldowns: cooldown.new(),
+    cooldown_ms: cooldown_ms,
+  )
+}
 
 pub fn start_named(
   name: Name(EventBusMessage),
+  cooldown_ms: Int,
 ) -> Result(actor.Started(Subject(EventBusMessage)), actor.StartError) {
   actor.new_with_initialiser(1000, fn(subject) {
-    actor.initialised(EventBusState(
-      plugins: [],
-      bus_subject: subject,
-      on_response: None,
-      cooldowns: cooldown.new(),
-      cooldown_ms: 5000,
-    ))
+    actor.initialised(init_state(subject, cooldown_ms))
     |> actor.returning(subject)
     |> Ok
   })
@@ -50,22 +56,23 @@ pub fn start_named(
 
 pub fn child_spec(
   name: Name(EventBusMessage),
+  cooldown_ms: Int,
 ) -> supervision.ChildSpecification(Subject(EventBusMessage)) {
-  supervision.worker(run: fn() { start_named(name) })
+  supervision.worker(run: fn() { start_named(name, cooldown_ms) })
 }
 
 pub fn start() -> Result(
   actor.Started(Subject(EventBusMessage)),
   actor.StartError,
 ) {
+  start_with_cooldown(5000)
+}
+
+pub fn start_with_cooldown(
+  cooldown_ms: Int,
+) -> Result(actor.Started(Subject(EventBusMessage)), actor.StartError) {
   actor.new_with_initialiser(1000, fn(subject) {
-    actor.initialised(EventBusState(
-      plugins: [],
-      bus_subject: subject,
-      on_response: None,
-      cooldowns: cooldown.new(),
-      cooldown_ms: 5000,
-    ))
+    actor.initialised(init_state(subject, cooldown_ms))
     |> actor.returning(subject)
     |> Ok
   })
@@ -129,7 +136,7 @@ fn handle_dispatch(
   case event {
     plugin.Command(user:, name:, args: _, role: _) -> {
       let key = user <> ":" <> name
-      let now = now_ms()
+      let now = time.now_ms()
       case cooldown.check(state.cooldowns, key, now, state.cooldown_ms) {
         Ok(Nil) -> {
           let responses = collect_responses(state.plugins, event)

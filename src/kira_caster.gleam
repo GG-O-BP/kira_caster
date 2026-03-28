@@ -1,38 +1,66 @@
 import gleam/erlang/process
-import gleam/io
+import gleam/list
 import gleam/result
+import kira_caster/admin/server as admin_server
+import kira_caster/config_loader
 import kira_caster/core/permission
 import kira_caster/event_bus
+import kira_caster/logger
 import kira_caster/platform/mock_adapter
 import kira_caster/plugin/attendance
+import kira_caster/plugin/custom_command
 import kira_caster/plugin/filter
 import kira_caster/plugin/minigame
 import kira_caster/plugin/plugin
 import kira_caster/plugin/points
+import kira_caster/plugin/uptime
+import kira_caster/plugin_registry
 import kira_caster/storage/sqlight_repo
 import kira_caster/supervisor
+import kira_caster/util/time
 
 pub fn main() -> Nil {
   case start() {
-    Ok(Nil) -> io.println("kira_caster running")
-    Error(reason) -> io.println("Startup failed: " <> reason)
+    Ok(Nil) -> logger.info("kira_caster running")
+    Error(reason) -> logger.error("Startup failed: " <> reason)
   }
 }
 
 fn start() -> Result(Nil, String) {
+  let config = config_loader.load()
+  let start_time = time.now_ms()
+
   use repo <- result.try(
-    sqlight_repo.new("kira_caster.db")
+    sqlight_repo.new(config.db_path)
     |> result.map_error(fn(_) { "Failed to open database" }),
   )
-  use #(_sup, bus) <- result.try(
-    supervisor.start()
+  use #(_sup, bus, _bus_name) <- result.try(
+    supervisor.start(config)
     |> result.map_error(fn(_) { "Failed to start supervisor" }),
   )
 
-  event_bus.subscribe(bus, attendance.new(repo))
-  event_bus.subscribe(bus, points.new(repo))
-  event_bus.subscribe(bus, minigame.new())
-  event_bus.subscribe(bus, filter.default(repo))
+  let registry =
+    plugin_registry.new()
+    |> plugin_registry.register(fn() {
+      attendance.new(repo, config.attendance_points)
+    })
+    |> plugin_registry.register(fn() { points.new(repo) })
+    |> plugin_registry.register(fn() {
+      minigame.new(
+        config.dice_win_points,
+        config.dice_loss_points,
+        config.rps_win_points,
+        config.rps_loss_points,
+      )
+    })
+    |> plugin_registry.register(fn() {
+      filter.default(repo, config.default_banned_words)
+    })
+    |> plugin_registry.register(fn() { custom_command.new(repo) })
+    |> plugin_registry.register(fn() { uptime.new(start_time) })
+
+  let plugins = plugin_registry.build_plugins(registry)
+  list.each(plugins, fn(p) { event_bus.subscribe(bus, p) })
 
   let adapter = mock_adapter.new()
   use _ <- result.try(
@@ -50,7 +78,12 @@ fn start() -> Result(Nil, String) {
     }
   })
 
-  io.println("kira_caster started with mock adapter")
+  case admin_server.start(repo, config, start_time) {
+    Ok(Nil) -> Nil
+    Error(e) -> logger.warn("Admin dashboard failed: " <> e)
+  }
+
+  logger.info("kira_caster started with mock adapter")
 
   event_bus.dispatch(
     bus,
@@ -65,16 +98,15 @@ fn start() -> Result(Nil, String) {
     plugin.Command(
       user: "charlie",
       name: "게임",
-      args: ["주사위"],
+      args: ["가위바위보", "바위"],
       role: permission.Viewer,
     ),
   )
   event_bus.dispatch(
     bus,
-    plugin.ChatMessage(user: "spammer", content: "spam spam", channel: "main"),
+    plugin.Command(user: "dave", name: "업타임", args: [], role: permission.Viewer),
   )
 
-  // Wait for async event processing to complete
   process.sleep(100)
   Ok(Nil)
 }

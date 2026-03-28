@@ -4,7 +4,7 @@ import kira_caster/plugin/minigame
 import kira_caster/plugin/plugin
 
 pub fn dice_game_returns_response_test() {
-  let p = minigame.new()
+  let p = minigame.new(50, -20, 30, -10)
   let events =
     plugin.handle(
       p,
@@ -25,7 +25,7 @@ pub fn dice_game_returns_response_test() {
 }
 
 pub fn help_message_test() {
-  let p = minigame.new()
+  let p = minigame.new(50, -20, 30, -10)
   let events =
     plugin.handle(
       p,
@@ -38,12 +38,15 @@ pub fn help_message_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "minigame", message: "사용법: !게임 주사위"),
+      plugin.PluginResponse(
+        plugin: "minigame",
+        message: "사용법: !게임 주사위 / !게임 가위바위보 <가위|바위|보>",
+      ),
     ]
 }
 
 pub fn unknown_game_shows_help_test() {
-  let p = minigame.new()
+  let p = minigame.new(50, -20, 30, -10)
   let events =
     plugin.handle(
       p,
@@ -56,12 +59,15 @@ pub fn unknown_game_shows_help_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "minigame", message: "사용법: !게임 주사위"),
+      plugin.PluginResponse(
+        plugin: "minigame",
+        message: "사용법: !게임 주사위 / !게임 가위바위보 <가위|바위|보>",
+      ),
     ]
 }
 
 pub fn unrelated_event_ignored_test() {
-  let p = minigame.new()
+  let p = minigame.new(50, -20, 30, -10)
   let events =
     plugin.handle(
       p,

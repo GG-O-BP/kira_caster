@@ -4,7 +4,7 @@ import kira_caster/plugin/plugin
 import kira_caster/storage/repository
 
 pub fn default_blocks_spam_test() {
-  let p = filter.default(repository.mock_repo([]))
+  let p = filter.default(repository.mock_repo([]), ["spam", "홍보", "광고"])
   let events =
     plugin.handle(
       p,
@@ -20,7 +20,7 @@ pub fn default_blocks_spam_test() {
 }
 
 pub fn default_blocks_korean_ad_test() {
-  let p = filter.default(repository.mock_repo([]))
+  let p = filter.default(repository.mock_repo([]), ["spam", "홍보", "광고"])
   let events =
     plugin.handle(
       p,
@@ -36,7 +36,7 @@ pub fn default_blocks_korean_ad_test() {
 }
 
 pub fn clean_message_passes_test() {
-  let p = filter.default(repository.mock_repo([]))
+  let p = filter.default(repository.mock_repo([]), ["spam", "홍보", "광고"])
   let events =
     plugin.handle(
       p,
@@ -46,7 +46,7 @@ pub fn clean_message_passes_test() {
 }
 
 pub fn case_insensitive_test() {
-  let p = filter.default(repository.mock_repo([]))
+  let p = filter.default(repository.mock_repo([]), ["spam", "홍보", "광고"])
   let events =
     plugin.handle(
       p,
@@ -109,7 +109,7 @@ pub fn db_words_checked_test() {
 }
 
 pub fn unrelated_event_ignored_test() {
-  let p = filter.default(repository.mock_repo([]))
+  let p = filter.default(repository.mock_repo([]), ["spam", "홍보", "광고"])
   let events =
     plugin.handle(
       p,
@@ -124,7 +124,7 @@ pub fn unrelated_event_ignored_test() {
 }
 
 pub fn moderator_add_word_test() {
-  let p = filter.default(repository.mock_repo([]))
+  let p = filter.default(repository.mock_repo([]), ["spam", "홍보", "광고"])
   let events =
     plugin.handle(
       p,
@@ -142,7 +142,7 @@ pub fn moderator_add_word_test() {
 }
 
 pub fn viewer_cannot_add_word_test() {
-  let p = filter.default(repository.mock_repo([]))
+  let p = filter.default(repository.mock_repo([]), ["spam", "홍보", "광고"])
   let events =
     plugin.handle(
       p,
@@ -160,7 +160,7 @@ pub fn viewer_cannot_add_word_test() {
 }
 
 pub fn moderator_remove_word_test() {
-  let p = filter.default(repository.mock_repo([]))
+  let p = filter.default(repository.mock_repo([]), ["spam", "홍보", "광고"])
   let events =
     plugin.handle(
       p,
@@ -181,7 +181,7 @@ pub fn moderator_remove_word_test() {
 }
 
 pub fn moderator_list_words_test() {
-  let p = filter.default(repository.mock_repo([]))
+  let p = filter.default(repository.mock_repo([]), ["spam", "홍보", "광고"])
   let events =
     plugin.handle(
       p,

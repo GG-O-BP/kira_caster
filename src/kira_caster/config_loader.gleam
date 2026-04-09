@@ -23,6 +23,10 @@ pub fn load() -> Config {
     admin_key: get_string("KIRA_ADMIN_KEY", d.admin_key),
     secret_key_base: get_string("KIRA_SECRET_KEY", d.secret_key_base),
     youtube_api_key: get_string("KIRA_YOUTUBE_API_KEY", d.youtube_api_key),
+    cime_client_id: get_string("CIME_CLIENT_ID", d.cime_client_id),
+    cime_client_secret: get_string("CIME_CLIENT_SECRET", d.cime_client_secret),
+    cime_redirect_uri: get_string("CIME_REDIRECT_URI", d.cime_redirect_uri),
+    cime_channel_id: get_string("CIME_CHANNEL_ID", d.cime_channel_id),
   )
 }
 

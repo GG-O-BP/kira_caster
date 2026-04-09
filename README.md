@@ -4,6 +4,8 @@
 
 채팅창에 명령어를 치면 키라캐스터가 대답해주는 거야! 출석체크도 하고, 포인트도 모으고, 미니게임도 하고, 투표도 하고, 룰렛도 돌리고, 퀴즈도 풀 수 있어!! 진짜 재밌겠지?!
 
+씨미 공식 API 연동으로 후원/구독 알림, 방송 제어, 유저 차단, 팔로워 추적까지 다 된다~!
+
 ## 이런 걸 할 수 있어!
 
 | 기능 | 설명 |
@@ -11,7 +13,7 @@
 | 출석체크 | `!출석` 치면 오늘 출석 완료~! 하루에 한 번만 가능해! |
 | 포인트 | 출석하면 포인트가 쌓여! `!포인트`로 확인, `!포인트 순위`로 랭킹! |
 | 미니게임 | 주사위 굴리기, 가위바위보 할 수 있어! 이기면 포인트 UP! |
-| 채팅 필터 | 나쁜 말은 자동으로 걸러줘! 착한 채팅만~ |
+| 채팅 필터 | 나쁜 말은 자동으로 걸러줘! 금칙어 위반 시 자동 차단까지! |
 | 커스텀 명령 | 매니저가 직접 명령어를 만들 수 있어! 템플릿 변수도 지원! |
 | 고급 명령 | 방송자가 Gleam 코드로 프로그래밍 가능한 명령어를 만들 수 있어! |
 | 업타임 | `!업타임`으로 봇이 얼마나 켜져있었는지 알 수 있어! |
@@ -20,7 +22,12 @@
 | 퀴즈 | 퀴즈 맞추면 포인트 GET! 누가 제일 빠를까~? |
 | 타이머 | `!타이머 30` 하면 30초 후에 알려줘! |
 | 신청곡 | YouTube 신청곡! 시청자가 URL로 신청하면 대기열에 추가되고 OBS에서 재생! |
-| 관리 대시보드 | 웹 페이지에서 유저, 금칙어, 명령어, 퀴즈, 투표, 신청곡 전부 관리! |
+| 후원 알림 | 채팅/영상 후원이 오면 알림! 익명 후원도 지원! `!후원순위`로 랭킹! |
+| 구독 알림 | 구독하면 환영 메시지! 티어, 연속 구독 개월 수 표시! |
+| 방송 제어 | 채팅으로 방송 제목, 태그, 카테고리, 슬로우모드, 공지 변경! |
+| 차단 관리 | `!차단`, `!차단해제`, `!차단목록`으로 유저 관리! |
+| 팔로워 추적 | 새 팔로워 자동 환영! `!팔로워`로 팔로워 수 확인! |
+| 관리 대시보드 | 웹에서 유저, 금칙어, 명령어, 퀴즈, 투표, 신청곡, 씨미 연동, 방송/채팅 설정, 차단, 채널 정보 전부 관리! |
 
 ## 시작하는 방법
 
@@ -30,7 +37,7 @@ Gleam이랑 Erlang/OTP가 설치되어 있어야 해!
 gleam deps download   # 필요한 것들 다운받기
 gleam build           # 빌드하기
 gleam run             # 실행하기!
-gleam test            # 테스트 돌리기 (249개나 있어!)
+gleam test            # 테스트 돌리기 (265개나 있어!)
 ```
 
 실행하면 이렇게 나와!
@@ -41,7 +48,7 @@ kira_caster running
 Listening on http://127.0.0.1:8080
 ```
 
-지금은 연습용(mock) 모드로 돌아가는 거야~ 씨미 API가 공개되면 진짜 방송이랑 연결할 수 있어!
+씨미 환경변수를 설정하면 자동으로 씨미 어댑터로 연결돼! 설정 안 하면 연습용(mock) 모드로 돌아가~
 
 ### 환경변수로 설정 바꾸기
 
@@ -60,6 +67,10 @@ Listening on http://127.0.0.1:8080
 | `KIRA_RPS_WIN_POINTS` | 가위바위보 승리 포인트 | `30` |
 | `KIRA_RPS_LOSS_POINTS` | 가위바위보 패배 포인트 | `-10` |
 | `KIRA_YOUTUBE_API_KEY` | YouTube Data API v3 키 (없으면 제목 대신 영상 ID 사용) | `` |
+| `CIME_CLIENT_ID` | 씨미 앱 Client ID (설정하면 씨미 연동 활성화!) | `` |
+| `CIME_CLIENT_SECRET` | 씨미 앱 Client Secret | `` |
+| `CIME_REDIRECT_URI` | OAuth 콜백 URL (예: `http://localhost:8080/oauth/callback`) | `` |
+| `CIME_CHANNEL_ID` | 봇이 연결할 채널 ID | `` |
 
 ## 명령어 목록
 
@@ -82,6 +93,10 @@ Listening on http://127.0.0.1:8080
 | `!노래 <YouTube URL>` | 신청곡 추가! 대기열에 넣어줘! |
 | `!노래 목록` | 대기열 보기 (상위 5곡) |
 | `!노래 현재` | 지금 재생 중인 곡 확인 |
+| `!후원순위` | 후원 랭킹 TOP 5 |
+| `!팔로워` | 현재 팔로워 수 확인 |
+| `!방송상태` | 방송 중 여부, 제목, 시작 시간 |
+| `!라이브` | 씨미 전체 라이브 목록 (상위 5개) |
 
 ### 매니저 전용 명령어
 
@@ -96,6 +111,16 @@ Listening on http://127.0.0.1:8080
 | `!노래 스킵` | 신청곡 건너뛰기 |
 | `!노래 삭제 <번호>` | 대기열에서 곡 삭제 |
 | `!노래 비우기` | 대기열 전체 초기화 |
+| `!노래 공지` | 현재 재생곡을 채팅 공지로 등록 |
+| `!제목 <새 제목>` | 방송 제목 변경 |
+| `!태그 <태그1> <태그2> ...` | 방송 태그 변경 (최대 6개) |
+| `!카테고리 <검색어>` | 카테고리 검색 후 변경 |
+| `!슬로우모드 <초>` / `!슬로우모드 끄기` | 채팅 슬로우모드 설정/해제 |
+| `!팔로워전용` / `!팔로워전용 끄기` | 팔로워 전용 채팅 토글 |
+| `!공지 <메시지>` | 채팅 상단 공지 등록 |
+| `!차단 <채널ID>` | 유저 차단 |
+| `!차단해제 <채널ID>` | 차단 해제 |
+| `!차단목록` | 차단된 유저 목록 |
 
 ### 방송자 전용 명령어
 
@@ -193,6 +218,36 @@ pub fn handle(user: String, args: List(String)) -> String {
 - 런타임에 컴파일 + BEAM 핫로드되니까 봇 재시작 없이 바로 적용!
 - 대시보드의 "재컴파일" 버튼으로 수정 후 즉시 반영!
 
+## 씨미(ci.me) 연동
+
+씨미 공식 OpenAPI를 통해 실제 방송 채팅과 연동할 수 있어! 환경변수 4개만 설정하면 자동으로 연결돼!
+
+### 설정 방법
+
+1. [씨미 개발자 포털](https://ci.me)에서 앱 등록
+2. 환경변수 설정:
+   ```sh
+   export CIME_CLIENT_ID="너의_앱_ID"
+   export CIME_CLIENT_SECRET="너의_앱_Secret"
+   export CIME_REDIRECT_URI="http://localhost:8080/oauth/callback"
+   export CIME_CHANNEL_ID="연결할_채널_ID"
+   ```
+3. `gleam run` 실행
+4. 대시보드 `http://localhost:8080` → "씨미 연동" 탭에서 "연결하기" 클릭
+5. 씨미에서 권한 승인하면 자동으로 연결!
+
+### 연동되는 기능들
+
+- **채팅 수신/송신**: WebSocket으로 실시간 채팅 연결 (PING 자동, 2시간/12시간 재연결)
+- **후원 이벤트**: 채팅/영상 후원 실시간 알림 (익명 후원 포함)
+- **구독 이벤트**: 구독 알림 (티어, 연속 개월 수)
+- **방송 제어**: 채팅에서 제목/태그/카테고리/슬로우모드/공지 변경
+- **유저 관리**: 차단/해제, 금칙어 위반 시 자동 차단
+- **팔로워 추적**: 새 팔로워 자동 환영 메시지
+- **역할 자동 매핑**: 채널 관리자 목록 → 권한 체계 자동 연동
+- **OAuth 토큰 관리**: 자동 갱신, 재시작 시 DB에서 복원
+- **대시보드**: 방송/채팅 설정, 차단 관리, 채널 정보, 스트림 키 조회
+
 ## 관리 대시보드 API
 
 봇이랑 같이 웹 서버가 켜져! REST API로 관리할 수 있어~
@@ -243,6 +298,18 @@ curl -X POST http://localhost:8080/songs/replay
 curl -X POST http://localhost:8080/songs/reorder -H "Content-Type: application/json" -d '{"id":2,"new_position":0}'
 ```
 
+```sh
+# 씨미 연동 (CIME_CLIENT_ID 설정 시 활성화)
+curl http://localhost:8080/oauth/status
+curl http://localhost:8080/cime/live-status
+curl http://localhost:8080/cime/live-setting
+curl http://localhost:8080/cime/chat-settings
+curl http://localhost:8080/cime/blocked-users
+curl http://localhost:8080/cime/channel-info
+curl http://localhost:8080/cime/stream-key
+curl "http://localhost:8080/cime/categories?keyword=게임"
+```
+
 `KIRA_ADMIN_KEY`를 설정하면 Bearer 토큰 인증이 필요해져!
 
 ```sh
@@ -259,11 +326,11 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] 설정 외부화 (환경변수로 전부 바꿀 수 있어!)
 - [x] OTP 로깅 (info/warn/error)
 
-### 플러그인 (11개!)
+### 플러그인 (17개!)
 - [x] 출석체크 (`!출석`) - 하루 1회 제한, 포인트 보상
 - [x] 포인트 시스템 (`!포인트`, `!포인트 순위`) - SQLite 저장
 - [x] 미니게임 (`!게임 주사위`, `!게임 가위바위보`) - 포인트 연동
-- [x] 채팅 필터 (`!필터 추가/삭제/목록`) - DB 영속화, 매니저 관리
+- [x] 채팅 필터 (`!필터 추가/삭제/목록`) - DB 영속화, 금칙어 위반 시 자동 차단
 - [x] 커스텀 명령 (`!명령 추가/삭제/목록`) - 템플릿 DSL 지원 (`{{user}}`, `{{if}}`)
 - [x] 고급 명령 (`!명령 고급추가/고급삭제`) - Gleam 런타임 컴파일 + BEAM 핫로드
 - [x] 업타임 (`!업타임`) - 봇 가동 시간 표시
@@ -271,31 +338,45 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] 룰렛 (`!룰렛`) - 확률 가중치, 포인트 보상
 - [x] 퀴즈 (`!퀴즈 시작`, `!퀴즈 <답>`) - 내장 퀴즈 15문제, 복수정답 지원, 최초 정답자 보상, DB 퀴즈 우선 출제
 - [x] 타이머 (`!타이머 <초>`) - 1~3600초, 커스텀 메시지 지원
-- [x] 신청곡 (`!노래 <URL>`) - YouTube 대기열, OBS 플레이어, 대시보드 관리, 포인트 연동
+- [x] 신청곡 (`!노래 <URL>`) - YouTube 대기열, OBS 플레이어, 대시보드 관리, 포인트 연동, 채팅 공지
+- [x] 후원 알림 - 채팅/영상 후원 알림, 익명 후원 지원, `!후원순위` 랭킹
+- [x] 구독 알림 - 구독 환영 메시지, 티어/개월 표시, 장기 구독자 특별 메시지
+- [x] 방송 제어 - `!제목/태그/카테고리/슬로우모드/팔로워전용/공지/방송상태/라이브`
+- [x] 차단 관리 - `!차단/차단해제/차단목록`, 필터 자동 차단 연동
+- [x] 팔로워 추적 - 새 팔로워 자동 환영, `!팔로워` 카운트
 
 ### 플랫폼 연결
 - [x] 어댑터 인터페이스 (어떤 플랫폼이든 연결 가능하게!)
 - [x] 연습용 Mock 어댑터
-- [ ] 씨미(ci.me) 어댑터 (API 공개 대기중~)
-- [x] WebSocket 상태 머신 (재연결 로직 포함)
+- [x] 씨미(ci.me) 어댑터 (OAuth + WebSocket + REST API 전체 연동!)
+- [x] WebSocket 상태 머신 (2시간 WS / 12시간 세션 자동 재연결)
+- [x] OAuth 2.0 토큰 관리 (자동 갱신, DB 복원)
+- [x] CimeApi 파사드 (24개 API 엔드포인트 래핑)
+- [x] 역할 자동 매핑 (streaming-roles → 권한 체계)
+- [x] 이모지 토큰 처리 (strip/placeholder/HTML 렌더링)
 
 ### 시스템
 - [x] 이벤트 버스 (OTP actor 기반, 쿨다운 내장)
 - [x] 플러그인 레지스트리 (팩토리 패턴)
 - [x] OTP Supervisor (자동 재시작!)
 - [x] 플러그인 자동 재구독 (이벤트 버스 재시작 시)
-- [x] SQLite 데이터 저장 (마이그레이션 포함)
-- [x] 관리 대시보드 (wisp + mist REST API)
+- [x] SQLite 데이터 저장 (마이그레이션 v6)
+- [x] 관리 대시보드 (wisp + mist REST API, 14개 탭!)
 - [x] Bearer 토큰 인증
 - [x] DB 마이그레이션 버전 관리
 - [x] Docker 지원
 - [x] 대시보드 HTML 프론트엔드
 - [x] 퀴즈 DB 관리 (대시보드)
-- [x] 플러그인 ON/OFF (대시보드)
+- [x] 플러그인 ON/OFF (대시보드, 17개 플러그인)
 - [x] 대시보드 CodeMirror 6 에디터 (Gleam 문법 하이라이팅)
 - [x] OBS 브라우저 소스 플레이어 (`/player`)
 - [x] YouTube Data API v3 연동
-- [x] 테스트 249개! 전부 통과!
+- [x] 대시보드 씨미 연동 관리 (OAuth 인증/해제)
+- [x] 대시보드 방송 설정 (제목/태그/카테고리 변경)
+- [x] 대시보드 채팅 설정 (슬로우모드/팔로워전용)
+- [x] 대시보드 차단 관리 (차단/해제 UI)
+- [x] 대시보드 채널 정보 (봇 계정, 방송 상태, 스트림 키)
+- [x] 테스트 265개! 전부 통과!
 
 ## 퀴즈 문제 목록
 
@@ -333,22 +414,22 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 
 ```
 src/
-├── kira_caster.gleam            # 여기서 시작해!
+├── kira_caster.gleam            # 여기서 시작해! (어댑터 자동 선택)
 ├── kira_caster/
 │   ├── core/                    # 순수한 로직들 (외부 의존 없음!)
-│   │   ├── config.gleam         # 설정 타입
+│   │   ├── config.gleam         # 설정 타입 (씨미 설정 포함)
 │   │   ├── command.gleam        # 명령어 파서
 │   │   ├── cooldown.gleam       # 쿨다운 관리
 │   │   ├── message.gleam        # 메시지 타입
 │   │   ├── permission.gleam     # 권한 체계
 │   │   ├── quiz_data.gleam      # 퀴즈 데이터
 │   │   └── template.gleam       # 템플릿 DSL 엔진
-│   ├── plugin/                  # 플러그인들! (11개!)
-│   │   ├── plugin.gleam         # 플러그인 인터페이스
+│   ├── plugin/                  # 플러그인들! (17개!)
+│   │   ├── plugin.gleam         # 플러그인 인터페이스 + 이벤트 타입
 │   │   ├── attendance.gleam     # 출석체크
 │   │   ├── points.gleam         # 포인트
 │   │   ├── minigame.gleam       # 미니게임
-│   │   ├── filter.gleam         # 채팅 필터
+│   │   ├── filter.gleam         # 채팅 필터 (자동 차단 연동)
 │   │   ├── custom_command.gleam # 커스텀 명령 (템플릿 + 고급)
 │   │   ├── advanced_command.gleam # 고급 명령 Gleam 컴파일러
 │   │   ├── uptime.gleam         # 업타임
@@ -356,18 +437,36 @@ src/
 │   │   ├── roulette.gleam       # 룰렛
 │   │   ├── quiz.gleam           # 퀴즈
 │   │   ├── timer.gleam          # 타이머
-│   │   └── song_request.gleam   # 신청곡 (YouTube)
+│   │   ├── song_request.gleam   # 신청곡 (YouTube + 채팅 공지)
+│   │   ├── donation_alert.gleam # 후원 알림 + 랭킹
+│   │   ├── subscription_alert.gleam # 구독 알림
+│   │   ├── broadcast_control.gleam  # 방송 제어 (제목/태그/카테고리/공지)
+│   │   ├── block.gleam          # 차단 관리 (자동 차단 포함)
+│   │   └── follower.gleam       # 팔로워 추적 + 환영
 │   ├── platform/                # 플랫폼 연결
 │   │   ├── adapter.gleam        # 어댑터 인터페이스
 │   │   ├── mock_adapter.gleam   # 연습용
-│   │   ├── cime_adapter.gleam   # 씨미 (준비중!)
-│   │   └── ws.gleam             # 웹소켓 상태머신
+│   │   ├── cime_adapter.gleam   # 씨미 어댑터 (OAuth + WS + REST)
+│   │   ├── ws.gleam             # 웹소켓 상태머신
+│   │   └── cime/                # 씨미 API 연동 모듈
+│   │       ├── api.gleam        # CimeApi 파사드 (24개 API)
+│   │       ├── http_client.gleam # HTTP 클라이언트
+│   │       ├── types.gleam      # API 응답 타입
+│   │       ├── decoders.gleam   # JSON 디코더
+│   │       ├── token_manager.gleam # OAuth 토큰 OTP actor
+│   │       ├── ws_manager.gleam # WebSocket 세션 OTP actor
+│   │       ├── emoji.gleam      # 이모지 토큰 처리
+│   │       └── role_resolver.gleam # 역할 매핑 캐시
 │   ├── storage/                 # 데이터 저장
 │   │   ├── repository.gleam     # 저장소 인터페이스
-│   │   └── sqlight_repo.gleam   # SQLite 구현
+│   │   ├── sqlight_repo.gleam   # SQLite 구현
+│   │   ├── migrations.gleam     # DB 마이그레이션 (v6)
+│   │   └── repos/               # 개별 테이블 구현
 │   ├── admin/                   # 관리 대시보드
-│   │   ├── router.gleam         # HTTP 라우터
-│   │   └── server.gleam         # 서버 시작
+│   │   ├── router.gleam         # HTTP 라우터 (RouterContext)
+│   │   ├── server.gleam         # 서버 시작
+│   │   ├── handlers/            # 11개 핸들러 (씨미 + OAuth 포함)
+│   │   └── views/               # 대시보드 + 플레이어 (14개 탭)
 │   ├── util/
 │   │   ├── time.gleam           # 시간 유틸
 │   │   └── youtube.gleam        # YouTube URL 파서 + API 클라이언트
@@ -376,7 +475,8 @@ src/
 │   ├── logger.gleam             # OTP 로거
 │   ├── plugin_registry.gleam    # 플러그인 레지스트리
 │   └── supervisor.gleam         # OTP 슈퍼바이저
-└── kira_caster_ffi.erl          # Erlang FFI
+├── kira_caster_ffi.erl          # Erlang FFI (시간/로깅/Gleam 컴파일)
+└── cime_ws_ffi.erl              # Erlang FFI (gun WebSocket 클라이언트)
 ```
 
 ## 라이선스

@@ -1,14 +1,17 @@
+import gleam/option
 import kira_caster/plugin/plugin
 
 pub fn noop_handler_returns_empty_test() {
-  let events = plugin.noop_handler(plugin.ChatMessage("alice", "hi", "main"))
+  let events =
+    plugin.noop_handler(plugin.ChatMessage("alice", "hi", "main", option.None))
   assert events == []
 }
 
 pub fn plugin_handle_delegates_test() {
   let p =
     plugin.new("test", fn(_event) { [plugin.PluginResponse("test", "ok")] })
-  let events = plugin.handle(p, plugin.ChatMessage("alice", "hi", "main"))
+  let events =
+    plugin.handle(p, plugin.ChatMessage("alice", "hi", "main", option.None))
   assert events == [plugin.PluginResponse("test", "ok")]
 }
 

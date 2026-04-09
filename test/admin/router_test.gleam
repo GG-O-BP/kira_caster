@@ -2,17 +2,29 @@ import gleam/http
 import gleam/json
 import gleam/option.{None}
 import kira_caster/admin/router
+import kira_caster/core/config
 import kira_caster/storage/repository
 import wisp/simulate
 
+fn make_ctx(admin_key: String) -> router.RouterContext {
+  router.RouterContext(
+    repo: repository.mock_repo([]),
+    start_time: 0,
+    admin_key:,
+    config: config.default(),
+    bus: None,
+    token_manager: None,
+    cime_api: None,
+    get_token: None,
+  )
+}
+
 fn handle(req) {
-  let repo = repository.mock_repo([])
-  router.handle_request(req, repo, 0, "", None)
+  router.handle_request(req, make_ctx(""))
 }
 
 fn handle_with_key(req) {
-  let repo = repository.mock_repo([])
-  router.handle_request(req, repo, 0, "secret123", None)
+  router.handle_request(req, make_ctx("secret123"))
 }
 
 pub fn get_status_test() {

@@ -82,7 +82,7 @@ pub fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
     False -> Ok(Nil)
   })
   use version5 <- result.try(get_schema_version(conn))
-  case version5 < 5 {
+  use _ <- result.try(case version5 < 5 {
     True -> {
       use _ <- result.try(exec(
         conn,
@@ -97,6 +97,33 @@ pub fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
       )",
       ))
       set_schema_version(conn, 5)
+    }
+    False -> Ok(Nil)
+  })
+  use version6 <- result.try(get_schema_version(conn))
+  case version6 < 6 {
+    True -> {
+      use _ <- result.try(exec(
+        conn,
+        "CREATE TABLE IF NOT EXISTS donation_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        channel_id TEXT,
+        user_nickname TEXT,
+        amount TEXT NOT NULL,
+        message TEXT,
+        donation_type TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      )",
+      ))
+      use _ <- result.try(exec(
+        conn,
+        "CREATE TABLE IF NOT EXISTS follower_cache (
+        channel_id TEXT PRIMARY KEY,
+        channel_name TEXT NOT NULL,
+        first_seen_at INTEGER NOT NULL
+      )",
+      ))
+      set_schema_version(conn, 6)
     }
     False -> Ok(Nil)
   }

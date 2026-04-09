@@ -1,3 +1,4 @@
+import gleam/option
 import kira_caster/core/permission
 import kira_caster/plugin/filter
 import kira_caster/plugin/plugin
@@ -8,7 +9,12 @@ pub fn default_blocks_spam_test() {
   let events =
     plugin.handle(
       p,
-      plugin.ChatMessage(user: "alice", content: "spam spam", channel: "main"),
+      plugin.ChatMessage(
+        user: "alice",
+        content: "spam spam",
+        channel: "main",
+        channel_id: option.None,
+      ),
     )
   assert events
     == [
@@ -24,7 +30,12 @@ pub fn default_blocks_korean_ad_test() {
   let events =
     plugin.handle(
       p,
-      plugin.ChatMessage(user: "bob", content: "무료 홍보합니다", channel: "main"),
+      plugin.ChatMessage(
+        user: "bob",
+        content: "무료 홍보합니다",
+        channel: "main",
+        channel_id: option.None,
+      ),
     )
   assert events
     == [
@@ -40,7 +51,12 @@ pub fn clean_message_passes_test() {
   let events =
     plugin.handle(
       p,
-      plugin.ChatMessage(user: "charlie", content: "안녕하세요!", channel: "main"),
+      plugin.ChatMessage(
+        user: "charlie",
+        content: "안녕하세요!",
+        channel: "main",
+        channel_id: option.None,
+      ),
     )
   assert events == []
 }
@@ -50,7 +66,12 @@ pub fn case_insensitive_test() {
   let events =
     plugin.handle(
       p,
-      plugin.ChatMessage(user: "alice", content: "SPAM HERE", channel: "main"),
+      plugin.ChatMessage(
+        user: "alice",
+        content: "SPAM HERE",
+        channel: "main",
+        channel_id: option.None,
+      ),
     )
   assert events
     == [
@@ -70,6 +91,7 @@ pub fn custom_banned_words_test() {
         user: "alice",
         content: "this is bad stuff",
         channel: "main",
+        channel_id: option.None,
       ),
     )
   assert events
@@ -86,7 +108,12 @@ pub fn custom_words_dont_match_default_test() {
   let events =
     plugin.handle(
       p,
-      plugin.ChatMessage(user: "alice", content: "spam here", channel: "main"),
+      plugin.ChatMessage(
+        user: "alice",
+        content: "spam here",
+        channel: "main",
+        channel_id: option.None,
+      ),
     )
   assert events == []
 }
@@ -97,7 +124,12 @@ pub fn db_words_checked_test() {
   let events =
     plugin.handle(
       p,
-      plugin.ChatMessage(user: "alice", content: "여기에 금칙어 있음", channel: "main"),
+      plugin.ChatMessage(
+        user: "alice",
+        content: "여기에 금칙어 있음",
+        channel: "main",
+        channel_id: option.None,
+      ),
     )
   assert events
     == [
@@ -185,7 +217,12 @@ pub fn multiple_banned_words_single_event_test() {
   let events =
     plugin.handle(
       p,
-      plugin.ChatMessage(user: "alice", content: "spam 그리고 광고", channel: "main"),
+      plugin.ChatMessage(
+        user: "alice",
+        content: "spam 그리고 광고",
+        channel: "main",
+        channel_id: option.None,
+      ),
     )
   assert events
     == [

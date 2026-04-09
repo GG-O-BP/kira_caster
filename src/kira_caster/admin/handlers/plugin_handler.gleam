@@ -9,7 +9,8 @@ import wisp.{type Request, type Response}
 pub fn handle_get_plugins(repo: Repository) -> Response {
   let all_plugins = [
     "attendance", "points", "minigame", "filter", "custom_command", "uptime",
-    "vote", "roulette", "quiz", "timer", "song_request",
+    "vote", "roulette", "quiz", "timer", "song_request", "donation_alert",
+    "subscription_alert", "broadcast_control", "block", "follower",
   ]
   let disabled = case repo.get_disabled_plugins() {
     Ok(d) -> d
@@ -78,6 +79,11 @@ fn plugin_description(name: String) -> String {
     "quiz" -> "퀴즈 (DB + 내장 문제)"
     "timer" -> "타이머 (비동기 알림)"
     "song_request" -> "신청곡 (YouTube 대기열)"
+    "donation_alert" -> "후원 알림 (채팅/영상 후원)"
+    "subscription_alert" -> "구독 알림"
+    "broadcast_control" -> "방송 제어 (제목/태그/카테고리/슬로우모드/공지)"
+    "block" -> "차단 관리 (유저 차단/해제)"
+    "follower" -> "팔로워 추적 (신규 환영)"
     _ -> ""
   }
 }

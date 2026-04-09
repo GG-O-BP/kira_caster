@@ -1,4 +1,5 @@
 import gleam/erlang/process
+import gleam/option
 import kira_caster/core/permission
 import kira_caster/event_bus
 import kira_caster/plugin/plugin.{Plugin}
@@ -65,7 +66,12 @@ pub fn unsubscribe_removes_plugin_test() {
 
   event_bus.dispatch(
     bus,
-    plugin.ChatMessage(user: "a", content: "hi", channel: "c"),
+    plugin.ChatMessage(
+      user: "a",
+      content: "hi",
+      channel: "c",
+      channel_id: option.None,
+    ),
   )
 
   let result = process.receive(test_subject, 100)
@@ -98,7 +104,12 @@ pub fn disabled_plugin_not_called_test() {
 
   event_bus.dispatch(
     bus,
-    plugin.ChatMessage(user: "a", content: "hi", channel: "c"),
+    plugin.ChatMessage(
+      user: "a",
+      content: "hi",
+      channel: "c",
+      channel_id: option.None,
+    ),
   )
 
   let result = process.receive(test_subject, 100)
@@ -115,7 +126,7 @@ pub fn re_enable_plugin_receives_events_test() {
   let test_plugin =
     Plugin(name: "toggle", handle_event: fn(event) {
       case event {
-        plugin.ChatMessage(_, _, _) -> [
+        plugin.ChatMessage(_, _, _, _) -> [
           plugin.PluginResponse(plugin: "toggle", message: "got it"),
         ]
         _ -> []
@@ -132,7 +143,12 @@ pub fn re_enable_plugin_receives_events_test() {
 
   event_bus.dispatch(
     bus,
-    plugin.ChatMessage(user: "a", content: "hi", channel: "c"),
+    plugin.ChatMessage(
+      user: "a",
+      content: "hi",
+      channel: "c",
+      channel_id: option.None,
+    ),
   )
 
   let disabled_result = process.receive(test_subject, 100)
@@ -143,7 +159,12 @@ pub fn re_enable_plugin_receives_events_test() {
 
   event_bus.dispatch(
     bus,
-    plugin.ChatMessage(user: "a", content: "hello", channel: "c"),
+    plugin.ChatMessage(
+      user: "a",
+      content: "hello",
+      channel: "c",
+      channel_id: option.None,
+    ),
   )
 
   let assert Ok(response) = process.receive(test_subject, 500)

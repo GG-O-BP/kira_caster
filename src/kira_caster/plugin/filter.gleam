@@ -1,4 +1,5 @@
 import gleam/list
+import gleam/option.{Some}
 import gleam/string
 import kira_caster/core/permission
 import kira_caster/plugin/plugin.{type Event, type Plugin, Plugin}
@@ -20,15 +21,24 @@ fn handle(
   event: Event,
 ) -> List(Event) {
   case event {
-    plugin.ChatMessage(user:, content:, channel: _) -> {
+    plugin.ChatMessage(user:, content:, channel: _, channel_id:) -> {
       let banned = get_all_banned(repo, default_words)
       case contains_banned_word(content, banned) {
-        True -> [
-          plugin.SystemEvent(
-            kind: "filter_blocked",
-            data: "Message from " <> user <> " blocked",
-          ),
-        ]
+        True -> {
+          let blocked_event =
+            plugin.SystemEvent(
+              kind: "filter_blocked",
+              data: "Message from " <> user <> " blocked",
+            )
+          // Auto-block if channel_id is available
+          case channel_id {
+            Some(cid) -> [
+              blocked_event,
+              plugin.SystemEvent(kind: "auto_block", data: cid),
+            ]
+            _ -> [blocked_event]
+          }
+        }
         False -> []
       }
     }

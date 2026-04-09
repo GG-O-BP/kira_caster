@@ -1,11 +1,31 @@
+import gleam/option.{type Option}
 import kira_caster/core/permission
 
 pub type Event {
-  ChatMessage(user: String, content: String, channel: String)
+  ChatMessage(
+    user: String,
+    content: String,
+    channel: String,
+    channel_id: Option(String),
+  )
   Command(user: String, name: String, args: List(String), role: permission.Role)
   PluginResponse(plugin: String, message: String)
   SystemEvent(kind: String, data: String)
   PointsChange(user: String, amount: Int, reason: String)
+  Donation(
+    user: String,
+    channel_id: Option(String),
+    amount: String,
+    message: String,
+    donation_type: String,
+  )
+  Subscription(
+    user: String,
+    channel_id: String,
+    month: Int,
+    tier: Int,
+    message: String,
+  )
 }
 
 pub type Plugin {

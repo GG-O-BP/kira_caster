@@ -1,3 +1,4 @@
+import kira_caster/core/permission
 import kira_caster/plugin/plugin.{type Event, type Plugin, Plugin}
 import kira_caster/plugin/song_request/formatter.{resp}
 import kira_caster/plugin/song_request/queue
@@ -22,13 +23,29 @@ fn handle(repo: Repository, api_key: String, event: Event) -> List(Event) {
       queue.handle_remove(repo, role, num)
     plugin.Command(user: _, name: "노래", args: ["비우기"], role:) ->
       queue.handle_clear(repo, role)
+    plugin.Command(user: _, name: "노래", args: ["공지"], role:) ->
+      handle_notice(repo, role)
     plugin.Command(user:, name: "노래", args: [url], role: _) ->
       validator.validate_and_add(repo, api_key, user, url)
     plugin.Command(user: _, name: "노래", args: _, role: _) -> [
       resp(
-        "사용법: !노래 <YouTube URL> / !노래 목록 / !노래 현재 / !노래 스킵 / !노래 삭제 <번호> / !노래 비우기",
+        "사용법: !노래 <YouTube URL> / !노래 목록 / !노래 현재 / !노래 스킵 / !노래 삭제 <번호> / !노래 비우기 / !노래 공지",
       ),
     ]
     _ -> []
+  }
+}
+
+fn handle_notice(repo: Repository, role: permission.Role) -> List(Event) {
+  case permission.check(role, permission.Moderator) {
+    Error(_) -> [resp("권한이 없습니다. (관리자 전용)")]
+    Ok(Nil) ->
+      case queue.handle_current_info(repo) {
+        Ok(title) -> [
+          plugin.SystemEvent(kind: "chat_notice", data: "현재 재생: " <> title),
+          resp("현재곡을 공지로 등록했습니다."),
+        ]
+        Error(_) -> [resp("현재 재생 중인 곡이 없습니다.")]
+      }
   }
 }

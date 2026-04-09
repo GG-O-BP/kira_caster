@@ -1,3 +1,4 @@
+import gleam/option
 import kira_caster/core/permission
 import kira_caster/plugin/plugin
 import kira_caster/plugin/points
@@ -145,7 +146,12 @@ pub fn unrelated_event_ignored_test() {
   let events =
     plugin.handle(
       p,
-      plugin.ChatMessage(user: "alice", content: "hello", channel: "main"),
+      plugin.ChatMessage(
+        user: "alice",
+        content: "hello",
+        channel: "main",
+        channel_id: option.None,
+      ),
     )
   assert events == []
 }

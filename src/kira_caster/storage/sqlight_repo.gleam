@@ -1,7 +1,9 @@
 import gleam/result
 import kira_caster/storage/migrations
 import kira_caster/storage/repos/command_repo
+import kira_caster/storage/repos/donation_repo
 import kira_caster/storage/repos/filter_repo
+import kira_caster/storage/repos/follower_repo
 import kira_caster/storage/repos/plugin_settings_repo
 import kira_caster/storage/repos/quiz_repo
 import kira_caster/storage/repos/settings_repo
@@ -78,6 +80,24 @@ pub fn new(db_path: String) -> Result(Repository, StorageError) {
       get_songs_by_user: fn(user) { song_repo.get_songs_by_user(conn, user) },
       has_song_with_video_id: fn(vid) {
         song_repo.has_song_with_video_id(conn, vid)
+      },
+      save_donation: fn(channel_id, nickname, amount, message, dtype, ts) {
+        donation_repo.save_donation(
+          conn,
+          channel_id,
+          nickname,
+          amount,
+          message,
+          dtype,
+          ts,
+        )
+      },
+      get_donation_ranking: fn(limit) {
+        donation_repo.get_donation_ranking(conn, limit)
+      },
+      get_known_followers: fn() { follower_repo.get_known_followers(conn) },
+      add_known_follower: fn(channel_id, name, ts) {
+        follower_repo.add_known_follower(conn, channel_id, name, ts)
       },
     ),
   )

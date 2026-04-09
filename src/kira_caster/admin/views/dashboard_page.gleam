@@ -100,6 +100,11 @@ fn dashboard_body() -> String {
     <div class=\"tab\" onclick=\"showTab('plugins',this)\">플러그인</div>
     <div class=\"tab\" onclick=\"showTab('settings',this)\">설정</div>
     <div class=\"tab\" onclick=\"showTab('songs',this)\">신청곡</div>
+    <div class=\"tab\" onclick=\"showTab('cime-auth',this)\">씨미 연동</div>
+    <div class=\"tab\" onclick=\"showTab('broadcast',this)\">방송 설정</div>
+    <div class=\"tab\" onclick=\"showTab('chat-settings',this)\">채팅 설정</div>
+    <div class=\"tab\" onclick=\"showTab('block-manage',this)\">차단 관리</div>
+    <div class=\"tab\" onclick=\"showTab('channel-info',this)\">채널 정보</div>
   </div>
   <div id=\"status\" class=\"panel active\"><div id=\"status-info\">로딩중...</div></div>
   <div id=\"users\" class=\"panel\"><div class=\"form-row\"><input id=\"user-search\" placeholder=\"유저 검색...\" oninput=\"filterUsers()\"><button class=\"success\" onclick=\"exportUsers()\">CSV 내보내기</button></div><table id=\"users-table\"><thead><tr><th>유저</th><th>포인트</th><th>출석</th><th>최근출석</th></tr></thead><tbody></tbody></table></div>
@@ -132,6 +137,41 @@ fn dashboard_body() -> String {
       <h3 style=\"margin-bottom:8px\">신청곡 설정</h3>
       <div id=\"song-settings-form\"></div>
     </div>
+  </div>
+  <div id=\"cime-auth\" class=\"panel\">
+    <h3 style=\"margin-bottom:12px\">씨미 OAuth 연동</h3>
+    <div id=\"cime-auth-status\" style=\"padding:12px;background:rgba(253,113,155,.08);border-radius:8px;margin-bottom:12px\">로딩중...</div>
+    <div class=\"form-row\">
+      <button class=\"success\" onclick=\"cimeConnect()\">연결하기</button>
+      <button class=\"danger\" onclick=\"cimeDisconnect()\">연결 해제</button>
+    </div>
+  </div>
+  <div id=\"broadcast\" class=\"panel\">
+    <h3 style=\"margin-bottom:12px\">방송 제목</h3>
+    <div class=\"form-row\" style=\"margin-top:0\"><input id=\"bc-title\" placeholder=\"방송 제목\" style=\"flex:1\"><button onclick=\"saveBcTitle()\">변경</button></div>
+    <h3 style=\"margin-top:16px;margin-bottom:12px\">태그</h3>
+    <div id=\"bc-tags\" style=\"margin-bottom:8px\"></div>
+    <div class=\"form-row\" style=\"margin-top:0\"><input id=\"bc-new-tag\" placeholder=\"새 태그\"><button onclick=\"addBcTag()\">추가</button></div>
+    <h3 style=\"margin-top:16px;margin-bottom:12px\">카테고리</h3>
+    <div id=\"bc-current-cat\" style=\"margin-bottom:8px;font-size:0.9em;color:var(--color-text)\"></div>
+    <div class=\"form-row\" style=\"margin-top:0;position:relative\"><input id=\"bc-cat-search\" placeholder=\"카테고리 검색\" oninput=\"searchCategories()\" style=\"flex:1\"><div id=\"bc-cat-dropdown\" style=\"display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--color-border);border-radius:var(--radius-input);max-height:200px;overflow-y:auto;z-index:20;margin-top:4px\"></div></div>
+  </div>
+  <div id=\"chat-settings\" class=\"panel\">
+    <h3 style=\"margin-bottom:12px\">채팅 설정</h3>
+    <div id=\"chat-settings-form\" style=\"padding:12px;background:rgba(253,113,155,.08);border-radius:8px\">로딩중...</div>
+  </div>
+  <div id=\"block-manage\" class=\"panel\">
+    <h3 style=\"margin-bottom:12px\">차단 관리</h3>
+    <div class=\"form-row\" style=\"margin-top:0;margin-bottom:12px\"><input id=\"block-target\" placeholder=\"차단할 채널 ID\"><button class=\"danger\" onclick=\"addBlock()\">차단</button></div>
+    <table id=\"block-table\"><thead><tr><th>채널 ID</th><th>닉네임</th><th>차단일</th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+  <div id=\"channel-info\" class=\"panel\">
+    <h3 style=\"margin-bottom:12px\">봇 계정 정보</h3>
+    <div id=\"ch-bot-info\" style=\"padding:12px;background:rgba(253,113,155,.08);border-radius:8px;margin-bottom:16px\">로딩중...</div>
+    <h3 style=\"margin-bottom:12px\">방송 상태</h3>
+    <div id=\"ch-live-status\" style=\"padding:12px;background:rgba(253,113,155,.08);border-radius:8px;margin-bottom:16px\">로딩중...</div>
+    <h3 style=\"margin-bottom:12px\">스트림 키</h3>
+    <div id=\"ch-stream-key\" style=\"padding:12px;background:rgba(253,113,155,.08);border-radius:8px\">로딩중...</div>
   </div>
   <div id=\"toast-container\" class=\"toast-container\"></div>
   <script>" <> dashboard_js() <> "</script>
@@ -214,7 +254,7 @@ fn dashboard_js() -> String {
 
     function startAutoRefresh() {
       if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-      var interval = (activeTab === 'status' || activeTab === 'votes' || activeTab === 'songs') ? 5000 : 15000;
+      var interval = (activeTab === 'status' || activeTab === 'votes' || activeTab === 'songs' || activeTab === 'channel-info') ? 5000 : 15000;
       autoRefreshInterval = setInterval(function() { load(activeTab); }, interval);
     }
 
@@ -316,6 +356,60 @@ fn dashboard_js() -> String {
             + '<button class=\\\"danger\\\" onclick=\\\"songDel(' + s.id + ')\\\">삭제</button></td></tr>';
         }).join('') : empty(5);
         loadSongSettings();
+      } else if (tab === 'cime-auth') {
+        var d = await api('GET', '/oauth/status');
+        var statusColor = d.authenticated ? 'var(--color-success)' : 'var(--color-error)';
+        var statusText = d.authenticated ? '연결됨' : '연결 안 됨';
+        var html = '<div style=\\\"display:flex;align-items:center;gap:8px;margin-bottom:8px\\\"><span style=\\\"display:inline-block;width:10px;height:10px;border-radius:50%;background:' + statusColor + '\\\"></span><strong style=\\\"color:' + statusColor + '\\\">' + statusText + '</strong></div>';
+        if (d.authenticated && d.expires_at) {
+          html += '<div style=\\\"font-size:0.85em;color:var(--color-text)\\\">토큰 만료: ' + new Date(d.expires_at).toLocaleString('ko-KR') + '</div>';
+        }
+        if (d.authenticated && d.channel_name) {
+          html += '<div style=\\\"font-size:0.85em;color:var(--color-text);margin-top:4px\\\">채널: ' + esc(d.channel_name) + '</div>';
+        }
+        document.getElementById('cime-auth-status').innerHTML = html;
+      } else if (tab === 'broadcast') {
+        var d = await api('GET', '/cime/live-setting');
+        document.getElementById('bc-title').value = d.defaultLiveTitle || '';
+        var tagsHtml = (d.tags || []).map(function(t) {
+          return '<span class=\\\"tag\\\" style=\\\"cursor:pointer\\\" onclick=\\\"removeBcTag(\\'' + esc(t) + '\\')\\\">' + esc(t) + ' x</span>';
+        }).join(' ');
+        document.getElementById('bc-tags').innerHTML = tagsHtml || '<span class=\\\"empty\\\" style=\\\"padding:4px\\\">태그 없음</span>';
+        document.getElementById('bc-current-cat').innerHTML = d.categoryName ? '현재: <strong>' + esc(d.categoryName) + '</strong>' : '카테고리 미설정';
+        window._bcCurrentTags = d.tags || [];
+      } else if (tab === 'chat-settings') {
+        var d = await api('GET', '/cime/chat-settings');
+        var slowChecked = d.slowMode ? ' checked' : '';
+        var followerChecked = d.allowedGroup === 'FOLLOWER' ? ' checked' : '';
+        var html = '<div class=\\\"form-row\\\" style=\\\"margin-top:0\\\"><label style=\\\"min-width:160px;font-weight:600\\\">슬로우 모드</label><input type=\\\"checkbox\\\" id=\\\"cs-slow\\\"' + slowChecked + ' style=\\\"width:auto;min-height:auto\\\"><input id=\\\"cs-slow-sec\\\" type=\\\"number\\\" value=\\\"' + (d.slowModeSeconds || 5) + '\\\" style=\\\"width:80px\\\" placeholder=\\\"초\\\"><span style=\\\"font-size:0.85em\\\">초</span></div>';
+        html += '<div class=\\\"form-row\\\"><label style=\\\"min-width:160px;font-weight:600\\\">팔로워 전용</label><input type=\\\"checkbox\\\" id=\\\"cs-follower\\\"' + followerChecked + ' style=\\\"width:auto;min-height:auto\\\"></div>';
+        html += '<div class=\\\"form-row\\\" style=\\\"margin-top:12px\\\"><button onclick=\\\"saveChatSettings()\\\">저장</button></div>';
+        document.getElementById('chat-settings-form').innerHTML = html;
+      } else if (tab === 'block-manage') {
+        var d = await api('GET', '/cime/blocked-users');
+        document.querySelector('#block-table tbody').innerHTML = d.length ? d.map(function(b) {
+          var date = b.blockedAt ? new Date(b.blockedAt).toLocaleDateString('ko-KR') : '-';
+          return '<tr><td>' + esc(b.channelId || '') + '</td><td>' + esc(b.nickname || '') + '</td><td>' + date + '</td><td><button class=\\\"danger\\\" onclick=\\\"removeBlock(\\'' + esc(b.channelId) + '\\')\\\">해제</button></td></tr>';
+        }).join('') : empty(4);
+      } else if (tab === 'channel-info') {
+        var ch = await api('GET', '/cime/channel-info');
+        var chHtml = '<div style=\\\"display:flex;align-items:center;gap:12px\\\">';
+        if (ch.imageUrl) chHtml += '<img src=\\\"' + esc(ch.imageUrl) + '\\\" style=\\\"width:48px;height:48px;border-radius:50%;border:2px solid var(--color-primary)\\\">';
+        chHtml += '<div><div style=\\\"font-weight:700\\\">' + esc(ch.name || '-') + '</div><div style=\\\"font-size:0.85em;color:var(--color-text)\\\">' + esc(ch.handle || '') + '</div></div></div>';
+        document.getElementById('ch-bot-info').innerHTML = chHtml;
+        var live = await api('GET', '/cime/live-status');
+        var liveColor = live.isLive ? 'var(--color-success)' : 'var(--color-error)';
+        var liveText = live.isLive ? '방송 중' : '오프라인';
+        var liveHtml = '<div style=\\\"display:flex;align-items:center;gap:8px\\\"><span style=\\\"display:inline-block;width:10px;height:10px;border-radius:50%;background:' + liveColor + '\\\"></span><strong style=\\\"color:' + liveColor + '\\\">' + liveText + '</strong></div>';
+        if (live.isLive && live.title) liveHtml += '<div style=\\\"font-size:0.85em;margin-top:4px\\\">' + esc(live.title) + '</div>';
+        if (live.isLive && live.viewerCount !== undefined) liveHtml += '<div style=\\\"font-size:0.85em;margin-top:2px\\\">시청자: ' + live.viewerCount + '명</div>';
+        document.getElementById('ch-live-status').innerHTML = liveHtml;
+        try {
+          var sk = await api('GET', '/cime/stream-key');
+          document.getElementById('ch-stream-key').innerHTML = '<div style=\\\"display:flex;align-items:center;gap:8px\\\"><code id=\\\"sk-value\\\" style=\\\"letter-spacing:2px\\\">********</code><button onclick=\\\"toggleStreamKey()\\\">표시</button></div>';
+          window._streamKey = sk.streamKey || '';
+          window._streamKeyVisible = false;
+        } catch(e) { document.getElementById('ch-stream-key').innerHTML = '<span class=\\\"empty\\\">스트림 키를 가져올 수 없습니다</span>'; }
       }
       } catch(e) { }
     }
@@ -537,6 +631,92 @@ fn dashboard_js() -> String {
       var el = document.getElementById('ss-' + key);
       var val = el.tagName === 'SELECT' ? el.value : el.value;
       try { await api('POST', '/settings', {key: key, value: val}); toast('설정 저장됨', 'success'); } catch(e) { toast('저장 실패', 'error'); }
+    }
+
+    // --- Cime Auth functions ---
+    function cimeConnect() {
+      window.open(base + '/oauth/authorize', '_blank');
+    }
+    async function cimeDisconnect() {
+      if (!confirm('씨미 연동을 해제할까요?')) return;
+      try { await api('POST', '/oauth/disconnect'); toast('연동이 해제되었습니다.', 'success'); load('cime-auth'); } catch(e) { toast('연동 해제에 실패했습니다.', 'error'); }
+    }
+
+    // --- Broadcast setting functions ---
+    async function saveBcTitle() {
+      var title = document.getElementById('bc-title').value.trim();
+      if (!title) { toast('방송 제목을 입력해주세요.', 'error'); return; }
+      try { await api('PATCH', '/cime/live-setting', {defaultLiveTitle: title}); toast('방송 제목이 변경되었습니다.', 'success'); } catch(e) { toast('변경에 실패했습니다.', 'error'); }
+    }
+    async function addBcTag() {
+      var tag = document.getElementById('bc-new-tag').value.trim();
+      if (!tag) { toast('태그를 입력해주세요.', 'error'); return; }
+      var tags = (window._bcCurrentTags || []).slice();
+      if (tags.indexOf(tag) !== -1) { toast('이미 존재하는 태그입니다.', 'error'); return; }
+      tags.push(tag);
+      try { await api('PATCH', '/cime/live-setting', {tags: tags}); document.getElementById('bc-new-tag').value = ''; toast('태그가 추가되었습니다.', 'success'); load('broadcast'); } catch(e) { toast('태그 추가에 실패했습니다.', 'error'); }
+    }
+    async function removeBcTag(tag) {
+      var tags = (window._bcCurrentTags || []).filter(function(t) { return t !== tag; });
+      try { await api('PATCH', '/cime/live-setting', {tags: tags}); toast('태그가 삭제되었습니다.', 'success'); load('broadcast'); } catch(e) { toast('태그 삭제에 실패했습니다.', 'error'); }
+    }
+    var _catSearchTimer = null;
+    function searchCategories() {
+      clearTimeout(_catSearchTimer);
+      var kw = document.getElementById('bc-cat-search').value.trim();
+      var dd = document.getElementById('bc-cat-dropdown');
+      if (!kw) { dd.style.display = 'none'; return; }
+      _catSearchTimer = setTimeout(async function() {
+        try {
+          var d = await api('GET', '/cime/categories?keyword=' + encodeURIComponent(kw));
+          if (!d.length) { dd.innerHTML = '<div style=\\\"padding:8px;color:var(--color-text);font-size:0.85em\\\">결과 없음</div>'; dd.style.display = 'block'; return; }
+          dd.innerHTML = d.map(function(c) {
+            return '<div style=\\\"padding:8px 12px;cursor:pointer;font-size:0.9em;border-bottom:1px solid var(--color-border)\\\" onmouseover=\\\"this.style.background=\\'.rgba(253,113,155,.08)\\'\\\" onmouseout=\\\"this.style.background=\\'\\' \\\" onclick=\\\"selectCategory(\\'' + esc(c.id) + '\\',\\'' + esc(c.name) + '\\')\\\">' + esc(c.name) + '</div>';
+          }).join('');
+          dd.style.display = 'block';
+        } catch(e) { dd.style.display = 'none'; }
+      }, 300);
+    }
+    async function selectCategory(id, name) {
+      try {
+        await api('PATCH', '/cime/live-setting', {categoryId: id});
+        document.getElementById('bc-cat-dropdown').style.display = 'none';
+        document.getElementById('bc-cat-search').value = '';
+        toast('카테고리가 변경되었습니다: ' + name, 'success');
+        load('broadcast');
+      } catch(e) { toast('카테고리 변경에 실패했습니다.', 'error'); }
+    }
+
+    // --- Chat settings functions ---
+    async function saveChatSettings() {
+      var slow = document.getElementById('cs-slow').checked;
+      var sec = parseInt(document.getElementById('cs-slow-sec').value) || 5;
+      var follower = document.getElementById('cs-follower').checked;
+      var body = {slowMode: slow, slowModeSeconds: sec, allowedGroup: follower ? 'FOLLOWER' : 'ALL'};
+      try { await api('PUT', '/cime/chat-settings', body); toast('채팅 설정이 저장되었습니다.', 'success'); load('chat-settings'); } catch(e) { toast('채팅 설정 저장에 실패했습니다.', 'error'); }
+    }
+
+    // --- Block management functions ---
+    async function addBlock() {
+      var target = document.getElementById('block-target').value.trim();
+      if (!target) { toast('차단할 채널 ID를 입력해주세요.', 'error'); return; }
+      try { await api('POST', '/cime/block', {targetChannelId: target}); document.getElementById('block-target').value = ''; toast('차단되었습니다.', 'success'); load('block-manage'); } catch(e) { toast('차단에 실패했습니다.', 'error'); }
+    }
+    async function removeBlock(channelId) {
+      if (!confirm('차단을 해제할까요?')) return;
+      try { await api('DELETE', '/cime/block', {targetChannelId: channelId}); toast('차단이 해제되었습니다.', 'success'); load('block-manage'); } catch(e) { toast('차단 해제에 실패했습니다.', 'error'); }
+    }
+
+    // --- Channel info functions ---
+    function toggleStreamKey() {
+      var el = document.getElementById('sk-value');
+      if (window._streamKeyVisible) {
+        el.textContent = '********';
+        window._streamKeyVisible = false;
+      } else {
+        el.textContent = window._streamKey || '(없음)';
+        window._streamKeyVisible = true;
+      }
     }
 
     load('status');

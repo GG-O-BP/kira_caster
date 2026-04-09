@@ -67,6 +67,12 @@ pub type Repository {
     reorder_song: fn(Int, Int) -> Result(Nil, StorageError),
     get_songs_by_user: fn(String) -> Result(List(SongData), StorageError),
     has_song_with_video_id: fn(String) -> Result(Bool, StorageError),
+    save_donation: fn(String, String, String, String, String, Int) ->
+      Result(Nil, StorageError),
+    get_donation_ranking: fn(Int) ->
+      Result(List(#(String, String)), StorageError),
+    get_known_followers: fn() -> Result(List(String), StorageError),
+    add_known_follower: fn(String, String, Int) -> Result(Nil, StorageError),
   )
 }
 
@@ -121,6 +127,10 @@ pub fn mock_repo(users: List(UserData)) -> Repository {
     reorder_song: fn(_id, _pos) { Ok(Nil) },
     get_songs_by_user: fn(_user) { Ok([]) },
     has_song_with_video_id: fn(_vid) { Ok(False) },
+    save_donation: fn(_, _, _, _, _, _) { Ok(Nil) },
+    get_donation_ranking: fn(_) { Ok([]) },
+    get_known_followers: fn() { Ok([]) },
+    add_known_follower: fn(_, _, _) { Ok(Nil) },
   )
 }
 

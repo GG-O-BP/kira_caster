@@ -128,6 +128,22 @@ pub fn handle_clear(repo: Repository, role: permission.Role) -> List(Event) {
   }
 }
 
+pub fn handle_current_info(repo: Repository) -> Result(String, Nil) {
+  let current_id = settings.get_setting_str(repo, "song_current_id", "")
+  case current_id {
+    "" -> Error(Nil)
+    _ ->
+      case repo.get_song_queue() {
+        Ok(songs) ->
+          case list.find(songs, fn(s) { int.to_string(s.id) == current_id }) {
+            Ok(s) -> Ok(s.title)
+            Error(_) -> Error(Nil)
+          }
+        Error(_) -> Error(Nil)
+      }
+  }
+}
+
 // --- navigation helpers ---
 
 type Direction {

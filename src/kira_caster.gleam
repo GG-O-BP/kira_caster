@@ -190,6 +190,7 @@ fn start() -> Result(Nil, String) {
   }
 
   process.sleep(100)
+  process.sleep_forever()
   Ok(Nil)
 }
 

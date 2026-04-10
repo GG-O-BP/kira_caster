@@ -361,14 +361,13 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] OTP Supervisor (자동 재시작!)
 - [x] 플러그인 자동 재구독 (이벤트 버스 재시작 시)
 - [x] SQLite 데이터 저장 (마이그레이션 v6)
-- [x] 관리 대시보드 (wisp + mist REST API, 14개 탭!)
+- [x] 관리 대시보드 (Lustre 서버 컴포넌트, WebSocket 실시간 업데이트, 14개 탭!)
 - [x] Bearer 토큰 인증
 - [x] DB 마이그레이션 버전 관리
 - [x] Docker 지원
-- [x] 대시보드 HTML 프론트엔드
+- [x] 대시보드 서버 사이드 렌더링 (Model-View-Update, DOM 패치 전송)
 - [x] 퀴즈 DB 관리 (대시보드)
 - [x] 플러그인 ON/OFF (대시보드, 17개 플러그인)
-- [x] 대시보드 CodeMirror 6 에디터 (Gleam 문법 하이라이팅)
 - [x] OBS 브라우저 소스 플레이어 (`/player`)
 - [x] YouTube Data API v3 연동
 - [x] 대시보드 씨미 연동 관리 (OAuth 인증/해제)
@@ -407,7 +406,8 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - **언어**: [Gleam](https://gleam.run) (반짝반짝 예쁜 언어!)
 - **런타임**: BEAM/OTP (엄청 안정적이야!)
 - **데이터베이스**: SQLite via sqlight (가볍고 빨라!)
-- **웹 서버**: wisp + mist (관리 대시보드용!)
+- **웹 서버**: wisp + mist (HTTP + WebSocket!)
+- **대시보드**: [Lustre](https://hexdocs.pm/lustre/) v5 서버 컴포넌트 (TEA 아키텍처, WebSocket 실시간 업데이트!)
 - **대상 플랫폼**: [씨미(ci.me)](https://ci.me)
 
 ## 프로젝트 구조
@@ -464,9 +464,15 @@ src/
 │   │   └── repos/               # 개별 테이블 구현
 │   ├── admin/                   # 관리 대시보드
 │   │   ├── router.gleam         # HTTP 라우터 (RouterContext)
-│   │   ├── server.gleam         # 서버 시작
-│   │   ├── handlers/            # 11개 핸들러 (씨미 + OAuth 포함)
-│   │   └── views/               # 대시보드 + 플레이어 (14개 탭)
+│   │   ├── server.gleam         # HTTP + WebSocket 서버
+│   │   ├── handlers/            # 11개 REST 핸들러 (씨미 + OAuth 포함)
+│   │   ├── dashboard/           # Lustre 서버 컴포넌트 (MVU)
+│   │   │   ├── app.gleam        # 앱 생성 + init
+│   │   │   ├── model.gleam      # Model, Msg, Tab 타입
+│   │   │   ├── update.gleam     # 상태 전이
+│   │   │   ├── view.gleam       # 14개 탭 UI 렌더링
+│   │   │   └── effects.gleam    # 데이터 로딩 + CRUD 이펙트
+│   │   └── views/               # 셸 페이지 + 플레이어 (SSR)
 │   ├── util/
 │   │   ├── time.gleam           # 시간 유틸
 │   │   └── youtube.gleam        # YouTube URL 파서 + API 클라이언트

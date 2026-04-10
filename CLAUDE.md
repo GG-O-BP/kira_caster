@@ -1,6 +1,6 @@
 # kira_caster
 
-씨미(ci.me) 스트리밍 챗봇. Gleam 1.15.2 + BEAM/OTP 28, SQLite, wisp+mist 대시보드.
+씨미(ci.me) 스트리밍 챗봇. Gleam 1.15.2 + BEAM/OTP 28, SQLite, Lustre 서버 컴포넌트 대시보드.
 
 ## Commands
 
@@ -15,13 +15,15 @@ gleam run                         # 실행
 ## Structure
 
 ```
-core/           # 순수 함수 (외부 의존 금지)
-plugin/         # 플러그인 17개 (이벤트 핸들러, 서브모듈 분리)
-platform/       # adapter.gleam(인터페이스) + cime_adapter + mock_adapter + ws.gleam(상태머신)
-platform/cime/  # 씨미 API 연동 (http_client, types, decoders, api, token_manager, ws_manager, emoji, role_resolver)
-storage/        # repository.gleam(인터페이스) + sqlight_repo.gleam(facade) + repos/
-admin/          # router.gleam(디스패치) + handlers/11개 + views/(dashboard, player)
-util/           # time, youtube(facade + url_parser/api/duration)
+core/               # 순수 함수 (외부 의존 금지)
+plugin/             # 플러그인 17개 (이벤트 핸들러, 서브모듈 분리)
+platform/           # adapter.gleam(인터페이스) + cime_adapter + mock_adapter + ws.gleam(상태머신)
+platform/cime/      # 씨미 API 연동 (http_client, types, decoders, api, token_manager, ws_manager, emoji, role_resolver)
+storage/            # repository.gleam(인터페이스) + sqlight_repo.gleam(facade) + repos/
+admin/              # router.gleam(디스패치) + server.gleam(HTTP+WebSocket) + handlers/11개
+admin/dashboard/    # Lustre 서버 컴포넌트 (model, update, view, effects, app)
+admin/views/        # layout, components, dashboard_page(셸), player_page(SSR)
+util/               # time, youtube(facade + url_parser/api/duration)
 ```
 
 ## Rules
@@ -35,7 +37,7 @@ util/           # time, youtube(facade + url_parser/api/duration)
 - SQL 쿼리는 storage/repos/ 안에서만 작성
 - 플러그인 간 통신은 반드시 이벤트 버스 경유 (직접 함수 호출 금지)
 - adapter 인터페이스는 플랫폼 중립 유지
-- 비동기 작업은 gleam_otp actor 사용 (process.sleep/무한 루프 금지)
+- 비동기 작업은 gleam_otp actor 사용 (process.sleep은 Effect 내 process.spawn에서만 허용)
 - 대시보드 스타일링 시 [references/COLOR_PALETTE.md](./references/COLOR_PALETTE.md) 팔레트 준수
 - DB 마이그레이션은 storage/migrations.gleam에서 schema_version 순차 관리
 
@@ -46,6 +48,7 @@ util/           # time, youtube(facade + url_parser/api/duration)
 - **Repository 패턴**: repository.gleam이 함수 필드 레코드로 인터페이스 정의, sqlight_repo.gleam이 facade로 repos/ 위임
 - **설정**: core/config.gleam 타입 정의 → config_loader.gleam 환경변수(KIRA_*) 오버라이드
 - **WebSocket 상태**: platform/ws.gleam이 Disconnected→Connected→Reconnecting 상태 머신 관리
+- **대시보드 서버 컴포넌트**: Lustre v5 TEA(Model-View-Update) 아키텍처. admin/dashboard/ 모듈이 BEAM 위에서 서버 컴포넌트로 실행되며 WebSocket으로 DOM 패치를 전송. admin/server.gleam이 mist WebSocket ↔ Lustre 런타임 브릿지. dashboard_page.gleam은 `<lustre-server-component>` 셸만 제공. 플레이어 페이지는 기존 SSR 유지
 
 ### 씨미 API 연동 가이드
 

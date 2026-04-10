@@ -1,15 +1,56 @@
+import kira_caster/admin/views/layout
+import lustre/attribute.{attribute as attr}
+import lustre/element.{type Element, fragment, text}
+import lustre/element/html
 import wisp.{type Response}
 
 pub fn handle_player_page() -> Response {
-  let html = "<!DOCTYPE html>
-<html lang=\"ko\">
-<head>
-  <meta charset=\"UTF-8\">
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-  <title>kira_caster Player</title>
-" <> "<style>" <> player_css() <> "</style>
-</head>" <> player_body() <> "</html>"
-  wisp.html_response(html, 200)
+  layout.page(
+    title: "kira_caster Player",
+    head: "<style>" <> player_css() <> "</style>",
+    body: player_body(),
+    tail: "<script src=\"https://www.youtube.com/iframe_api\"></script>"
+      <> "<script>"
+      <> player_js()
+      <> "</script>",
+  )
+}
+
+fn player_body() -> Element(msg) {
+  fragment([
+    html.div([attribute.id("player-wrap")], [
+      html.div([attribute.id("yt-player")], []),
+      html.div([attribute.class("idle-msg"), attribute.id("idle")], [
+        text("대기 중..."),
+      ]),
+    ]),
+    html.div(
+      [
+        attribute.class("now-bar"),
+        attribute.id("now-bar"),
+        attr("style", "display:none"),
+      ],
+      [
+        element.element(
+          "svg",
+          [
+            attribute.class("icon"),
+            attr("viewBox", "0 0 24 24"),
+            attr("fill", "#fff"),
+          ],
+          [
+            element.element(
+              "path",
+              [attr("d", "M12 3v10.55A4 4 0 1014 17V7h4V3h-6z")],
+              [],
+            ),
+          ],
+        ),
+        html.span([attribute.class("now-title"), attribute.id("now-title")], []),
+        html.span([attribute.class("now-user"), attribute.id("now-user")], []),
+      ],
+    ),
+  ])
 }
 
 fn player_css() -> String {
@@ -30,19 +71,8 @@ fn player_css() -> String {
   "
 }
 
-fn player_body() -> String {
-  "<body>
-<div id=\"player-wrap\">
-  <div id=\"yt-player\"></div>
-  <div class=\"idle-msg\" id=\"idle\">대기 중...</div>
-</div>
-<div class=\"now-bar\" id=\"now-bar\" style=\"display:none\">
-  <svg class=\"icon\" viewBox=\"0 0 24 24\" fill=\"#fff\"><path d=\"M12 3v10.55A4 4 0 1014 17V7h4V3h-6z\"/></svg>
-  <span class=\"now-title\" id=\"now-title\"></span>
-  <span class=\"now-user\" id=\"now-user\"></span>
-</div>
-<script src=\"https://www.youtube.com/iframe_api\"></script>
-<script>
+fn player_js() -> String {
+  "
 const base = window.location.origin;
 let player = null;
 let currentVideoId = '';
@@ -88,6 +118,5 @@ function pollCurrent() {
     }).catch(function(){});
   }, 2000);
 }
-</script>
-</body>"
+  "
 }

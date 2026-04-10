@@ -56,7 +56,7 @@ fn player_body() -> Element(msg) {
 fn player_css() -> String {
   "
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:#0e0e10; color:#efeff1; font-family:'Quicksand',sans-serif; overflow:hidden; }
+    body { background:#000; color:#fff; font-family:'Quicksand',sans-serif; overflow:hidden; }
     #player-wrap { position:relative; width:100vw; height:calc(100vh - 56px); background:#000; }
     #yt-player { width:100%; height:100%; }
     .now-bar {
@@ -67,7 +67,7 @@ fn player_css() -> String {
     .now-user { font-size:13px; opacity:.85; white-space:nowrap; }
     .now-bar .icon { width:20px; height:20px; animation:pulse 1.5s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-    .idle-msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:18px; color:#888; }
+    .idle-msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:18px; color:#E9EAEE; }
   "
 }
 

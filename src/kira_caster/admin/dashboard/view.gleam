@@ -6,6 +6,7 @@ import gleam/string
 import kira_caster/admin/dashboard/model.{
   type Model, type Msg, type Tab, type Toast,
 }
+import kira_caster/util/time
 import lustre/attribute.{attribute as attr}
 import lustre/element.{type Element, fragment, text}
 import lustre/element/html
@@ -131,7 +132,7 @@ fn users_view(model: Model) -> Element(Msg) {
               html.td([], [
                 text(case u.last_attendance {
                   0 -> "-"
-                  _ -> int.to_string(u.last_attendance)
+                  _ -> time.format_ms(u.last_attendance)
                 }),
               ]),
             ])

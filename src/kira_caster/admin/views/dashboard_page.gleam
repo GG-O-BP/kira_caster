@@ -32,24 +32,34 @@ fn dashboard_css() -> String {
   "
     :root {
       --color-primary: #FD719B;
+      --color-coral: #FD9371;
+      --color-light-pink: #FD99B8;
       --gradient-main: linear-gradient(92.54deg, #FF608F 5.84%, #FBB35E 95.21%);
       --gradient-secondary: linear-gradient(92.54deg, #FD719B 5.84%, #FD9371 95.21%);
       --color-success: #00C199;
+      --color-warning: #F8C03A;
       --color-error: #F77061;
       --color-info: #3B9FFA;
+      --color-link: #007AFF;
       --color-text: #54577A;
       --color-border: #E9EAEE;
       --color-bg: #FFFFFF;
+      --color-black: #000000;
       --color-glass: rgba(255,255,255,0.75);
-      --font-body: 'Quicksand', Hiragino Sans, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+      --color-glass-light: rgba(255,255,255,0.1);
+      --color-overlay: rgba(0,0,0,0.5);
+      --yuruka-font: 'Quicksand', sans-serif;
+      --quicksand-font: 'Quicksand', sans-serif;
+      --font-body: Hiragino Sans, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
       --font-number: 'Roboto', sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
       --radius-pill: 20px;
       --radius-card: 12px;
       --radius-input: 8px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: var(--font-body); background: var(--color-bg); color: var(--color-text); padding: 20px; }
-    h1 { background: var(--gradient-main); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-weight: 700; }
+    h1 { font-family: var(--yuruka-font); background: var(--gradient-main); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-weight: 700; }
     .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
     .tab { padding: 8px 16px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-pill); cursor: pointer; color: var(--color-text); font-weight: 600; transition: all .2s; }
     .tab:hover { border-color: var(--color-primary); color: var(--color-primary); }
@@ -81,6 +91,21 @@ fn dashboard_css() -> String {
     .toast.success { background: var(--color-success); }
     .toast.error { background: var(--color-error); }
     .toast.info { background: var(--color-info); }
+    .toast.warning { background: var(--color-warning); }
+    h3 { font-family: var(--yuruka-font); font-weight: 700; }
+    a { color: var(--color-link); text-decoration: none; font-weight: 600; transition: color .2s; }
+    a:hover { color: var(--color-primary); }
+    .dot { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+    .dot::before { content: ''; width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot.green { color: var(--color-success); }
+    .dot.green::before { background: var(--color-success); }
+    .dot.red { color: var(--color-error); }
+    .dot.red::before { background: var(--color-error); }
+    .category-btn { background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); margin: 4px; transition: all .2s; }
+    .category-btn:hover { border-color: var(--color-primary); color: var(--color-primary); background: rgba(253,113,155,0.08); }
+    .tag-remove { background: none; color: var(--color-primary); border: none; padding: 0 4px; margin-left: 4px; font-size: 0.85em; min-height: auto; }
+    .tag-remove:hover { color: var(--color-error); }
+    select:focus { outline: none; border-color: var(--color-primary); }
     @media (max-width: 600px) {
       body { padding: 10px; }
       .tabs { flex-direction: row; overflow-x: auto; flex-wrap: nowrap; position: sticky; top: 0; background: var(--color-bg); z-index: 10; padding-bottom: 8px; }

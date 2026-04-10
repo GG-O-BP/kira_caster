@@ -1,9 +1,16 @@
 -module(kira_caster_ffi).
--export([now_ms/0, get_env/1, log_info/1, log_warn/1, log_error/1,
+-export([now_ms/0, format_ms/1, get_env/1, log_info/1, log_warn/1, log_error/1,
          compile_gleam/2, call_command/3, unload_command/1,
          ensure_custom_project/0]).
 
 now_ms() -> os:system_time(millisecond).
+
+format_ms(Ms) ->
+    Seconds = Ms div 1000,
+    KstSeconds = Seconds + 9 * 3600,
+    {{Y, Mo, D}, {H, Mi, _S}} = calendar:system_time_to_universal_time(KstSeconds, second),
+    list_to_binary(io_lib:format("~4..0B-~2..0B-~2..0B ~2..0B:~2..0B",
+                                  [Y, Mo, D, H, Mi])).
 
 get_env(Name) ->
     case os:getenv(binary_to_list(Name)) of

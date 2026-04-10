@@ -167,20 +167,22 @@ fn start() -> Result(Nil, String) {
     Some(_) -> logger.info("kira_caster started with ci.me adapter")
     None -> {
       logger.info("kira_caster started with mock adapter")
-      // Dispatch test commands only in mock mode
+      // Dispatch test commands in mock mode (すとぷり members)
+      list.each(["나나모리", "제루", "리누", "사토미", "코론", "루토"], fn(member) {
+        event_bus.dispatch(
+          bus,
+          plugin.Command(
+            user: member,
+            name: "출석",
+            args: [],
+            role: permission.Viewer,
+          ),
+        )
+      })
       event_bus.dispatch(
         bus,
         plugin.Command(
-          user: "alice",
-          name: "출석",
-          args: [],
-          role: permission.Viewer,
-        ),
-      )
-      event_bus.dispatch(
-        bus,
-        plugin.Command(
-          user: "bob",
+          user: "제루",
           name: "포인트",
           args: [],
           role: permission.Viewer,

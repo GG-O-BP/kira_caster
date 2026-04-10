@@ -1,6 +1,6 @@
 import gleam/int
 import gleam/json
-import gleam/option.{type Option, None}
+import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import kira_caster/platform/cime/decoders
@@ -103,9 +103,9 @@ pub fn mock_api() -> CimeApi {
     revoke_token: fn(_, _) { Ok(Nil) },
     get_me: fn(_) {
       Ok(types.UserMe(
-        channel_id: "mock_channel",
-        channel_name: "Mock Bot",
-        channel_handle: "mock-bot",
+        channel_id: "stpr_nanamori",
+        channel_name: "왕!왕! 오무라이츄!",
+        channel_handle: "rinu-ch",
         channel_image_url: None,
       ))
     },
@@ -115,13 +115,26 @@ pub fn mock_api() -> CimeApi {
     get_streaming_roles: fn(_) { Ok([]) },
     get_lives: fn(_, _) { Ok(#([], types.PageInfo(next: None))) },
     get_live_status: fn(_) {
-      Ok(types.LiveStatus(is_live: False, title: None, opened_at: None))
+      Ok(types.LiveStatus(
+        is_live: True,
+        title: Some("すとぷり 심야 잡담 방송"),
+        opened_at: Some("2026-04-11T22:00:00Z"),
+      ))
     },
     get_live_setting: fn(_) {
-      Ok(types.LiveSetting(default_live_title: "", category: None, tags: []))
+      Ok(types.LiveSetting(
+        default_live_title: "すとぷり 심야 잡담 방송",
+        category: Some(types.Category(
+          category_id: "cat_talk",
+          category_type: "TALK",
+          category_value: "토크/잡담",
+          poster_image_url: None,
+        )),
+        tags: ["すとぷり", "스토푸리", "잡담"],
+      ))
     },
     update_live_setting: fn(_, _) { Ok(Nil) },
-    get_stream_key: fn(_) { Ok(types.StreamKey(stream_key: "mock_key")) },
+    get_stream_key: fn(_) { Ok(types.StreamKey(stream_key: "stpr_live_20160604")) },
     send_chat: fn(_, _) { Ok("mock_msg_id") },
     send_notice: fn(_, _) { Ok(Nil) },
     get_chat_settings: fn(_) {

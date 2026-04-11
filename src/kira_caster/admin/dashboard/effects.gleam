@@ -110,7 +110,11 @@ fn load_users(repo: Repository) -> Effect(Msg) {
   async(fn(dispatch) {
     case repo.get_all_users() {
       Ok(users) -> dispatch(model.UsersLoaded(users))
-      Error(_) -> Nil
+      Error(_) ->
+        dispatch(model.ShowToast(
+          "유저 목록을 불러올 수 없습���다. 잠시 후 자동으로 다시 시도합니다",
+          model.ErrorToast,
+        ))
     }
   })
 }
@@ -119,7 +123,11 @@ fn load_words(repo: Repository) -> Effect(Msg) {
   async(fn(dispatch) {
     case repo.get_banned_words() {
       Ok(words) -> dispatch(model.WordsLoaded(words))
-      Error(_) -> Nil
+      Error(_) ->
+        dispatch(model.ShowToast(
+          "금칙어 목록을 불러��� 수 없습니다. 잠시 �� ��동으로 다시 시도합니다",
+          model.ErrorToast,
+        ))
     }
   })
 }
@@ -128,7 +136,11 @@ fn load_commands(repo: Repository) -> Effect(Msg) {
   async(fn(dispatch) {
     case repo.get_all_commands_detailed() {
       Ok(cmds) -> dispatch(model.CommandsLoaded(cmds))
-      Error(_) -> Nil
+      Error(_) ->
+        dispatch(model.ShowToast(
+          "명령어 목록을 불러올 수 없습니다. 잠시 ��� 자동으로 다시 시도합니다",
+          model.ErrorToast,
+        ))
     }
   })
 }
@@ -137,7 +149,11 @@ fn load_quizzes(repo: Repository) -> Effect(Msg) {
   async(fn(dispatch) {
     case repo.get_all_quizzes() {
       Ok(q) -> dispatch(model.QuizzesLoaded(q))
-      Error(_) -> Nil
+      Error(_) ->
+        dispatch(model.ShowToast(
+          "퀴즈 목록을 불러올 수 없습니다. 잠시 후 자동으로 다시 시도���니다",
+          model.ErrorToast,
+        ))
     }
   })
 }
@@ -163,22 +179,22 @@ fn load_votes(repo: Repository) -> Effect(Msg) {
 fn load_plugins(repo: Repository) -> Effect(Msg) {
   async(fn(dispatch) {
     let all_plugins = [
-      #("attendance", "출석 체크"),
-      #("points", "포인트 조회"),
-      #("minigame", "미니게임"),
-      #("filter", "채팅 필터"),
+      #("attendance", "출석 체크 (하루 1회, 포인트 보상)"),
+      #("points", "포인트 조회 및 순위"),
+      #("minigame", "미니게임 (주사위, 가위바위보)"),
+      #("filter", "채팅 필터 (금칙어 자동 감지)"),
       #("custom_command", "커스텀 명령어"),
-      #("uptime", "가동 시간"),
-      #("vote", "투표"),
-      #("roulette", "룰렛"),
-      #("quiz", "퀴즈"),
-      #("timer", "타이머"),
-      #("song_request", "신청곡"),
-      #("donation_alert", "후원 알림"),
+      #("uptime", "봇 가동 시간 조회"),
+      #("vote", "투표 시스템"),
+      #("roulette", "룰렛 (확률 기반 포인트)"),
+      #("quiz", "퀴즈 (정답 맞추기)"),
+      #("timer", "타이머 (비동기 알림)"),
+      #("song_request", "신청곡 (YouTube 대기열)"),
+      #("donation_alert", "후원 알림 (채팅/영상 후원)"),
       #("subscription_alert", "구독 알림"),
-      #("broadcast_control", "방송 제어"),
-      #("block", "차단 관리"),
-      #("follower", "팔로워 추적"),
+      #("broadcast_control", "방송 제어 (제목/태그/카테고리)"),
+      #("block", "차단 관리 (유저 차단/해제)"),
+      #("follower", "팔로워 추적 (신규 환영)"),
     ]
     case repo.get_disabled_plugins() {
       Ok(disabled) -> {
@@ -189,7 +205,11 @@ fn load_plugins(repo: Repository) -> Effect(Msg) {
           })
         dispatch(model.PluginsLoaded(plugins))
       }
-      Error(_) -> Nil
+      Error(_) ->
+        dispatch(model.ShowToast(
+          "플러그인 목록을 불러올 수 없습니다. 잠시 후 자동으로 다시 시도합니다",
+          model.ErrorToast,
+        ))
     }
   })
 }
@@ -198,7 +218,11 @@ fn load_settings(repo: Repository) -> Effect(Msg) {
   async(fn(dispatch) {
     case repo.get_all_settings() {
       Ok(s) -> dispatch(model.SettingsLoaded(s))
-      Error(_) -> Nil
+      Error(_) ->
+        dispatch(model.ShowToast(
+          "설정을 불러올 수 없습니다. 잠시 후 자동으로 다시 시도합니다",
+          model.ErrorToast,
+        ))
     }
   })
 }
@@ -404,8 +428,8 @@ pub fn add_command(
 ) -> Effect(Msg) {
   crud(
     fn() { repo.set_command(name, response) },
-    "명령어 추가 완료",
-    "명령어 저장에 실패했습니다. 데이터베이스 오류가 발생했습니다",
+    "명���어 추가 완료",
+    "명령어를 저장할 수 없습니다. 다시 시도하거나, 이름에 특수문자가 없는지 확인해주세요",
   )
 }
 
@@ -443,7 +467,11 @@ pub fn add_quiz(
 }
 
 pub fn delete_quiz(repo: Repository, question: String) -> Effect(Msg) {
-  crud(fn() { repo.delete_quiz(question) }, "퀴즈 삭제 완료", "퀴즈 삭제에 실패했습니다")
+  crud(
+    fn() { repo.delete_quiz(question) },
+    "퀴즈 삭제 완료",
+    "퀴즈를 삭제할 수 없습니다. 목록을 새로고침해주세요",
+  )
 }
 
 pub fn start_vote(
@@ -517,7 +545,10 @@ pub fn save_setting(
         dispatch(model.OpDone(Ok(Nil)))
       }
       Error(_) ->
-        dispatch(model.ShowToast("설정 저장에 실패했습니다. 값을 확인해주세요", model.ErrorToast))
+        dispatch(model.ShowToast(
+          "설정을 저장할 수 없습니다. 입력한 값이 올바른지 확인해주세요",
+          model.ErrorToast,
+        ))
     }
   })
 }
@@ -584,7 +615,10 @@ pub fn song_next(repo: Repository) -> Effect(Msg) {
                 }
               }
               Error(_) ->
-                dispatch(model.ShowToast("곡 목록을 불러올 수 없습니다", model.ErrorToast))
+                dispatch(model.ShowToast(
+                  "곡 목록을 불러올 수 없습니다. 페이지를 새로고침해주세요",
+                  model.ErrorToast,
+                ))
             }
           Error(_) -> dispatch(model.OpDone(Ok(Nil)))
         }
@@ -644,7 +678,10 @@ pub fn song_prev(repo: Repository) -> Effect(Msg) {
                 }
               }
               Error(_) ->
-                dispatch(model.ShowToast("곡 목록을 불러올 수 없습니다", model.ErrorToast))
+                dispatch(model.ShowToast(
+                  "곡 목록을 불러올 수 없습니다. 페이지를 새로고침해주세요",
+                  model.ErrorToast,
+                ))
             }
           Error(_) -> dispatch(model.OpDone(Ok(Nil)))
         }
@@ -666,7 +703,10 @@ pub fn song_replay(repo: Repository) -> Effect(Msg) {
     case repo.set_setting("song_current_version", int.to_string(ver)) {
       Ok(_) -> dispatch(model.OpDone(Ok(Nil)))
       Error(_) ->
-        dispatch(model.ShowToast("곡 재생 상태를 저장할 수 없습니다", model.ErrorToast))
+        dispatch(model.ShowToast(
+          "재생 상태를 저장할 수 없습니다. 다시 시도해주세요",
+          model.ErrorToast,
+        ))
     }
   })
 }

@@ -33,7 +33,8 @@ pub fn load() -> Config {
 }
 
 /// DB settings 테이블에서 저장된 설정을 읽어 config에 병합합니다.
-/// 환경변수가 설정되지 않은 항목만 DB 값으로 대체됩니다.
+/// DB에 저장된 설정(UI 입력)이 우선 적용됩니다.
+/// DB에 값이 없는 경우 환경변수 또는 기본값이 사용됩니다.
 pub fn apply_db_settings(config: Config, repo: Repository) -> Config {
   case repo.get_all_settings() {
     Ok(settings) -> merge_settings(config, settings)
@@ -60,37 +61,26 @@ fn merge_settings(config: Config, settings: List(#(String, String))) -> Config {
     }
   }
 
-  // DB 설정은 환경변수가 비어있을 때만 적용 (환경변수가 우선)
+  // DB 설정(UI 입력)이 우선. DB에 값이 없으면 환경변수/기본값 사용.
+  // db_path, admin_port, secret_key_base는 부트스트랩 전용 (DB 접근 전 필요)
   Config(
     ..config,
-    admin_port: case config.admin_port == 8080 {
-      True -> get_int("admin_port", 8080)
-      False -> config.admin_port
-    },
-    admin_key: case config.admin_key {
-      "" -> get("admin_key", "")
-      _ -> config.admin_key
-    },
-    cime_client_id: case config.cime_client_id {
-      "" -> get("cime_client_id", "")
-      _ -> config.cime_client_id
-    },
-    cime_client_secret: case config.cime_client_secret {
-      "" -> get("cime_client_secret", "")
-      _ -> config.cime_client_secret
-    },
-    cime_redirect_uri: case config.cime_redirect_uri {
-      "" -> get("cime_redirect_uri", "")
-      _ -> config.cime_redirect_uri
-    },
-    cime_channel_id: case config.cime_channel_id {
-      "" -> get("cime_channel_id", "")
-      _ -> config.cime_channel_id
-    },
-    youtube_api_key: case config.youtube_api_key {
-      "" -> get("youtube_api_key", "")
-      _ -> config.youtube_api_key
-    },
+    admin_key: get("admin_key", config.admin_key),
+    cime_client_id: get("cime_client_id", config.cime_client_id),
+    cime_client_secret: get("cime_client_secret", config.cime_client_secret),
+    cime_redirect_uri: get("cime_redirect_uri", config.cime_redirect_uri),
+    cime_channel_id: get("cime_channel_id", config.cime_channel_id),
+    youtube_api_key: get("youtube_api_key", config.youtube_api_key),
+    cooldown_ms: get_int("cooldown_ms", config.cooldown_ms),
+    attendance_points: get_int("attendance_points", config.attendance_points),
+    dice_win_points: get_int("dice_win_points", config.dice_win_points),
+    dice_loss_points: get_int("dice_loss_points", config.dice_loss_points),
+    rps_win_points: get_int("rps_win_points", config.rps_win_points),
+    rps_loss_points: get_int("rps_loss_points", config.rps_loss_points),
+    max_reconnect_attempts: get_int(
+      "max_reconnect_attempts",
+      config.max_reconnect_attempts,
+    ),
   )
 }
 

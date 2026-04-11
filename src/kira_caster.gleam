@@ -57,7 +57,7 @@ fn start() -> Result(Nil, String) {
     }),
   )
 
-  // DB에 저장된 설정을 config에 병합 (환경변수가 우선)
+  // DB에 저장된 설정을 config에 병합 (DB 설정이 우선, 없으면 환경변수/기본값)
   let config = config_loader.apply_db_settings(base_config, repo)
 
   use #(_sup, bus, bus_name) <- result.try(

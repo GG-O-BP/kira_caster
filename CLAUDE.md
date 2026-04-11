@@ -22,7 +22,7 @@ platform/cime/      # 씨미 API 연동 (http_client, types, decoders, api, toke
 storage/            # repository.gleam(인터페이스) + sqlight_repo.gleam(facade) + repos/
 admin/              # router.gleam(디스패치) + server.gleam(HTTP+WebSocket) + handlers/11개
 admin/dashboard/    # Lustre 서버 컴포넌트 (model, update, view, effects, app)
-admin/views/        # layout, components, dashboard_page(셸), player_page(SSR)
+admin/views/        # layout, components, dashboard_page(셸), setup_page(마법사), login_page, player_page(SSR)
 util/               # time, youtube(facade + url_parser/api/duration)
 ```
 
@@ -46,9 +46,11 @@ util/               # time, youtube(facade + url_parser/api/duration)
 - **어댑터 패턴**: platform/adapter.gleam이 인터페이스 (send_message, connect, disconnect). cime_adapter가 씨미 API 연동 구현체, mock_adapter는 테스트/개발용
 - **이벤트 흐름**: Platform → EventBus → Plugin(s) → EventBus → Platform
 - **Repository 패턴**: repository.gleam이 함수 필드 레코드로 인터페이스 정의, sqlight_repo.gleam이 facade로 repos/ 위임
-- **설정**: core/config.gleam 타입 정의 → config_loader.gleam 환경변수(KIRA_*) 오버라이드
+- **설정**: core/config.gleam 타입 정의 → config_loader.gleam 환경변수(KIRA_*) 초기값 → apply_db_settings()로 DB 설정 병합 (**DB 설정(UI 입력) 우선**, DB에 없으면 환경변수/기본값). db_path, admin_port, secret_key_base는 부트스트랩 전용(ENV만). 대시보드 설정 탭에서 시스템/게임 설정 편집 가능. 설정 변경 후 `init:restart/0` FFI로 자동 재시작 (kira_caster_ffi.erl의 restart_application/0, router.gleam의 POST /restart)
 - **WebSocket 상태**: platform/ws.gleam이 Disconnected→Connected→Reconnecting 상태 머신 관리
 - **대시보드 서버 컴포넌트**: Lustre v5 TEA(Model-View-Update) 아키텍처. admin/dashboard/ 모듈이 BEAM 위에서 서버 컴포넌트로 실행되며 WebSocket으로 DOM 패치를 전송. admin/server.gleam이 mist WebSocket ↔ Lustre 런타임 브릿지. dashboard_page.gleam은 `<lustre-server-component>` 셸만 제공. 플레이어 페이지는 기존 SSR 유지
+- **대시보드 탭 구조**: 14개 탭을 4개 카테고리(기본/채팅 관리/엔터테인먼트/씨미)로 그룹핑. MockMode에서는 씨미 전용 탭 4개(방송 설정, 채팅 설정, 차단 관리, 채널 정보) 숨김. 설정 탭은 editing_settings 로컬 상태로 편집 추적 후 SaveSetting으로 DB 저장
+- **설정 마법사**: setup_page.gleam이 첫 실행 UI 제공. 설정 완료 시 setup_handler가 DB 저장 후 restart_application() FFI로 자동 재시작. 건너뛰기 시 테스트 모드로 즉시 리다이렉트
 
 ### 씨미 API 연동 가이드
 

@@ -21,7 +21,16 @@ pub fn view(model: Model) -> Element(Msg) {
       mode_badge(model.adapter_mode),
     ]),
     tabs_bar(model.active_tab, model.adapter_mode),
-    html.div([attribute.class("panel active")], [active_panel(model)]),
+    html.div([attribute.class("panel active")], [
+      case model.loading {
+        True ->
+          html.div([attribute.class("loading-overlay")], [
+            html.div([attribute.class("spinner")], []),
+          ])
+        False -> text("")
+      },
+      active_panel(model),
+    ]),
     toast_container(model.toasts),
   ])
 }
@@ -165,9 +174,18 @@ fn status_view(model: Model) -> Element(Msg) {
           html.h3([attr("style", "margin-bottom:12px;font-size:1.1em")], [
             text("kira_caster에 오신 것을 환영합니다!"),
           ]),
-          html.p([attr("style", "margin-bottom:12px;color:#888")], [
-            text("현재 테스트 모드로 실행 중입니다. 아래 순서로 시작해보세요:"),
-          ]),
+          html.p(
+            [attr("style", "margin-bottom:12px;color:#888;line-height:1.5")],
+            [
+              text(
+                "씨미(ci.me)와 연결하지 않은 상태입니다. 대부분의 기능을 미리 체험할 수 있지만, 실제 채팅방에서 봇을 사용하려면 씨미 연동이 필요합니다.",
+              ),
+            ],
+          ),
+          html.p(
+            [attr("style", "margin-bottom:12px;color:#888;font-size:0.9em")],
+            [text("아래 순서로 시작해보세요:")],
+          ),
           html.div([attribute.class("welcome-steps")], [
             welcome_step(
               "1",
@@ -570,49 +588,52 @@ fn plugins_view(model: Model) -> Element(Msg) {
 
 fn settings_view(model: Model) -> Element(Msg) {
   let system_defs = [
-    #("admin_key", "관리자 비밀번호", "", True),
-    #("cime_client_id", "씨미 앱 ID", "", False),
-    #("cime_client_secret", "씨미 앱 비밀키", "", True),
-    #("youtube_api_key", "YouTube API 키", "", False),
+    #("admin_key", "관리자 비밀번호", "", True, "대시보드 접속 시 필요한 비밀번호"),
+    #("cime_client_id", "씨미 앱 ID", "", False, "씨미 개발자 센터에서 발급받은 앱 ID"),
+    #("cime_client_secret", "씨미 앱 비밀키", "", True, "씨미 개발자 센터에서 발급받은 앱 비밀키"),
+    #("youtube_api_key", "YouTube API 키", "", False, "신청곡 정보 조회용 (없어도 기본 동작)"),
   ]
   let game_defs = [
-    #("cooldown_ms", "명령어 쿨다운 (밀리초)", "5000", False),
-    #("attendance_points", "출석 포인트", "10", False),
-    #("dice_win_points", "주사위 승리 포인트", "50", False),
-    #("dice_loss_points", "주사위 패배 포인트", "-20", False),
-    #("rps_win_points", "가위바위보 승리 포인트", "30", False),
-    #("rps_loss_points", "가위바위보 패배 포인트", "-10", False),
+    #(
+      "cooldown_ms",
+      "명령어 쿨다운",
+      "5000",
+      False,
+      "같은 명령어를 다시 쓸 수 있는 대기 시간 (1000 = 1초)",
+    ),
+    #("attendance_points", "출석 포인트", "10", False, "하루 한 번 출석 시 받는 포인트"),
+    #("dice_win_points", "주사위 승리 포인트", "50", False, "주사위 게임에서 이기면 받는 포인트"),
+    #("dice_loss_points", "주사위 패배 포인트", "-20", False, "주사위 게임에서 지면 깎이는 포인트"),
+    #("rps_win_points", "가위바위보 승리 포인트", "30", False, "가위바위보에서 이기면 받는 포인트"),
+    #("rps_loss_points", "가위바위보 패배 포인트", "-10", False, "가위바위보에서 지면 깎이는 포인트"),
   ]
   fragment([
     section_heading("시스템 설정"),
     html.p([attr("style", "font-size:0.85em;color:#888;margin-bottom:8px")], [
-      text("변경 후 재시작해야 적용됩니다."),
+      text("이 설정을 변경하면 프로그램 재시작이 필요합니다. 수정 후 아래 '재시작하여 적용' 버튼을 눌러주세요."),
     ]),
     html.div(
       [],
       list.map(system_defs, fn(def) {
-        let #(key, label, default, is_secret) = def
-        setting_row(model, key, label, default, is_secret)
+        let #(key, label, default, is_secret, hint) = def
+        setting_row(model, key, label, default, is_secret, hint)
       }),
     ),
     html.div([attr("style", "margin-top:12px")], [
       html.button(
-        [
-          attribute.class("danger"),
-          event.on_click(model.RestartApp),
-        ],
+        [attribute.class("danger"), event.on_click(model.RestartApp)],
         [text("재시작하여 적용")],
       ),
     ]),
     section_heading_top("게임 설정"),
     html.p([attr("style", "font-size:0.85em;color:#888;margin-bottom:8px")], [
-      text("저장하면 바로 적용됩니다."),
+      text("이 설정은 저장하면 바로 적용됩니다. 재시작할 필요가 없습니다."),
     ]),
     html.div(
       [],
       list.map(game_defs, fn(def) {
-        let #(key, label, default, is_secret) = def
-        setting_row(model, key, label, default, is_secret)
+        let #(key, label, default, is_secret, hint) = def
+        setting_row(model, key, label, default, is_secret, hint)
       }),
     ),
   ])
@@ -624,23 +645,63 @@ fn setting_row(
   label: String,
   default: String,
   is_secret: Bool,
+  hint: String,
 ) -> Element(Msg) {
   let val = find_setting(model.editing_settings, key, default)
-  html.div([attribute.class("form-row")], [
-    html.label([attr("style", "min-width:180px;font-weight:600")], [
-      text(label),
+  html.div([attr("style", "margin-top:10px")], [
+    html.div([attribute.class("form-row")], [
+      html.label([attr("style", "min-width:180px;font-weight:600")], [
+        text(label),
+      ]),
+      html.input([
+        attribute.value(val),
+        case is_secret {
+          True -> attribute.type_("password")
+          False -> attribute.type_("text")
+        },
+        event.on_input(fn(v) { model.UpdateSettingEdit(key, v) }),
+        attr("style", "flex:1;min-width:120px"),
+      ]),
+      html.button([event.on_click(model.SaveSetting(key, val))], [
+        text("저장"),
+      ]),
     ]),
-    html.input([
-      attribute.value(val),
-      case is_secret {
-        True -> attribute.type_("password")
-        False -> attribute.type_("text")
-      },
-      event.on_input(fn(v) { model.UpdateSettingEdit(key, v) }),
-      attr("style", "flex:1;min-width:120px"),
-    ]),
-    html.button([event.on_click(model.SaveSetting(key, val))], [text("저장")]),
+    html.div(
+      [
+        attr(
+          "style",
+          "font-size:0.8em;color:#aaa;margin-top:2px;padding-left:4px",
+        ),
+      ],
+      [text(hint), ms_hint(key, val)],
+    ),
   ])
+}
+
+fn ms_hint(key: String, val: String) -> Element(Msg) {
+  case key {
+    "cooldown_ms" ->
+      case int.parse(val) {
+        Ok(ms) -> {
+          let sec = ms / 1000
+          let remainder = ms % 1000
+          case sec, remainder {
+            0, _ -> text("")
+            s, 0 -> text(" = " <> int.to_string(s) <> "초")
+            s, _ ->
+              text(
+                " = "
+                <> int.to_string(s)
+                <> "."
+                <> int.to_string(remainder / 100)
+                <> "초",
+              )
+          }
+        }
+        Error(_) -> text("")
+      }
+    _ -> text("")
+  }
 }
 
 fn find_setting(
@@ -885,7 +946,7 @@ fn block_manage_view(model: Model) -> Element(Msg) {
     section_heading("차단 관리"),
     html.div([attribute.class("form-row")], [
       html.input([
-        attribute.placeholder("채널 ID"),
+        attribute.placeholder("사용자 닉네임 또는 채널 ID"),
         attribute.value(model.block_target),
         event.on_input(model.UpdateBlockTarget),
       ]),

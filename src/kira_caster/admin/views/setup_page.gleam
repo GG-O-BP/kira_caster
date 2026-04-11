@@ -9,7 +9,7 @@ pub fn handle_setup(message: String, is_success: Bool) -> Response {
     title: "kira_caster 초기 설정",
     head: setup_head(),
     body: setup_body(message, is_success),
-    tail: "",
+    tail: setup_script(),
   )
 }
 
@@ -40,10 +40,19 @@ fn setup_done_body() -> Element(Nil) {
           text("설정이 저장되었습니다!"),
         ]),
         html.div([attribute.class("setup-done")], [
-          html.p([], [text("설정을 적용하고 있습니다...")]),
+          html.div(
+            [
+              attr(
+                "style",
+                "width:32px;height:32px;border:3px solid #E9EAEE;border-top-color:#FD719B;border-radius:50%;animation:spin 0.8s linear infinite;margin:16px auto",
+              ),
+            ],
+            [],
+          ),
+          html.p([], [text("설정을 적용하고 프로그램을 재시작하는 중입니다...")]),
           html.p(
             [attr("style", "margin-top:12px;font-size:0.85em;color:#888")],
-            [text("잠시 후 자동으로 대시보드로 이동합니다.")],
+            [text("잠시 후 자동으로 대시보드로 이동합니다. 이 페이지를 닫지 마세요.")],
           ),
         ]),
       ]),
@@ -51,7 +60,11 @@ fn setup_done_body() -> Element(Nil) {
   ])
 }
 
-fn setup_body(message: String, is_success: Bool) -> Element(Nil) {
+fn setup_script() -> String {
+  "<script>function copyUri(btn){var t=document.getElementById('redirect-uri');if(t){navigator.clipboard.writeText(t.textContent).then(function(){btn.textContent='복사됨!';setTimeout(function(){btn.textContent='복사'},2000)}).catch(function(){var r=document.createRange();r.selectNodeContents(t);var s=window.getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');btn.textContent='복사됨!';setTimeout(function(){btn.textContent='복사'},2000)})}}</script>"
+}
+
+fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
   fragment([
     html.div([attribute.class("setup-container")], [
       html.div([attribute.class("setup-card")], [
@@ -61,118 +74,136 @@ fn setup_body(message: String, is_success: Bool) -> Element(Nil) {
         ]),
         case message {
           "" -> text("")
-          msg ->
-            html.div(
-              [
-                attribute.class(case is_success {
-                  True -> "setup-success"
-                  False -> "setup-error"
-                }),
-              ],
-              [text(msg)],
-            )
+          msg -> html.div([attribute.class("setup-error")], [text(msg)])
         },
-        case is_success {
-          True ->
-            html.div([attribute.class("setup-done")], [
-              html.p([], [
-                text("프로그램을 재시작하면 설정이 적용됩니다."),
+        html.form([attr("method", "POST"), attr("action", "/setup")], [
+          // Step 1: Admin password
+          html.div([attribute.class("setup-section")], [
+            html.h3([], [text("1. 관리자 비밀번호")]),
+            html.p([attribute.class("setup-hint")], [
+              text("대시보드에 접속할 때 사용할 비밀번호입니다. 비워두면 비밀번호 없이 누구나 접근할 수 있습니다."),
+            ]),
+            html.input([
+              attribute.type_("password"),
+              attr("name", "admin_key"),
+              attribute.placeholder("비밀번호 (선택사항 - 비워둬도 됩니다)"),
+            ]),
+          ]),
+          // Step 2: CIME settings
+          html.div([attribute.class("setup-section")], [
+            html.h3([], [text("2. 씨미(ci.me) 연동")]),
+            html.p([attribute.class("setup-hint")], [
+              text(
+                "씨미 방송과 연동하면 채팅에서 봇이 자동으로 응답합니다. 지금 건너뛰고 나중에 대시보드에서 설정할 수도 있습니다.",
+              ),
+            ]),
+            html.div([attribute.class("setup-guide")], [
+              html.p([attr("style", "font-weight:600;margin-bottom:6px")], [
+                text("준비 방법:"),
               ]),
-              html.p(
-                [attr("style", "margin-top:8px;font-size:0.85em;color:#888")],
+              html.ol([attr("style", "padding-left:20px;line-height:1.8")], [
+                html.li([], [
+                  text("아래 버튼으로 씨미 개발자 센터에 접속하세요"),
+                ]),
+                html.li([], [
+                  text("\"새 앱 만들기\"를 클릭하세요"),
+                ]),
+                html.li([], [
+                  text("앱 이름을 자유롭게 입력하세요"),
+                ]),
+                html.li([], [
+                  text("Redirect URI에 아래 주소를 복사해서 붙여넣으세요"),
+                ]),
+                html.li([], [
+                  text("앱 생성 후 표시되는 앱 ID와 비밀키를 아래에 입력하세요"),
+                ]),
+              ]),
+              html.div(
                 [
-                  text("Docker: "),
-                  html.code([], [text("docker compose restart")]),
-                  html.br([]),
-                  text("직접 실행: 프로그램을 종료 후 "),
-                  html.code([], [text("gleam run")]),
+                  attr(
+                    "style",
+                    "display:flex;gap:8px;align-items:center;margin:10px 0",
+                  ),
+                ],
+                [
+                  html.code(
+                    [
+                      attr("id", "redirect-uri"),
+                      attr(
+                        "style",
+                        "flex:1;padding:6px 10px;background:rgba(253,113,155,0.1);border-radius:4px;font-size:0.88em",
+                      ),
+                    ],
+                    [text("http://localhost:8080/oauth/callback")],
+                  ),
+                  html.button(
+                    [
+                      attribute.type_("button"),
+                      attr("onclick", "copyUri(this)"),
+                      attr(
+                        "style",
+                        "padding:6px 14px;font-size:0.85em;white-space:nowrap",
+                      ),
+                    ],
+                    [text("복사")],
+                  ),
                 ],
               ),
-            ])
-          False ->
-            html.form([attr("method", "POST"), attr("action", "/setup")], [
-              // Step 1: Admin password
-              html.div([attribute.class("setup-section")], [
-                html.h3([], [text("1. 관리자 비밀번호")]),
-                html.p([attribute.class("setup-hint")], [
-                  text("대시보드 접속 시 사용할 비밀번호입니다. 비워두면 누구나 접근할 수 있습니다."),
-                ]),
-                html.input([
-                  attribute.type_("password"),
-                  attr("name", "admin_key"),
-                  attribute.placeholder("비밀번호 (선택)"),
-                ]),
-              ]),
-              // Step 2: CIME settings
-              html.div([attribute.class("setup-section")], [
-                html.h3([], [text("2. 씨미(ci.me) 연동")]),
-                html.p([attribute.class("setup-hint")], [
-                  text("씨미 스트리밍과 연동하려면 아래 정보를 입력하세요. 나중에 대시보드에서도 설정할 수 있습니다."),
-                ]),
-                html.div([attribute.class("setup-guide")], [
-                  html.p([attr("style", "font-weight:600;margin-bottom:6px")], [
-                    text("준비 방법:"),
-                  ]),
-                  html.ol([attr("style", "padding-left:20px;line-height:1.8")], [
-                    html.li([], [
-                      text("씨미 개발자 센터에 접속하세요"),
-                    ]),
-                    html.li([], [
-                      text("\"새 앱 만들기\"를 클릭하세요"),
-                    ]),
-                    html.li([], [
-                      text("앱 이름에 \"kira_caster\"를 입력하세요"),
-                    ]),
-                    html.li([], [
-                      text("Redirect URI에 "),
-                      html.code([], [
-                        text("http://localhost:8080/oauth/callback"),
-                      ]),
-                      text(" 을 입력하세요"),
-                    ]),
-                    html.li([], [
-                      text("앱을 생성하면 표시되는 앱 ID와 앱 비밀키를 아래에 입력하세요"),
-                    ]),
-                  ]),
-                  html.a(
-                    [
-                      attribute.href("https://ci.me/developer"),
-                      attr("target", "_blank"),
-                      attribute.class("guide-link"),
-                    ],
-                    [text("씨미 개발자 센터 열기")],
-                  ),
-                ]),
-                html.input([
-                  attr("name", "cime_client_id"),
-                  attribute.placeholder("앱 ID (Client ID) - 개발자 센터에서 복사"),
-                ]),
-                html.input([
-                  attr("name", "cime_client_secret"),
-                  attribute.placeholder("앱 비밀키 (Client Secret) - 개발자 센터에서 복사"),
-                  attribute.type_("password"),
-                ]),
-                el("details", [], [
-                  el("summary", [attribute.class("setup-hint")], [
-                    text("이게 뭔가요?"),
-                  ]),
-                  html.p([attribute.class("setup-hint")], [
-                    text(
-                      "씨미에서 봇을 사용하려면 '앱'을 등록해야 합니다. 앱 ID와 비밀키는 봇이 씨미에 로그인할 때 사용하는 열쇠 같은 것입니다. 채널 ID는 연동 후 자동으로 가져옵니다.",
-                    ),
-                  ]),
-                ]),
-              ]),
-              html.button([attribute.type_("submit")], [text("설정 완료")]),
               html.a(
                 [
-                  attribute.href("/setup?skip=true"),
-                  attribute.class("skip-link"),
+                  attribute.href("https://ci.me/developer"),
+                  attr("target", "_blank"),
+                  attribute.class("guide-link"),
                 ],
-                [text("건너뛰고 테스트 모드로 시작")],
+                [text("씨미 개발자 센터 열기")],
               ),
-            ])
-        },
+            ]),
+            html.input([
+              attr("name", "cime_client_id"),
+              attribute.placeholder("앱 ID - 개발자 센터에서 복사"),
+            ]),
+            html.input([
+              attr("name", "cime_client_secret"),
+              attribute.placeholder("앱 비밀키 - 개발자 센터에서 복사"),
+              attribute.type_("password"),
+            ]),
+            el("details", [], [
+              el(
+                "summary",
+                [
+                  attr(
+                    "style",
+                    "font-size:0.85em;color:var(--color-primary);cursor:pointer;font-weight:600;margin-top:8px",
+                  ),
+                ],
+                [text("이게 뭔가요?")],
+              ),
+              html.p([attribute.class("setup-hint")], [
+                text(
+                  "씨미에서 봇을 사용하려면 '앱'을 등록해야 합니다. 앱 ID와 비밀키는 봇이 씨미에 로그인할 때 필요한 열쇠 같은 것입니다. 채널 정보는 연동 후 자동으로 가져옵니다.",
+                ),
+              ]),
+            ]),
+          ]),
+          html.button([attribute.type_("submit")], [text("설정 완료")]),
+          html.div([attr("style", "text-align:center;margin-top:16px")], [
+            html.a(
+              [
+                attribute.href("/setup?skip=true"),
+                attribute.class("skip-link"),
+              ],
+              [text("씨미 연결 없이 시작하기")],
+            ),
+            html.p(
+              [
+                attr("style", "font-size:0.78em;color:#aaa;margin-top:6px"),
+              ],
+              [
+                text("나중에 대시보드 설정에서 언제든 씨미를 연결할 수 있습니다"),
+              ],
+            ),
+          ]),
+        ]),
       ]),
     ]),
   ])
@@ -220,5 +251,6 @@ fn setup_css() -> String {
     details[open] summary { margin-bottom: 6px; }
     .skip-link { display: block; text-align: center; margin-top: 16px; color: #888; font-size: 0.85em; text-decoration: none; transition: color .2s; }
     .skip-link:hover { color: var(--color-primary); }
+    @keyframes spin { to { transform: rotate(360deg); } }
   "
 }

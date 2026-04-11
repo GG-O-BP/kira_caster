@@ -10,7 +10,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     // --- Navigation & General ---
     model.SwitchTab(tab) -> #(
-      Model(..model, active_tab: tab),
+      Model(..model, active_tab: tab, loading: True),
       effects.load_tab(tab, model.ctx),
     )
 
@@ -49,12 +49,15 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
     // --- Status ---
     model.StatusLoaded(uptime) -> #(
-      Model(..model, uptime_seconds: uptime),
+      Model(..model, uptime_seconds: uptime, loading: False),
       effect.none(),
     )
 
     // --- Users ---
-    model.UsersLoaded(users) -> #(Model(..model, users: users), effect.none())
+    model.UsersLoaded(users) -> #(
+      Model(..model, users: users, loading: False),
+      effect.none(),
+    )
 
     model.UpdateUserFilter(q) -> #(
       Model(..model, user_filter: q),
@@ -62,7 +65,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     )
 
     // --- Words ---
-    model.WordsLoaded(words) -> #(Model(..model, words: words), effect.none())
+    model.WordsLoaded(words) -> #(
+      Model(..model, words: words, loading: False),
+      effect.none(),
+    )
 
     model.UpdateNewWord(w) -> #(Model(..model, new_word: w), effect.none())
 
@@ -82,7 +88,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
     // --- Commands ---
     model.CommandsLoaded(cmds) -> #(
-      Model(..model, commands: cmds),
+      Model(..model, commands: cmds, loading: False),
       effect.none(),
     )
 
@@ -133,7 +139,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     model.CmdOpDone(_) -> #(model, effects.load_tab(model.Commands, model.ctx))
 
     // --- Quizzes ---
-    model.QuizzesLoaded(q) -> #(Model(..model, quizzes: q), effect.none())
+    model.QuizzesLoaded(q) -> #(
+      Model(..model, quizzes: q, loading: False),
+      effect.none(),
+    )
 
     model.UpdateQuizQ(q) -> #(Model(..model, quiz_question: q), effect.none())
 
@@ -167,6 +176,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         vote_active: active,
         vote_topic_display: topic,
         vote_results: results,
+        loading: False,
       ),
       effect.none(),
     )
@@ -196,7 +206,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     model.EndVote -> #(model, effects.end_vote(model.ctx.repo))
 
     // --- Plugins ---
-    model.PluginsLoaded(p) -> #(Model(..model, plugins: p), effect.none())
+    model.PluginsLoaded(p) -> #(
+      Model(..model, plugins: p, loading: False),
+      effect.none(),
+    )
 
     model.TogglePlugin(name, enabled) -> #(
       model,
@@ -205,7 +218,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
     // --- Settings ---
     model.SettingsLoaded(s) -> #(
-      Model(..model, settings: s, editing_settings: s),
+      Model(..model, settings: s, editing_settings: s, loading: False),
       effect.none(),
     )
 
@@ -234,7 +247,13 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
     // --- Songs ---
     model.SongsLoaded(songs, current, version) -> #(
-      Model(..model, songs: songs, current_song: current, song_version: version),
+      Model(
+        ..model,
+        songs: songs,
+        current_song: current,
+        song_version: version,
+        loading: False,
+      ),
       effect.none(),
     )
 
@@ -280,6 +299,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         cime_authenticated: auth,
         cime_expires_at: expires,
         cime_channel_name: ch,
+        loading: False,
       ),
       effect.none(),
     )
@@ -289,7 +309,13 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
     // --- Broadcast ---
     model.BroadcastLoaded(title, tags, cat) -> #(
-      Model(..model, bc_title: title, bc_tags: tags, bc_category_name: cat),
+      Model(
+        ..model,
+        bc_title: title,
+        bc_tags: tags,
+        bc_category_name: cat,
+        loading: False,
+      ),
       effect.none(),
     )
 
@@ -327,6 +353,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         cs_slow_mode: slow,
         cs_slow_seconds: sec,
         cs_follower_only: follower,
+        loading: False,
       ),
       effect.none(),
     )
@@ -351,7 +378,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
     // --- Block Manage ---
     model.BlockedUsersLoaded(users) -> #(
-      Model(..model, blocked_users: users),
+      Model(..model, blocked_users: users, loading: False),
       effect.none(),
     )
 
@@ -368,7 +395,13 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
     // --- Channel Info ---
     model.ChannelInfoLoaded(name, handle, img) -> #(
-      Model(..model, ch_name: name, ch_handle: handle, ch_image_url: img),
+      Model(
+        ..model,
+        ch_name: name,
+        ch_handle: handle,
+        ch_image_url: img,
+        loading: False,
+      ),
       effect.none(),
     )
 

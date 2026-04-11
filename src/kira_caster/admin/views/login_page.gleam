@@ -1,6 +1,6 @@
 import kira_caster/admin/views/layout
 import lustre/attribute.{attribute as attr}
-import lustre/element.{type Element, fragment, text}
+import lustre/element.{type Element, element as el, fragment, text}
 import lustre/element/html
 import wisp.{type Response}
 
@@ -43,6 +43,45 @@ fn login_body(error_message: String) -> Element(Nil) {
             attr("required", ""),
           ]),
           html.button([attribute.type_("submit")], [text("로그인")]),
+        ]),
+        html.div([attr("style", "margin-top:20px;text-align:center")], [
+          el("details", [], [
+            el(
+              "summary",
+              [
+                attr(
+                  "style",
+                  "font-size:0.85em;color:#888;cursor:pointer;list-style:none",
+                ),
+              ],
+              [text("비밀번호를 잊으셨나요?")],
+            ),
+            html.p(
+              [
+                attr(
+                  "style",
+                  "font-size:0.82em;color:#888;margin-top:8px;line-height:1.6;text-align:left",
+                ),
+              ],
+              [
+                text("비밀번호를 재설정하려면 프로그램을 종료한 후 같은 폴더에 있는 "),
+                html.code(
+                  [
+                    attr(
+                      "style",
+                      "background:rgba(253,113,155,0.1);padding:2px 6px;border-radius:4px",
+                    ),
+                  ],
+                  [text("kira_caster.db")],
+                ),
+                text(" 파일을 삭제하고 다시 시작하세요. 초기 설정 화면이 다시 나타납니다."),
+                html.br([]),
+                html.strong([attr("style", "color:var(--color-error)")], [
+                  text("주의: 저장된 모든 설정과 데이터가 초기화됩니다."),
+                ]),
+              ],
+            ),
+          ]),
         ]),
       ]),
     ]),

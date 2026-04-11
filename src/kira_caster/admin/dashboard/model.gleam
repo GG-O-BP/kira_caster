@@ -84,6 +84,7 @@ pub type Model {
   Model(
     ctx: DashboardContext,
     active_tab: Tab,
+    loading: Bool,
     toasts: List(Toast),
     next_toast_id: Int,
     // Adapter
@@ -260,6 +261,7 @@ pub fn new(ctx: DashboardContext) -> Model {
   Model(
     ctx: ctx,
     active_tab: Status,
+    loading: False,
     toasts: [],
     next_toast_id: 0,
     adapter_mode: mode,

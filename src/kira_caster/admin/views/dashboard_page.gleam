@@ -110,7 +110,7 @@ fn dashboard_css() -> String {
     .category-btn { background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); margin: 4px; transition: all .2s; }
     .category-btn:hover { border-color: var(--color-primary); color: var(--color-primary); background: rgba(253,113,155,0.08); }
     .tab-divider { width: 1px; height: 20px; background: var(--color-border); margin: 0 4px; flex-shrink: 0; align-self: center; }
-    .tab-group-label { font-size: 0.7em; color: #888; padding: 0 2px; white-space: nowrap; align-self: center; font-weight: 600; }
+    .tab-group-label { font-size: 0.75em; color: var(--color-primary); padding: 0 4px; white-space: nowrap; align-self: center; font-weight: 700; letter-spacing: 0.3px; }
     .welcome-card { margin-top:16px; padding:20px; background:rgba(253,113,155,0.06); border:1px solid rgba(253,113,155,0.15); border-radius:var(--radius-card); }
     .welcome-steps { display:flex; flex-direction:column; gap:8px; }
     .welcome-step { display:flex; gap:12px; align-items:center; padding:10px 12px; background:var(--color-bg); border:1px solid var(--color-border); border-radius:var(--radius-input); cursor:pointer; transition:all .2s; }
@@ -119,9 +119,13 @@ fn dashboard_css() -> String {
     .tag-remove { background: none; color: var(--color-primary); border: none; padding: 0 4px; margin-left: 4px; font-size: 0.85em; min-height: auto; }
     .tag-remove:hover { color: var(--color-error); }
     select:focus { outline: none; border-color: var(--color-primary); }
+    .loading-overlay { display: flex; justify-content: center; padding: 40px 0; }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--color-border); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     @media (max-width: 600px) {
       body { padding: 10px; }
-      .tabs { flex-direction: row; overflow-x: auto; flex-wrap: nowrap; position: sticky; top: 0; background: var(--color-bg); z-index: 10; padding-bottom: 8px; }
+      .tabs { flex-direction: row; overflow-x: auto; flex-wrap: nowrap; position: sticky; top: 0; background: var(--color-bg); z-index: 10; padding-bottom: 8px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      .tabs::-webkit-scrollbar { display: none; }
       .tab { text-align: center; white-space: nowrap; flex-shrink: 0; min-height: 44px; display: flex; align-items: center; justify-content: center; }
       .tab-group-label { display: none; }
       .tab-divider { display: none; }

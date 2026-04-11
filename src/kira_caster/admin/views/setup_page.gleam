@@ -49,10 +49,10 @@ fn setup_done_body() -> Element(Nil) {
             ],
             [],
           ),
-          html.p([], [text("설정을 적용하고 프로그램을 재시작하는 중입니다...")]),
+          html.p([], [text("설정을 저장했습니다. 잠시만 기다려주세요...")]),
           html.p(
             [attr("style", "margin-top:12px;font-size:0.85em;color:#888")],
-            [text("잠시 후 자동으로 대시보드로 이동합니다. 이 페이지를 닫지 마세요.")],
+            [text("약 5초 후 자동으로 관리 화면으로 이동합니다. 이 화면을 닫지 않아도 됩니다.")],
           ),
         ]),
       ]),
@@ -81,8 +81,21 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
           html.div([attribute.class("setup-section")], [
             html.h3([], [text("1. 관리자 비밀번호")]),
             html.p([attribute.class("setup-hint")], [
-              text("대시보드에 접속할 때 사용할 비밀번호입니다. 비워두면 비밀번호 없이 누구나 접근할 수 있습니다."),
+              text("대시보드에 접속할 때 사용할 비밀번호입니다."),
             ]),
+            html.p(
+              [
+                attr(
+                  "style",
+                  "font-size:0.82em;color:var(--color-error);margin-bottom:8px;line-height:1.4",
+                ),
+              ],
+              [
+                text(
+                  "비밀번호를 비워두면 같은 네트워크에 있는 누구나 봇을 조종할 수 있습니다. 꼭 비밀번호를 설정하는 것을 권장합니다.",
+                ),
+              ],
+            ),
             html.div(
               [
                 attr("style", "display:flex;gap:8px;align-items:center"),
@@ -92,7 +105,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
                   attribute.type_("password"),
                   attr("name", "admin_key"),
                   attr("id", "admin-key-input"),
-                  attribute.placeholder("비밀번호 (선택사항 - 비워둬도 됩니다)"),
+                  attribute.placeholder("비밀번호를 입력하세요"),
                   attr("style", "flex:1"),
                 ]),
                 html.button(
@@ -132,9 +145,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
                   text("앱 이름을 자유롭게 입력하세요"),
                 ]),
                 html.li([], [
-                  text(
-                    "'Redirect URI' 칸에 아래 주소를 복사해서 붙여넣으세요 (봇이 로그인 후 돌아올 주소입니다)",
-                  ),
+                  text("'Redirect URI' 칸에 아래 주소를 복사해서 붙여넣으세요"),
                 ]),
                 html.li([], [
                   text("앱을 만들면 '앱 ID'와 '비밀키'가 표시됩니다. 이 두 값을 아래 칸에 붙여넣으세요"),
@@ -182,7 +193,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
             ]),
             html.input([
               attr("name", "cime_client_id"),
-              attribute.placeholder("앱 ID (Client ID) - 개발자 센터에서 복사한 값"),
+              attribute.placeholder("앱 ID - 개발자 센터에서 복사한 값"),
             ]),
             html.div(
               [
@@ -191,7 +202,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
               [
                 html.input([
                   attr("name", "cime_client_secret"),
-                  attribute.placeholder("앱 비밀키 (Secret Key) - 개발자 센터에서 복사한 값"),
+                  attribute.placeholder("앱 비밀키 - 개발자 센터에서 복사한 값"),
                   attribute.type_("password"),
                   attr("id", "cime-secret-input"),
                   attr("style", "flex:1"),
@@ -222,7 +233,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
               ),
               html.p([attribute.class("setup-hint")], [
                 text(
-                  "씨미에서 봇을 사용하려면 '앱'을 등록해야 합니다. 마치 새 계정을 만드는 것과 비슷해요. 앱 ID와 비밀키는 봇의 아이디/비밀번호라고 생각하면 됩니다. Redirect URI는 로그인 성공 후 돌아올 주소예요 (자동으로 채워져 있으니 그대로 복사하면 됩니다). 채널 정보는 연동 후 자동으로 가져옵니다.",
+                  "씨미에서 봇을 사용하려면 '앱'을 등록해야 합니다. 마치 새 계정을 만드는 것과 비슷해요. 앱 ID와 비밀키는 봇의 아이디/비밀번호라고 생각하면 됩니다. 위의 주소(Redirect URI)는 자동으로 채워져 있으니 그대로 복사해서 붙여넣기만 하면 됩니다. 채널 정보는 연동 후 자동으로 가져옵니다.",
                 ),
               ]),
             ]),

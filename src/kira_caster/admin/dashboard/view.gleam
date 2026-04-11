@@ -38,9 +38,21 @@ pub fn view(model: Model) -> Element(Msg) {
 fn mode_badge(mode: model.AdapterMode) -> Element(Msg) {
   case mode {
     model.CimeMode ->
-      html.span([attribute.class("mode-badge cime")], [text("ci.me 연동")])
+      html.span(
+        [
+          attribute.class("mode-badge cime"),
+          attr("title", "씨미 방송과 연결되어 실제 채팅에서 봇이 동작합니다"),
+        ],
+        [text("씨미 연동 중")],
+      )
     model.MockMode ->
-      html.span([attribute.class("mode-badge mock")], [text("테스트 모드")])
+      html.span(
+        [
+          attribute.class("mode-badge mock"),
+          attr("title", "씨미와 연결되지 않은 상태입니다. 아래 '씨미 연동' 탭에서 연결할 수 있습니다"),
+        ],
+        [text("테스트 모드 — 씨미 미연결")],
+      )
   }
 }
 
@@ -119,17 +131,29 @@ fn tab_btn(label: String, tab: Tab, active: Tab) -> Element(Msg) {
 fn active_panel(model: Model) -> Element(Msg) {
   let #(desc, content) = case model.active_tab {
     model.Status -> #("", status_view(model))
-    model.Users -> #("채팅에 참여한 사용자들의 포인트와 출석 기록을 확인합니다", users_view(model))
-    model.Words -> #("채팅에서 자동으로 차단할 단어를 관리합니다", words_view(model))
-    model.Commands -> #("채팅에서 !명령어로 사용할 봇 응답을 설정합니다", commands_view(model))
+    model.Users -> #(
+      "채팅에 참여한 시청자 목록입니다. 각 시청자의 포인트와 출석 횟수를 확인할 수 있습니다",
+      users_view(model),
+    )
+    model.Words -> #("이 목록에 추가한 단어가 채팅에 입력되면 자동으로 삭제됩니다", words_view(model))
+    model.Commands -> #(
+      "시청자가 채팅에 !명령어를 입력하면 봇이 자동으로 답변합니다. 예: !인사 → 안녕하세요!",
+      commands_view(model),
+    )
     model.Quizzes -> #(
-      "채팅 퀴즈 문제를 관리합니다. 정답을 맞히면 포인트를 받습니다",
+      "채팅에서 퀴즈를 낼 수 있습니다. 시청자가 정답을 맞히면 포인트를 받습니다",
       quizzes_view(model),
     )
-    model.Votes -> #("시청자 투표를 만들고 결과를 확인합니다", votes_view(model))
-    model.Plugins -> #("봇의 개별 기능을 켜고 끌 수 있습니다", plugins_view(model))
-    model.Settings -> #("봇의 동작 방식을 조정합니다", settings_view(model))
-    model.Songs -> #("시청자가 신청한 YouTube 노래 목록을 관리합니다", songs_view(model))
+    model.Votes -> #("시청자에게 투표를 받을 수 있습니다. 예: 오늘 할 게임 투표", votes_view(model))
+    model.Plugins -> #(
+      "봇의 각 기능을 켜거나 끌 수 있습니다. 필요 없는 기능은 꺼두세요",
+      plugins_view(model),
+    )
+    model.Settings -> #(
+      "포인트, 명령어 사용 간격 등 봇의 세부 동작을 조정합니다",
+      settings_view(model),
+    )
+    model.Songs -> #("시청자가 채팅으로 신청한 YouTube 노래를 관리합니다", songs_view(model))
     model.CimeAuth -> #("", cime_auth_view(model))
     model.Broadcast -> #("", broadcast_view(model))
     model.ChatSettings -> #("", chat_settings_view(model))
@@ -163,7 +187,7 @@ fn status_view(model: Model) -> Element(Msg) {
           model.CimeMode -> connection_status_badge(model.connection_state)
           model.MockMode ->
             html.span([attr("style", "color:#888;font-size:0.85em")], [
-              text("테스트 모드 (씨미 미연동)"),
+              text("씨미와 연결되지 않음 — 아래 '씨미 연동'에서 연결하세요"),
             ])
         },
       ]),
@@ -203,12 +227,22 @@ fn status_view(model: Model) -> Element(Msg) {
           html.div([attribute.class("welcome-steps")], [
             welcome_step(
               "1",
-              "씨미 연동",
-              "ci.me 계정을 연결하면 실제 채팅에서 봇이 동작합니다",
+              "씨미 연동 — 봇을 채팅방에 연결하기",
+              "씨미 계정을 연결하면 실제 방송 채팅에서 봇이 자동으로 동작합니다. 여기를 클릭하세요",
               model.CimeAuth,
             ),
-            welcome_step("2", "명령어", "채팅에서 사용할 봇 명령어를 설정하세요", model.Commands),
-            welcome_step("3", "설정", "포인트, 쿨다운 등을 조정하세요", model.Settings),
+            welcome_step(
+              "2",
+              "명령어 — 봇이 할 말 정하기",
+              "시청자가 !명령어를 입력하면 봇이 답변합니다. 예: !인사 → '안녕하세요!'",
+              model.Commands,
+            ),
+            welcome_step(
+              "3",
+              "설정 — 포인트와 게임 규칙 조정하기",
+              "출석 포인트, 게임 보상 등을 자유롭게 바꿀 수 있습니다",
+              model.Settings,
+            ),
           ]),
         ])
       model.CimeMode -> text("")
@@ -622,48 +656,62 @@ fn settings_view(model: Model) -> Element(Msg) {
       "관리자 비밀번호",
       "",
       True,
-      "이 대시보드에 접속할 때 사용할 비밀번호 (비워두면 누구나 접근 가능)",
+      "이 관리 화면에 접속할 때 사용하는 비밀번호입니다. 비워두면 누구나 접근할 수 있으니 꼭 설정하세요",
     ),
     #(
       "cime_client_id",
       "씨미 앱 ID",
       "",
       False,
-      "씨미 개발자 센터 > 내 앱에서 확인할 수 있는 앱 ID (Client ID)",
+      "씨미 개발자 센터(ci.me/developer)에서 앱을 만들면 발급되는 ID입니다",
     ),
     #(
       "cime_client_secret",
       "씨미 앱 비밀키",
       "",
       True,
-      "씨미 개발자 센터 > 내 앱에서 확인할 수 있는 비밀키 (Secret Key)",
+      "씨미 개발자 센터에서 앱을 만들면 발급되는 비밀키입니다. 다른 사람에게 절대 공유하지 마세요",
     ),
     #(
       "youtube_api_key",
       "YouTube API 키",
       "",
       False,
-      "YouTube 영상 제목/길이 자동 조회에 사용 (없으면 URL만 표시됨, 대부분 비워둬도 OK)",
+      "신청곡의 제목과 길이를 자동으로 가져오는 데 사용됩니다. 비워두면 URL만 표시되며, 대부분 비워둬도 됩니다",
     ),
   ]
   let game_defs = [
     #(
       "cooldown_ms",
-      "명령어 쿨다운",
+      "명령어 사용 간격",
       "5000",
       False,
-      "같은 명령어를 다시 쓸 수 있는 대기 시간 (예: 5000 = 5초)",
+      "같은 명령어를 다시 쓸 수 있을 때까지 기다리는 시간입니다. 숫자가 클수록 천천히 사용 가능합니다",
     ),
-    #("attendance_points", "출석 포인트", "10", False, "하루 한 번 출석 시 받는 포인트"),
-    #("dice_win_points", "주사위 승리 포인트", "50", False, "주사위 게임에서 이기면 받는 포인트"),
-    #("dice_loss_points", "주사위 패배 포인트", "-20", False, "주사위 게임에서 지면 깎이는 포인트"),
-    #("rps_win_points", "가위바위보 승리 포인트", "30", False, "가위바위보에서 이기면 받는 포인트"),
-    #("rps_loss_points", "가위바위보 패배 포인트", "-10", False, "가위바위보에서 지면 깎이는 포인트"),
+    #("attendance_points", "출석 보상", "10", False, "시청자가 하루 한 번 출석하면 받는 포인트입니다"),
+    #("dice_win_points", "주사위 이김 보상", "50", False, "주사위 게임에서 이기면 받는 포인트입니다"),
+    #(
+      "dice_loss_points",
+      "주사위 짐 감점",
+      "-20",
+      False,
+      "주사위 게임에서 지면 깎이는 포인트입니다. 음수(-)로 입력하세요",
+    ),
+    #("rps_win_points", "가위바위보 이김 보상", "30", False, "가위바위보에서 이기면 받는 포인트입니다"),
+    #(
+      "rps_loss_points",
+      "가위바위보 짐 감점",
+      "-10",
+      False,
+      "가위바위보에서 지면 깎이는 포인트입니다. 음수(-)로 입력하세요",
+    ),
   ]
   fragment([
     section_heading("시스템 설정"),
     html.p([attr("style", "font-size:0.85em;color:#888;margin-bottom:8px")], [
-      text("이 설정을 변경하면 프로그램 재시작이 필요합니다. 수정 후 아래 '재시작하여 적용' 버튼을 눌러주세요."),
+      text(
+        "이 설정은 변경 후 아래 '변경사항 적용' 버튼을 눌러야 반영됩니다. 버튼을 누르면 프로그램이 자동으로 다시 시작됩니다.",
+      ),
     ]),
     html.div(
       [],
@@ -756,19 +804,19 @@ fn ms_hint(key: String, val: String) -> Element(Msg) {
           let sec = ms / 1000
           let remainder = ms % 1000
           case sec, remainder {
-            0, _ -> text("")
-            s, 0 -> text(" = " <> int.to_string(s) <> "초")
+            0, _ -> text(" (1초 미만)")
+            s, 0 -> text(" → 약 " <> int.to_string(s) <> "초마다 명령어 사용 가능")
             s, _ ->
               text(
-                " = "
+                " → 약 "
                 <> int.to_string(s)
                 <> "."
                 <> int.to_string(remainder / 100)
-                <> "초",
+                <> "초마다 명령어 사용 가능",
               )
           }
         }
-        Error(_) -> text("")
+        Error(_) -> text(" (숫자를 입력해주세요)")
       }
     _ -> text("")
   }

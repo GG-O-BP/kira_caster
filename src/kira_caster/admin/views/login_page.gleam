@@ -84,13 +84,18 @@ fn login_body(error_message: String) -> Element(Nil) {
                 ),
               ],
               [
-                html.p([attr("style", "margin-bottom:6px")], [
+                html.p([attr("style", "margin-bottom:6px;font-weight:600")], [
                   text("비밀번호를 초기화하는 방법:"),
                 ]),
                 html.ol([attr("style", "padding-left:20px;margin-bottom:8px")], [
-                  html.li([], [text("프로그램을 종료하세요")]),
                   html.li([], [
-                    text("같은 폴더에 있는 "),
+                    text("먼저 이 프로그램(kira_caster)을 종료하세요"),
+                  ]),
+                  html.li([], [
+                    text("프로그램이 있는 폴더를 열어주세요"),
+                  ]),
+                  html.li([], [
+                    text("그 폴더에서 "),
                     html.code(
                       [
                         attr(
@@ -100,7 +105,10 @@ fn login_body(error_message: String) -> Element(Nil) {
                       ],
                       [text("kira_caster.db")],
                     ),
-                    text(" 파일의 이름을 "),
+                    text(" 라는 파일을 찾으세요. 이 파일에 모든 설정이 저장되어 있습니다"),
+                  ]),
+                  html.li([], [
+                    text("이 파일의 이름 뒤에 "),
                     html.code(
                       [
                         attr(
@@ -108,16 +116,16 @@ fn login_body(error_message: String) -> Element(Nil) {
                           "background:rgba(253,113,155,0.1);padding:2px 6px;border-radius:4px",
                         ),
                       ],
-                      [text("kira_caster.db.backup")],
+                      [text(".backup")],
                     ),
-                    text("으로 변경하세요"),
+                    text(" 을 붙여주세요 (예: kira_caster.db → kira_caster.db.backup)"),
                   ]),
                   html.li([], [
-                    text("프로그램을 다시 시작하면 초기 설정 화면이 나타납니다"),
+                    text("프로그램을 다시 시작하면 처음 설정 화면이 나타나고, 새 비밀번호를 설정할 수 있습니다"),
                   ]),
                 ]),
                 html.p([attr("style", "color:#aaa;font-size:0.95em")], [
-                  text("원래 파일(.backup)은 남아있으니 필요하면 되돌릴 수 있습니다."),
+                  text("이름을 바꾼 원래 파일은 그대로 남아있으니, 필요하면 이름을 되돌려 복구할 수 있습니다."),
                 ]),
               ],
             ),

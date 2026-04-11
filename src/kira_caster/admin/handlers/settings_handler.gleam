@@ -19,7 +19,7 @@ pub fn handle_get_settings(repo: Repository) -> Response {
         })
       wisp.json_response(json.to_string(body), 200)
     }
-    Error(_) -> error_json("설정 목록을 불러올 수 없습니다")
+    Error(_) -> error_json("설정 목록을 불러올 수 없습니다. 프로그램을 재시작한 후 다시 시도해주세요")
   }
 }
 
@@ -56,9 +56,9 @@ pub fn handle_set_setting(
             200,
           )
         }
-        Error(_) -> error_json("설정 저장에 실패했습니다. 값을 확인해주세요")
+        Error(_) -> error_json("설정을 저장할 수 없습니다. 입력한 값이 올바른지 확인하고 다시 시도해주세요")
       }
-    Error(_) -> wisp.bad_request("invalid request body")
+    Error(_) -> bad_request_json("잘못된 요청입니다. 페이지를 새로고침한 후 다시 시도해주세요")
   }
 }
 
@@ -71,5 +71,17 @@ fn error_json(message: String) -> Response {
       ]),
     ),
     500,
+  )
+}
+
+fn bad_request_json(message: String) -> Response {
+  wisp.json_response(
+    json.to_string(
+      json.object([
+        #("status", json.string("error")),
+        #("message", json.string(message)),
+      ]),
+    ),
+    400,
   )
 }

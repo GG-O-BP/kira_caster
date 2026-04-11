@@ -32,7 +32,7 @@ pub fn handle_live_status(
             ),
             200,
           )
-        Error(_) -> api_error("방송 상태 조회 실패")
+        Error(_) -> api_error("방송 상태를 가져올 수 없습니다. 인터넷 연결을 확인하거나 잠시 후 다시 시도해주세요")
       }
     }
   }
@@ -69,7 +69,8 @@ pub fn handle_live_setting(
                 ),
                 200,
               )
-            Error(_) -> api_error("방송 설정 조회 실패")
+            Error(_) ->
+              api_error("방송 설정을 가져올 수 없습니다. 씨미 연동 상태를 확인하거나 잠시 후 다시 시도해주세요")
           }
         Error(e) -> api_error(e)
       }
@@ -90,7 +91,7 @@ pub fn handle_update_live_setting(
         Ok(token) ->
           case a.update_live_setting(token, string.inspect(body)) {
             Ok(Nil) -> ok_response("방송 설정 변경 완료")
-            Error(_) -> api_error("방송 설정 변경 실패")
+            Error(_) -> api_error("방송 설정을 변경할 수 없습니다. 잠시 후 다시 시도해주세요")
           }
         Error(e) -> api_error(e)
       }
@@ -126,7 +127,8 @@ pub fn handle_chat_settings(
                 ),
                 200,
               )
-            Error(_) -> api_error("채팅 설정 조회 실패")
+            Error(_) ->
+              api_error("채팅 설정을 가져올 수 없습니다. 씨미 연동 상태를 확인하거나 잠시 후 다시 시도해주세요")
           }
         Error(e) -> api_error(e)
       }
@@ -147,7 +149,7 @@ pub fn handle_update_chat_settings(
         Ok(token) ->
           case a.update_chat_settings(token, string.inspect(body)) {
             Ok(Nil) -> ok_response("채팅 설정 변경 완료")
-            Error(_) -> api_error("채팅 설정 변경 실패")
+            Error(_) -> api_error("채팅 설정을 변경할 수 없습니다. 잠시 후 다시 시도해주세요")
           }
         Error(e) -> api_error(e)
       }
@@ -180,7 +182,7 @@ pub fn handle_blocked_users(
                 ),
                 200,
               )
-            Error(_) -> api_error("차단 목록 조회 실패")
+            Error(_) -> api_error("차단 목록을 가져올 수 없습니다. 잠시 후 다시 시도해주세요")
           }
         Error(e) -> api_error(e)
       }
@@ -208,9 +210,9 @@ pub fn handle_block_user(
         Ok(channel_id), Ok(token) ->
           case a.block_user(token, channel_id) {
             Ok(Nil) -> ok_response("차단 완료")
-            Error(_) -> api_error("차단 실패")
+            Error(_) -> api_error("차단에 실패했습니다. 대상 정보가 올바른지 확인해주세요")
           }
-        _, _ -> api_error("요청 처리 실패")
+        _, _ -> api_error("요청을 처리할 수 없습니다. 씨미 연동 상태를 확인해주세요")
       }
     }
     _, _ -> service_unavailable()
@@ -236,9 +238,9 @@ pub fn handle_unblock_user(
         Ok(channel_id), Ok(token) ->
           case a.unblock_user(token, channel_id) {
             Ok(Nil) -> ok_response("차단 해제 완료")
-            Error(_) -> api_error("차단 해제 실패")
+            Error(_) -> api_error("차단 해제에 실패했습니다. 잠시 후 다시 시도해주세요")
           }
-        _, _ -> api_error("요청 처리 실패")
+        _, _ -> api_error("요청을 처리할 수 없습니다. 씨미 연동 상태를 확인해주세요")
       }
     }
     _, _ -> service_unavailable()
@@ -270,7 +272,8 @@ pub fn handle_channel_info(
                 ),
                 200,
               )
-            Error(_) -> api_error("채널 정보 조회 실패")
+            Error(_) ->
+              api_error("채널 정보를 가져올 수 없습니다. 씨미 연동 상태를 확인하거나 잠시 후 다시 시도해주세요")
           }
         Error(e) -> api_error(e)
       }
@@ -298,7 +301,7 @@ pub fn handle_stream_key(
                 ),
                 200,
               )
-            Error(_) -> api_error("스트림 키 조회 실패")
+            Error(_) -> api_error("스트림 키를 가져올 수 없습니다. 잠시 후 다시 시도해주세요")
           }
         Error(e) -> api_error(e)
       }
@@ -334,7 +337,7 @@ pub fn handle_categories(req: Request, api: Option(CimeApi)) -> Response {
             ),
             200,
           )
-        Error(_) -> api_error("카테고리 검색 실패")
+        Error(_) -> api_error("카테고리를 검색할 수 없습니다. 잠시 후 다시 시도해주세요")
       }
     }
     None -> service_unavailable()
@@ -370,7 +373,12 @@ fn service_unavailable() -> Response {
     json.to_string(
       json.object([
         #("status", json.string("error")),
-        #("message", json.string("씨미 연동이 설정되지 않았습니다")),
+        #(
+          "message",
+          json.string(
+            "씨미 연동이 아직 설정되지 않았습니다. '설정' 탭에서 씨미 앱 ID와 비밀키를 입력한 뒤 '변경사항 적용' 버튼을 눌러주세요",
+          ),
+        ),
       ]),
     ),
     503,

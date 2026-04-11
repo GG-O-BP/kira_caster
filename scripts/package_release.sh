@@ -239,12 +239,9 @@ echo  If this keeps happening, send erl_crash.dump to the developer.
 echo.
 pause
 BATCH
-# LF → CRLF 변환 (cmd.exe 호환성)
-if command -v sed &>/dev/null; then
-  sed -i 's/$/\r/' "${RELEASE_DIR}/start.bat"
-elif command -v unix2dos &>/dev/null; then
-  unix2dos "${RELEASE_DIR}/start.bat" 2>/dev/null
-fi
+# LF → CRLF 변환 (cmd.exe 호환성, macOS/Linux 공통)
+awk '{printf "%s\r\n", $0}' "${RELEASE_DIR}/start.bat" > "${RELEASE_DIR}/start.bat.tmp" \
+  && mv "${RELEASE_DIR}/start.bat.tmp" "${RELEASE_DIR}/start.bat"
 
 # 11. 패키징
 tar czf "kira_caster-${TARGET}.tar.gz" "$RELEASE_DIR"

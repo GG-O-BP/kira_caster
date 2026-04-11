@@ -654,7 +654,7 @@ fn settings_view(model: Model) -> Element(Msg) {
       "씨미 앱 ID",
       "",
       False,
-      "씨미 개발자 센터(ci.me/developer)에서 앱 만들면 나오는 ID야용",
+      "씨미 개발자 센터(developers.ci.me)에서 앱 만들면 나오는 ID야용",
     ),
     #(
       "cime_client_secret",

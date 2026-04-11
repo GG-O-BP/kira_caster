@@ -182,7 +182,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
               ),
               html.a(
                 [
-                  attribute.href("https://ci.me/developer"),
+                  attribute.href("https://developers.ci.me/applications"),
                   attr("target", "_blank"),
                   attribute.class("guide-link"),
                 ],

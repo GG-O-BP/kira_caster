@@ -1,7 +1,7 @@
 -module(kira_caster_ffi).
 -export([now_ms/0, format_ms/1, get_env/1, log_info/1, log_warn/1, log_error/1,
          compile_gleam/2, call_command/3, unload_command/1,
-         ensure_custom_project/0]).
+         ensure_custom_project/0, restart_application/0]).
 
 now_ms() -> os:system_time(millisecond).
 
@@ -21,6 +21,14 @@ get_env(Name) ->
 log_info(Msg) -> logger:info("~ts", [Msg]), nil.
 log_warn(Msg) -> logger:warning("~ts", [Msg]), nil.
 log_error(Msg) -> logger:error("~ts", [Msg]), nil.
+
+restart_application() ->
+    logger:info("kira_caster restarting..."),
+    spawn(fun() ->
+        timer:sleep(2000),
+        init:restart()
+    end),
+    nil.
 
 %% --- Advanced Gleam Commands ---
 

@@ -522,6 +522,16 @@ pub fn save_setting(
   })
 }
 
+@external(erlang, "kira_caster_ffi", "restart_application")
+fn do_restart() -> Nil
+
+pub fn restart_app() -> Effect(Msg) {
+  async(fn(dispatch) {
+    dispatch(model.ShowToast("재시작 중... 잠시 후 페이지가 새로고침됩니다", model.SuccessToast))
+    do_restart()
+  })
+}
+
 pub fn delete_song(repo: Repository, id: Int) -> Effect(Msg) {
   crud(fn() { repo.remove_song(id) }, "곡 삭제 완료", "곡 삭제에 실패했습니다")
 }

@@ -41,9 +41,10 @@ pub fn start(ctx: router.RouterContext, config: Config) -> Result(Nil, String) {
     |> mist.start
   {
     Ok(_) -> {
-      logger.info(
-        "Admin dashboard running on port " <> int.to_string(config.admin_port),
-      )
+      logger.info("=====================================")
+      logger.info("  kira_caster 대시보드")
+      logger.info("  http://localhost:" <> int.to_string(config.admin_port))
+      logger.info("=====================================")
       Ok(Nil)
     }
     Error(_) -> Error("Failed to start admin server")

@@ -123,6 +123,14 @@ fn find_form_value(values: List(#(String, String)), key: String) -> String {
   }
 }
 
+@external(erlang, "kira_caster_ffi", "restart_application")
+fn restart_application() -> Nil
+
+fn handle_restart() -> Response {
+  restart_application()
+  wisp.json_response("{\"ok\":true}", 200)
+}
+
 fn route(req: Request, ctx: RouterContext) -> Response {
   case req.method, request.path_segments(req) {
     http.Get, ["status"] -> status_handler.handle_status(ctx.start_time)
@@ -186,6 +194,7 @@ fn route(req: Request, ctx: RouterContext) -> Response {
       cime_handler.handle_stream_key(req, ctx.cime_api, ctx.get_token)
     http.Get, ["cime", "categories"] ->
       cime_handler.handle_categories(req, ctx.cime_api)
+    http.Post, ["restart"] -> handle_restart()
     http.Get, [] -> dashboard_page.handle_dashboard()
     _, _ -> wisp.not_found()
   }

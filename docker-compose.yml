@@ -8,6 +8,12 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/status"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
 
 volumes:
   kira_data:

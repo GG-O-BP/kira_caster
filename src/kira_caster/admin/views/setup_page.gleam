@@ -1,6 +1,6 @@
 import kira_caster/admin/views/layout
 import lustre/attribute.{attribute as attr}
-import lustre/element.{type Element, fragment, text}
+import lustre/element.{type Element, element as el, fragment, text}
 import lustre/element/html
 import wisp.{type Response}
 
@@ -13,6 +13,15 @@ pub fn handle_setup(message: String, is_success: Bool) -> Response {
   )
 }
 
+pub fn handle_setup_done() -> Response {
+  layout.page(
+    title: "kira_caster 설정 완료",
+    head: setup_head() <> "<meta http-equiv=\"refresh\" content=\"5;url=/\">",
+    body: setup_done_body(),
+    tail: "",
+  )
+}
+
 fn setup_head() -> String {
   "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">"
   <> "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>"
@@ -20,6 +29,26 @@ fn setup_head() -> String {
   <> "<style>"
   <> setup_css()
   <> "</style>"
+}
+
+fn setup_done_body() -> Element(Nil) {
+  fragment([
+    html.div([attribute.class("setup-container")], [
+      html.div([attribute.class("setup-card")], [
+        html.h1([attribute.class("setup-title")], [text("kira_caster")]),
+        html.div([attribute.class("setup-success")], [
+          text("설정이 저장되었습니다!"),
+        ]),
+        html.div([attribute.class("setup-done")], [
+          html.p([], [text("설정을 적용하고 있습니다...")]),
+          html.p(
+            [attr("style", "margin-top:12px;font-size:0.85em;color:#888")],
+            [text("잠시 후 자동으로 대시보드로 이동합니다.")],
+          ),
+        ]),
+      ]),
+    ]),
+  ])
 }
 
 fn setup_body(message: String, is_success: Bool) -> Element(Nil) {
@@ -78,26 +107,60 @@ fn setup_body(message: String, is_success: Bool) -> Element(Nil) {
               html.div([attribute.class("setup-section")], [
                 html.h3([], [text("2. 씨미(ci.me) 연동")]),
                 html.p([attribute.class("setup-hint")], [
-                  text("씨미 스트리밍과 연동하려면 아래 정보를 입력하세요. 나중에 설정해도 됩니다."),
+                  text("씨미 스트리밍과 연동하려면 아래 정보를 입력하세요. 나중에 대시보드에서도 설정할 수 있습니다."),
                 ]),
-                html.input([
-                  attr("name", "cime_client_id"),
-                  attribute.placeholder("Client ID"),
-                ]),
-                html.input([
-                  attr("name", "cime_client_secret"),
-                  attribute.placeholder("Client Secret"),
-                  attribute.type_("password"),
-                ]),
-                html.input([
-                  attr("name", "cime_redirect_uri"),
-                  attribute.placeholder(
-                    "Redirect URI (기본: http://localhost:8080/oauth/callback)",
+                html.div([attribute.class("setup-guide")], [
+                  html.p([attr("style", "font-weight:600;margin-bottom:6px")], [
+                    text("준비 방법:"),
+                  ]),
+                  html.ol([attr("style", "padding-left:20px;line-height:1.8")], [
+                    html.li([], [
+                      text("씨미 개발자 센터에 접속하세요"),
+                    ]),
+                    html.li([], [
+                      text("\"새 앱 만들기\"를 클릭하세요"),
+                    ]),
+                    html.li([], [
+                      text("앱 이름에 \"kira_caster\"를 입력하세요"),
+                    ]),
+                    html.li([], [
+                      text("Redirect URI에 "),
+                      html.code([], [
+                        text("http://localhost:8080/oauth/callback"),
+                      ]),
+                      text(" 을 입력하세요"),
+                    ]),
+                    html.li([], [
+                      text("앱을 생성하면 표시되는 앱 ID와 앱 비밀키를 아래에 입력하세요"),
+                    ]),
+                  ]),
+                  html.a(
+                    [
+                      attribute.href("https://ci.me/developer"),
+                      attr("target", "_blank"),
+                      attribute.class("guide-link"),
+                    ],
+                    [text("씨미 개발자 센터 열기")],
                   ),
                 ]),
                 html.input([
-                  attr("name", "cime_channel_id"),
-                  attribute.placeholder("채널 ID (씨미 연동 후 자동 조회 가능)"),
+                  attr("name", "cime_client_id"),
+                  attribute.placeholder("앱 ID (Client ID) - 개발자 센터에서 복사"),
+                ]),
+                html.input([
+                  attr("name", "cime_client_secret"),
+                  attribute.placeholder("앱 비밀키 (Client Secret) - 개발자 센터에서 복사"),
+                  attribute.type_("password"),
+                ]),
+                el("details", [], [
+                  el("summary", [attribute.class("setup-hint")], [
+                    text("이게 뭔가요?"),
+                  ]),
+                  html.p([attribute.class("setup-hint")], [
+                    text(
+                      "씨미에서 봇을 사용하려면 '앱'을 등록해야 합니다. 앱 ID와 비밀키는 봇이 씨미에 로그인할 때 사용하는 열쇠 같은 것입니다. 채널 ID는 연동 후 자동으로 가져옵니다.",
+                    ),
+                  ]),
                 ]),
               ]),
               html.button([attribute.type_("submit")], [text("설정 완료")]),
@@ -149,6 +212,12 @@ fn setup_css() -> String {
     input:focus { outline: none; border-color: var(--color-primary); }
     button { padding: 14px; background: var(--gradient-secondary); color: #fff; border: none; border-radius: var(--radius-pill); cursor: pointer; font-family: inherit; font-weight: 600; font-size: 1em; transition: opacity .2s; margin-top: 8px; }
     button:hover { opacity: 0.85; }
+    .setup-guide { background: rgba(253,113,155,0.06); border: 1px solid rgba(253,113,155,0.15); border-radius: var(--radius-input); padding: 14px 16px; margin-bottom: 12px; font-size: 0.88em; color: var(--color-text); line-height: 1.5; }
+    .guide-link { display: inline-block; margin-top: 10px; padding: 8px 16px; background: var(--gradient-secondary); color: #fff !important; border-radius: var(--radius-pill); font-size: 0.9em; font-weight: 600; text-decoration: none; transition: opacity .2s; }
+    .guide-link:hover { opacity: 0.85; }
+    details summary { cursor: pointer; color: var(--color-primary); font-weight: 600; }
+    details summary:hover { opacity: 0.8; }
+    details[open] summary { margin-bottom: 6px; }
     .skip-link { display: block; text-align: center; margin-top: 16px; color: #888; font-size: 0.85em; text-decoration: none; transition: color .2s; }
     .skip-link:hover { color: var(--color-primary); }
   "

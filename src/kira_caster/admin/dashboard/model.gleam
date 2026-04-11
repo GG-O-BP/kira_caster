@@ -118,6 +118,7 @@ pub type Model {
     plugins: List(PluginInfo),
     // Settings
     settings: List(#(String, String)),
+    editing_settings: List(#(String, String)),
     // Songs
     songs: List(SongData),
     current_song: Option(SongData),
@@ -204,7 +205,9 @@ pub type Msg {
   TogglePlugin(String, Bool)
   // Settings
   SettingsLoaded(List(#(String, String)))
+  UpdateSettingEdit(String, String)
   SaveSetting(String, String)
+  RestartApp
   // Songs
   SongsLoaded(List(SongData), Option(SongData), String)
   UpdateSongUrl(String)
@@ -282,6 +285,7 @@ pub fn new(ctx: DashboardContext) -> Model {
     vote_options: "",
     plugins: [],
     settings: [],
+    editing_settings: [],
     songs: [],
     current_song: None,
     song_version: "",

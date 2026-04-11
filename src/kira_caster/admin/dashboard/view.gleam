@@ -20,7 +20,7 @@ pub fn view(model: Model) -> Element(Msg) {
       html.h1([], [text("kira_caster 관리 대시보드")]),
       mode_badge(model.adapter_mode),
     ]),
-    tabs_bar(model.active_tab),
+    tabs_bar(model.active_tab, model.adapter_mode),
     html.div([attribute.class("panel active")], [active_panel(model)]),
     toast_container(model.toasts),
   ])
@@ -37,23 +37,59 @@ fn mode_badge(mode: model.AdapterMode) -> Element(Msg) {
 
 // --- Tabs bar ---------------------------------------------------------------
 
-fn tabs_bar(active: Tab) -> Element(Msg) {
-  html.div([attribute.class("tabs")], [
-    tab_btn("상태", model.Status, active),
-    tab_btn("유저", model.Users, active),
-    tab_btn("금칙어", model.Words, active),
-    tab_btn("명령어", model.Commands, active),
-    tab_btn("퀴즈", model.Quizzes, active),
-    tab_btn("투표", model.Votes, active),
-    tab_btn("플러그인", model.Plugins, active),
-    tab_btn("설정", model.Settings, active),
-    tab_btn("신청곡", model.Songs, active),
-    tab_btn("씨미 연동", model.CimeAuth, active),
-    tab_btn("방송 설정", model.Broadcast, active),
-    tab_btn("채팅 설정", model.ChatSettings, active),
-    tab_btn("차단 관리", model.BlockManage, active),
-    tab_btn("채널 정보", model.ChannelInfo, active),
-  ])
+fn tabs_bar(active: Tab, mode: model.AdapterMode) -> Element(Msg) {
+  html.div(
+    [attribute.class("tabs")],
+    list.flatten([
+      // 기본
+      [
+        tab_group_label("기본"),
+        tab_btn("상태", model.Status, active),
+        tab_btn("유저", model.Users, active),
+        tab_btn("설정", model.Settings, active),
+      ],
+      // 채팅 관리
+      [
+        tab_divider(),
+        tab_group_label("채팅 관리"),
+        tab_btn("금칙어", model.Words, active),
+        tab_btn("명령어", model.Commands, active),
+        tab_btn("퀴즈", model.Quizzes, active),
+        tab_btn("투표", model.Votes, active),
+      ],
+      // 엔터테인먼트
+      [
+        tab_divider(),
+        tab_group_label("엔터테인먼트"),
+        tab_btn("신청곡", model.Songs, active),
+        tab_btn("플러그인", model.Plugins, active),
+      ],
+      // 씨미 연동 (MockMode에서는 연동 탭만 표시)
+      case mode {
+        model.CimeMode -> [
+          tab_divider(),
+          tab_group_label("씨미"),
+          tab_btn("씨미 연동", model.CimeAuth, active),
+          tab_btn("방송 설정", model.Broadcast, active),
+          tab_btn("채팅 설정", model.ChatSettings, active),
+          tab_btn("차단 관리", model.BlockManage, active),
+          tab_btn("채널 정보", model.ChannelInfo, active),
+        ]
+        model.MockMode -> [
+          tab_divider(),
+          tab_btn("씨미 연동", model.CimeAuth, active),
+        ]
+      },
+    ]),
+  )
+}
+
+fn tab_divider() -> Element(Msg) {
+  html.div([attribute.class("tab-divider")], [])
+}
+
+fn tab_group_label(label: String) -> Element(Msg) {
+  html.span([attribute.class("tab-group-label")], [text(label)])
 }
 
 fn tab_btn(label: String, tab: Tab, active: Tab) -> Element(Msg) {
@@ -125,31 +161,46 @@ fn status_view(model: Model) -> Element(Msg) {
     ]),
     case model.adapter_mode {
       model.MockMode ->
-        html.div(
-          [
-            attr(
-              "style",
-              "margin-top:16px;padding:12px;background:rgba(253,113,155,0.08);border-radius:8px;font-size:0.9em;line-height:1.5",
+        html.div([attribute.class("welcome-card")], [
+          html.h3([attr("style", "margin-bottom:12px;font-size:1.1em")], [
+            text("kira_caster에 오신 것을 환영합니다!"),
+          ]),
+          html.p([attr("style", "margin-bottom:12px;color:#888")], [
+            text("현재 테스트 모드로 실행 중입니다. 아래 순서로 시작해보세요:"),
+          ]),
+          html.div([attribute.class("welcome-steps")], [
+            welcome_step(
+              "1",
+              "씨미 연동",
+              "ci.me 계정을 연결하면 실제 채팅에서 봇이 동작합니다",
+              model.CimeAuth,
             ),
-          ],
-          [
-            text("씨미 계정을 연동하면 실제 채팅에서 봇을 사용할 수 있습니다. "),
-            html.a(
-              [
-                event.on_click(model.SwitchTab(model.CimeAuth)),
-                attr(
-                  "style",
-                  "cursor:pointer;color:var(--color-link);font-weight:600",
-                ),
-              ],
-              [text("씨미 연동 탭")],
-            ),
-            text("에서 설정하세요."),
-          ],
-        )
+            welcome_step("2", "명령어", "채팅에서 사용할 봇 명령어를 설정하세요", model.Commands),
+            welcome_step("3", "설정", "포인트, 쿨다운 등을 조정하세요", model.Settings),
+          ]),
+        ])
       model.CimeMode -> text("")
     },
   ])
+}
+
+fn welcome_step(
+  num: String,
+  title: String,
+  desc: String,
+  tab: Tab,
+) -> Element(Msg) {
+  html.div(
+    [attribute.class("welcome-step"), event.on_click(model.SwitchTab(tab))],
+    [
+      html.span([attribute.class("welcome-step-num")], [text(num)]),
+      html.div([], [
+        html.strong([], [text(title)]),
+        html.br([]),
+        html.span([attr("style", "font-size:0.85em;color:#888")], [text(desc)]),
+      ]),
+    ],
+  )
 }
 
 fn connection_status_badge(state: model.CimeConnectionState) -> Element(Msg) {
@@ -518,30 +569,78 @@ fn plugins_view(model: Model) -> Element(Msg) {
 // --- 8. Settings ------------------------------------------------------------
 
 fn settings_view(model: Model) -> Element(Msg) {
-  let setting_defs = [
-    #("cooldown_ms", "쿨다운 (ms)", "5000"),
-    #("attendance_points", "출석 포인트", "10"),
-    #("dice_win_points", "주사위 승리 포인트", "50"),
-    #("dice_loss_points", "주사위 패배 포인트", "-20"),
-    #("rps_win_points", "가위바위보 승리 포인트", "30"),
-    #("rps_loss_points", "가위바위보 패배 포인트", "-10"),
+  let system_defs = [
+    #("admin_key", "관리자 비밀번호", "", True),
+    #("cime_client_id", "씨미 앱 ID", "", False),
+    #("cime_client_secret", "씨미 앱 비밀키", "", True),
+    #("youtube_api_key", "YouTube API 키", "", False),
   ]
-  html.div(
-    [],
-    list.map(setting_defs, fn(def) {
-      let #(key, label, default) = def
-      let val = find_setting(model.settings, key, default)
-      html.div([attribute.class("form-row")], [
-        html.label([attr("style", "min-width:180px;font-weight:600")], [
-          text(label),
-        ]),
-        html.span([], [text(val)]),
-        html.button([event.on_click(model.SaveSetting(key, val))], [
-          text("저장"),
-        ]),
-      ])
-    }),
-  )
+  let game_defs = [
+    #("cooldown_ms", "명령어 쿨다운 (밀리초)", "5000", False),
+    #("attendance_points", "출석 포인트", "10", False),
+    #("dice_win_points", "주사위 승리 포인트", "50", False),
+    #("dice_loss_points", "주사위 패배 포인트", "-20", False),
+    #("rps_win_points", "가위바위보 승리 포인트", "30", False),
+    #("rps_loss_points", "가위바위보 패배 포인트", "-10", False),
+  ]
+  fragment([
+    section_heading("시스템 설정"),
+    html.p([attr("style", "font-size:0.85em;color:#888;margin-bottom:8px")], [
+      text("변경 후 재시작해야 적용됩니다."),
+    ]),
+    html.div(
+      [],
+      list.map(system_defs, fn(def) {
+        let #(key, label, default, is_secret) = def
+        setting_row(model, key, label, default, is_secret)
+      }),
+    ),
+    html.div([attr("style", "margin-top:12px")], [
+      html.button(
+        [
+          attribute.class("danger"),
+          event.on_click(model.RestartApp),
+        ],
+        [text("재시작하여 적용")],
+      ),
+    ]),
+    section_heading_top("게임 설정"),
+    html.p([attr("style", "font-size:0.85em;color:#888;margin-bottom:8px")], [
+      text("저장하면 바로 적용됩니다."),
+    ]),
+    html.div(
+      [],
+      list.map(game_defs, fn(def) {
+        let #(key, label, default, is_secret) = def
+        setting_row(model, key, label, default, is_secret)
+      }),
+    ),
+  ])
+}
+
+fn setting_row(
+  model: Model,
+  key: String,
+  label: String,
+  default: String,
+  is_secret: Bool,
+) -> Element(Msg) {
+  let val = find_setting(model.editing_settings, key, default)
+  html.div([attribute.class("form-row")], [
+    html.label([attr("style", "min-width:180px;font-weight:600")], [
+      text(label),
+    ]),
+    html.input([
+      attribute.value(val),
+      case is_secret {
+        True -> attribute.type_("password")
+        False -> attribute.type_("text")
+      },
+      event.on_input(fn(v) { model.UpdateSettingEdit(key, v) }),
+      attr("style", "flex:1;min-width:120px"),
+    ]),
+    html.button([event.on_click(model.SaveSetting(key, val))], [text("저장")]),
+  ])
 }
 
 fn find_setting(

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=kira_caster
+Comment=ci.me streaming chatbot
+Exec=bash -c 'cd "$(dirname "%k")" && ./start.sh'
+Terminal=true
+Type=Application
+Categories=Network;Chat;

@@ -53,6 +53,11 @@ cp -r build/dev/erlang/* "${RELEASE_DIR}/erlang/"
 cp gleam.toml "${RELEASE_DIR}/"
 cp .env.example "${RELEASE_DIR}/"
 
+# 7.1 Linux 데스크톱 엔트리 복사
+if [ -f "scripts/kira-caster.desktop" ]; then
+  cp scripts/kira-caster.desktop "${RELEASE_DIR}/"
+fi
+
 # 8. 시작 스크립트 생성
 cat > "${RELEASE_DIR}/start.sh" << 'LAUNCHER'
 #!/usr/bin/env bash

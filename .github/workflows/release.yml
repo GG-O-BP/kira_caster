@@ -17,6 +17,8 @@ jobs:
             target: linux-amd64
           - os: macos-latest
             target: macos-arm64
+          - os: windows-latest
+            target: windows-amd64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
@@ -40,12 +42,31 @@ jobs:
           ESQLITE_USE_SYSTEM: "1"
 
       - name: Package release with bundled ERTS
+        if: runner.os != 'Windows'
         run: bash scripts/package_release.sh "${{ matrix.target }}"
 
+      - name: Package release (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: bash scripts/package_release.sh "${{ matrix.target }}"
+
+      - name: Build macOS .dmg
+        if: runner.os == 'macOS'
+        run: bash scripts/build_macos_app.sh "kira_caster-${{ matrix.target }}"
+
       - uses: actions/upload-artifact@v4
+        if: runner.os != 'macOS'
         with:
           name: kira_caster-${{ matrix.target }}
           path: kira_caster-${{ matrix.target }}.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'macOS'
+        with:
+          name: kira_caster-${{ matrix.target }}
+          path: |
+            kira_caster-${{ matrix.target }}.tar.gz
+            kira_caster-${{ matrix.target }}.dmg
 
   release:
     needs: build
@@ -58,16 +79,30 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: "*.tar.gz"
+          files: |
+            *.tar.gz
+            *.dmg
           generate_release_notes: true
           body: |
             ## 설치 방법
 
-            1. OS에 맞는 파일을 다운로드하세요
-            2. 압축을 풀어주세요: `tar xzf kira_caster-*.tar.gz`
-            3. `.env.example`을 `.env`로 복사하고 설정을 편집하세요
-            4. `./start.sh` 를 실행하세요 (Linux/Mac)
-            5. 브라우저가 자동으로 열립니다
+            ### macOS
+            `.dmg` 파일을 다운로드하고 더블클릭하세요. `kira_caster.app`을 실행하면 브라우저가 자동으로 열립니다.
 
-            > Erlang 런타임이 포함되어 있어 별도 설치가 필요 없습니다 (Linux/Mac).
-            > Windows는 [Erlang/OTP](https://www.erlang.org/downloads) 설치가 필요합니다.
+            ### Linux
+            1. `.tar.gz` 파일을 다운로드하고 압축을 풀어주세요
+            2. `start.sh`를 더블클릭하거나 `kira-caster.desktop` 파일을 사용하세요
+            3. 브라우저가 자동으로 열립니다
+
+            ### Windows
+            1. `.tar.gz` 파일을 다운로드하고 압축을 풀어주세요
+            2. `start.bat`을 더블클릭하세요
+            3. 브라우저가 자동으로 열립니다
+
+            ### Docker
+            ```sh
+            bash scripts/docker-start.sh
+            ```
+
+            > 모든 플랫폼에서 Erlang 런타임이 포함되어 있어 별도 설치가 필요 없습니다.
+            > 처음 실행하면 설정 마법사가 나타납니다.

@@ -49,9 +49,24 @@ fn merge_settings(config: Config, settings: List(#(String, String))) -> Config {
     }
   }
 
+  let get_int = fn(key: String, fallback: Int) -> Int {
+    case find_setting(settings, key) {
+      "" -> fallback
+      val ->
+        case int.parse(val) {
+          Ok(n) -> n
+          Error(_) -> fallback
+        }
+    }
+  }
+
   // DB 설정은 환경변수가 비어있을 때만 적용 (환경변수가 우선)
   Config(
     ..config,
+    admin_port: case config.admin_port == 8080 {
+      True -> get_int("admin_port", 8080)
+      False -> config.admin_port
+    },
     admin_key: case config.admin_key {
       "" -> get("admin_key", "")
       _ -> config.admin_key

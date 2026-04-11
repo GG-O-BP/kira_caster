@@ -204,12 +204,33 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     )
 
     // --- Settings ---
-    model.SettingsLoaded(s) -> #(Model(..model, settings: s), effect.none())
+    model.SettingsLoaded(s) -> #(
+      Model(..model, settings: s, editing_settings: s),
+      effect.none(),
+    )
+
+    model.UpdateSettingEdit(key, value) -> {
+      let updated = case
+        list.find(model.editing_settings, fn(s) { s.0 == key })
+      {
+        Ok(_) ->
+          list.map(model.editing_settings, fn(s) {
+            case s.0 == key {
+              True -> #(key, value)
+              False -> s
+            }
+          })
+        Error(_) -> list.append(model.editing_settings, [#(key, value)])
+      }
+      #(Model(..model, editing_settings: updated), effect.none())
+    }
 
     model.SaveSetting(key, value) -> #(
       model,
       effects.save_setting(model.ctx.repo, key, value, model.ctx.bus),
     )
+
+    model.RestartApp -> #(model, effects.restart_app())
 
     // --- Songs ---
     model.SongsLoaded(songs, current, version) -> #(

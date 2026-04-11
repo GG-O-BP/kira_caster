@@ -3,6 +3,9 @@ import kira_caster/admin/views/setup_page
 import kira_caster/storage/repository.{type Repository}
 import wisp.{type Request, type Response}
 
+@external(erlang, "kira_caster_ffi", "restart_application")
+fn restart_application() -> Nil
+
 pub fn is_setup_complete(repo: Repository) -> Bool {
   case repo.get_setting("setup_complete") {
     Ok("true") -> True
@@ -24,31 +27,21 @@ pub fn handle_setup_submit(req: Request, repo: Repository) -> Response {
   let admin_key = find_value(vals, "admin_key")
   let cime_client_id = find_value(vals, "cime_client_id")
   let cime_client_secret = find_value(vals, "cime_client_secret")
-  let cime_redirect_uri = find_value(vals, "cime_redirect_uri")
-  let cime_channel_id = find_value(vals, "cime_channel_id")
 
   // Save non-empty values to DB settings
   save_if_set(repo, "admin_key", admin_key)
   save_if_set(repo, "cime_client_id", cime_client_id)
   save_if_set(repo, "cime_client_secret", cime_client_secret)
-  save_if_set(repo, "cime_channel_id", cime_channel_id)
 
-  // Redirect URI: use default if not provided
-  case cime_redirect_uri {
-    "" ->
-      case cime_client_id {
-        "" -> Nil
-        _ -> {
-          let _ =
-            repo.set_setting(
-              "cime_redirect_uri",
-              "http://localhost:8080/oauth/callback",
-            )
-          Nil
-        }
-      }
-    uri -> {
-      let _ = repo.set_setting("cime_redirect_uri", uri)
+  // Redirect URI: auto-set default when client_id is provided
+  case cime_client_id {
+    "" -> Nil
+    _ -> {
+      let _ =
+        repo.set_setting(
+          "cime_redirect_uri",
+          "http://localhost:8080/oauth/callback",
+        )
       Nil
     }
   }
@@ -56,12 +49,15 @@ pub fn handle_setup_submit(req: Request, repo: Repository) -> Response {
   // Mark setup as complete
   let _ = repo.set_setting("setup_complete", "true")
 
-  setup_page.handle_setup("설정이 저장되었습니다!", True)
+  // Trigger auto-restart (2 second delay in FFI to allow response)
+  restart_application()
+
+  setup_page.handle_setup_done()
 }
 
 fn handle_skip(repo: Repository) -> Response {
   let _ = repo.set_setting("setup_complete", "true")
-  setup_page.handle_setup("테스트 모드로 시작합니다. 설정은 나중에 대시보드에서 변경할 수 있습니다.", True)
+  wisp.redirect("/")
 }
 
 fn find_value(values: List(#(String, String)), key: String) -> String {

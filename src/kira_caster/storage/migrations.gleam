@@ -155,7 +155,11 @@ fn seed_default_quizzes(conn: sqlight.Connection) -> Result(Nil, StorageError) {
     sqlight.query(
       "INSERT OR IGNORE INTO quizzes (question, answer, reward) VALUES (?, ?, ?)",
       on: conn,
-      with: [sqlight.text(q.question), sqlight.text(answer), sqlight.int(q.reward)],
+      with: [
+        sqlight.text(q.question),
+        sqlight.text(answer),
+        sqlight.int(q.reward),
+      ],
       expecting: decode.success(Nil),
     )
     |> result.map_error(fn(e) { QueryError(e.message) })
@@ -163,41 +167,52 @@ fn seed_default_quizzes(conn: sqlight.Connection) -> Result(Nil, StorageError) {
   })
 }
 
-fn seed_sample_commands(
-  conn: sqlight.Connection,
-) -> Result(Nil, StorageError) {
+fn seed_sample_commands(conn: sqlight.Connection) -> Result(Nil, StorageError) {
   let text_sql =
     "INSERT OR IGNORE INTO custom_commands (name, response, command_type) VALUES (?, ?, 'text')"
   let gleam_sql =
     "INSERT OR IGNORE INTO custom_commands (name, response, command_type, source_code) VALUES (?, ?, 'gleam', ?)"
   // 1. 단순 텍스트 (변수 없음)
   use _ <- result.try(
-    sqlight.query(text_sql, on: conn, with: [
-      sqlight.text("인사"),
-      sqlight.text(
-        "반갑습니다~ 채팅 매너를 지키면서 즐거운 방송 시간 보내봐용!",
-      ),
-    ], expecting: decode.success(Nil))
+    sqlight.query(
+      text_sql,
+      on: conn,
+      with: [
+        sqlight.text("인사"),
+        sqlight.text("반갑습니다~ 채팅 매너를 지키면서 즐거운 방송 시간 보내봐용!"),
+      ],
+      expecting: decode.success(Nil),
+    )
     |> result.map_error(fn(e) { QueryError(e.message) })
     |> result.replace(Nil),
   )
   // 2. 템플릿 (변수 + 조건문)
   use _ <- result.try(
-    sqlight.query(text_sql, on: conn, with: [
-      sqlight.text("내정보"),
-      sqlight.text(
-        "{{user}}님 | 포인트: {{points}} | 출석: {{attendance}}회{{if points}} \u{2728}{{else}} (첫 출석을 해보세용!){{end}}",
-      ),
-    ], expecting: decode.success(Nil))
+    sqlight.query(
+      text_sql,
+      on: conn,
+      with: [
+        sqlight.text("내정보"),
+        sqlight.text(
+          "{{user}}님 | 포인트: {{points}} | 출석: {{attendance}}회{{if points}} \u{2728}{{else}} (첫 출석을 해보세용!){{end}}",
+        ),
+      ],
+      expecting: decode.success(Nil),
+    )
     |> result.map_error(fn(e) { QueryError(e.message) })
     |> result.replace(Nil),
   )
   // 3. 고급 Gleam (주사위)
-  sqlight.query(gleam_sql, on: conn, with: [
-    sqlight.text("dice"),
-    sqlight.text("주사위 명령어이에용~ (컴파일이 필요해용)"),
-    sqlight.text(dice_sample_source()),
-  ], expecting: decode.success(Nil))
+  sqlight.query(
+    gleam_sql,
+    on: conn,
+    with: [
+      sqlight.text("dice"),
+      sqlight.text("주사위 명령어이에용~ (컴파일이 필요해용)"),
+      sqlight.text(dice_sample_source()),
+    ],
+    expecting: decode.success(Nil),
+  )
   |> result.map_error(fn(e) { QueryError(e.message) })
   |> result.replace(Nil)
 }

@@ -120,7 +120,12 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             _ -> effect.none()
           }
           #(
-            Model(..model, cmd_name: "", cmd_response: "", editing_cmd: option.None),
+            Model(
+              ..model,
+              cmd_name: "",
+              cmd_response: "",
+              editing_cmd: option.None,
+            ),
             effect.batch([delete_old, effects.add_command(model.ctx.repo, n, r)]),
           )
         }
@@ -138,7 +143,12 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             _ -> effect.none()
           }
           #(
-            Model(..model, cmd_name: "", cmd_source: "", editing_cmd: option.None),
+            Model(
+              ..model,
+              cmd_name: "",
+              cmd_source: "",
+              editing_cmd: option.None,
+            ),
             effect.batch([
               delete_old,
               effects.add_advanced_command(model.ctx.repo, n, s),

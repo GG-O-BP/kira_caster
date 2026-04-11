@@ -66,10 +66,7 @@ fn handle_cast(repo: Repository, user: String, choice: String) -> List(Event) {
       case formatter.list_contains(options, choice) {
         False -> [
           resp(
-            "'"
-            <> choice
-            <> "'은(는) 없는 선택지야 선택지: "
-            <> string.join(options, ", "),
+            "'" <> choice <> "'은(는) 없는 선택지야 선택지: " <> string.join(options, ", "),
           ),
         ]
         True ->

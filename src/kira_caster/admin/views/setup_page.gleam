@@ -146,7 +146,9 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
                   text("'Redirect URI' 칸에 아래 주소를 복사해서 넣어줘용"),
                 ]),
                 html.li([], [
-                  text("앱 만들면 'Client ID'랑 'Client Secret'이 나오거든용 그거 아래 칸에 넣어주면 돼용"),
+                  text(
+                    "앱 만들면 'Client ID'랑 'Client Secret'이 나오거든용 그거 아래 칸에 넣어주면 돼용",
+                  ),
                 ]),
               ]),
               html.div(

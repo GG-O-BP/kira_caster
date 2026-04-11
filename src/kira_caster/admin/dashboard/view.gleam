@@ -465,10 +465,7 @@ fn commands_view(model: Model) -> Element(Msg) {
               html.td([], [text(cmd_type)]),
               html.td([], [text(response)]),
               html.td([], [
-                html.button(
-                  [event.on_click(model.EditCmd(name))],
-                  [text("수정")],
-                ),
+                html.button([event.on_click(model.EditCmd(name))], [text("수정")]),
                 html.button(
                   [
                     attribute.class("danger"),
@@ -540,10 +537,9 @@ fn quizzes_view(model: Model) -> Element(Msg) {
               ]),
               html.td([], [text(int.to_string(reward))]),
               html.td([], [
-                html.button(
-                  [event.on_click(model.EditQuiz(question))],
-                  [text("수정")],
-                ),
+                html.button([event.on_click(model.EditQuiz(question))], [
+                  text("수정"),
+                ]),
                 html.button(
                   [
                     attribute.class("danger"),

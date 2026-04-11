@@ -37,7 +37,7 @@ import {syntaxHighlighting, defaultHighlightStyle, indentOnInput, bracketMatchin
 import {defaultKeymap, history, historyKeymap} from 'https://esm.sh/@codemirror/commands@6';
 import {closeBrackets, closeBracketsKeymap, autocompletion, completionKeymap} from 'https://esm.sh/@codemirror/autocomplete@6';
 import {searchKeymap, highlightSelectionMatches} from 'https://esm.sh/@codemirror/search@6';
-import {rust} from 'https://esm.sh/@codemirror/lang-rust@6';
+import {gleam} from 'https://esm.sh/@exercism/codemirror-lang-gleam@2';
 var basicSetup = [
   lineNumbers(), highlightActiveLineGutter(), highlightSpecialChars(), history(),
   foldGutter(), drawSelection(), dropCursor(), EditorState.allowMultipleSelections.of(true),
@@ -57,7 +57,7 @@ class CodeEditorElement extends HTMLElement {
     var ph = this.getAttribute('placeholder') || '';
     var exts = [
       ...basicSetup,
-      rust(),
+      gleam(),
       EditorView.updateListener.of((update) => {
         if (update.docChanged && !this._updating) {
           this._value = update.state.doc.toString();

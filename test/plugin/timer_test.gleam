@@ -21,7 +21,7 @@ pub fn timer_set_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "timer", message: "5초 타이머가 설정되었습니다."),
+      plugin.PluginResponse(plugin: "timer", message: "5초 타이머 맞춰놨당!"),
     ]
 }
 
@@ -39,7 +39,7 @@ pub fn timer_invalid_seconds_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "timer", message: "초 단위 숫자를 입력해주세요."),
+      plugin.PluginResponse(plugin: "timer", message: "초 단위로 숫자를 넣어줘용"),
     ]
 }
 
@@ -57,7 +57,7 @@ pub fn timer_out_of_range_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "timer", message: "1~3600초 사이로 설정해주세요."),
+      plugin.PluginResponse(plugin: "timer", message: "1~3600초 사이로 해줘용"),
     ]
 }
 
@@ -75,7 +75,7 @@ pub fn timer_help_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "timer", message: "사용법: !타이머 <초> [메시지]"),
+      plugin.PluginResponse(plugin: "timer", message: "이렇게 써줘용 !타이머 <초> [메시지]"),
     ]
 }
 

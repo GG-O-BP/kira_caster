@@ -54,7 +54,7 @@ fn respond(message: String) -> List(Event) {
 fn require_mod(role: permission.Role, f: fn() -> List(Event)) -> List(Event) {
   case permission.check(role, permission.Moderator) {
     Ok(Nil) -> f()
-    Error(_) -> respond("권한이 없습니다. (관리자 전용)")
+    Error(_) -> respond("헐 이건 관리자만 할 수 있어용 ㅠ")
   }
 }
 
@@ -66,7 +66,7 @@ fn handle_title(
 ) -> List(Event) {
   require_mod(role, fn() {
     case args {
-      [] -> respond("사용법: !제목 <새 제목>")
+      [] -> respond("이렇게 써줘용 !제목 <새 제목>")
       _ -> {
         let title = string.join(args, " ")
         let body =
@@ -76,10 +76,10 @@ fn handle_title(
         case get_token() {
           Ok(token) ->
             case api.update_live_setting(token, body) {
-              Ok(Nil) -> respond("방송 제목을 '" <> title <> "'(으)로 변경했습니다.")
-              Error(_) -> respond("제목 변경에 실패했습니다.")
+              Ok(Nil) -> respond("방송 제목을 '" <> title <> "'(으)로 바꿨당!")
+              Error(_) -> respond("앗 제목 바꾸다 에러났어 ㅠㅠ")
             }
-          Error(_) -> respond("인증 토큰을 가져올 수 없습니다.")
+          Error(_) -> respond("앗 인증 토큰을 못 가져왔어 ㅠㅠ")
         }
       }
     }
@@ -94,7 +94,7 @@ fn handle_tags(
 ) -> List(Event) {
   require_mod(role, fn() {
     case args {
-      [] -> respond("사용법: !태그 <태그1> <태그2> ... (최대 6개)")
+      [] -> respond("이렇게 써줘용 !태그 <태그1> <태그2> ... (최대 6개)")
       tags -> {
         let tags = list.take(tags, 6)
         let body =
@@ -104,10 +104,10 @@ fn handle_tags(
         case get_token() {
           Ok(token) ->
             case api.update_live_setting(token, body) {
-              Ok(Nil) -> respond("태그를 변경했습니다: " <> string.join(tags, ", "))
-              Error(_) -> respond("태그 변경에 실패했습니다.")
+              Ok(Nil) -> respond("태그 바꿨당! " <> string.join(tags, ", "))
+              Error(_) -> respond("앗 태그 바꾸다 에러났어 ㅠㅠ")
             }
-          Error(_) -> respond("인증 토큰을 가져올 수 없습니다.")
+          Error(_) -> respond("앗 인증 토큰을 못 가져왔어 ㅠㅠ")
         }
       }
     }
@@ -122,7 +122,7 @@ fn handle_category(
 ) -> List(Event) {
   require_mod(role, fn() {
     case args {
-      [] -> respond("사용법: !카테고리 <검색어>")
+      [] -> respond("이렇게 써줘용 !카테고리 <검색어>")
       _ -> {
         let keyword = string.join(args, " ")
         case api.search_categories(keyword, 1) {
@@ -135,14 +135,14 @@ fn handle_category(
               Ok(token) ->
                 case api.update_live_setting(token, body) {
                   Ok(Nil) ->
-                    respond("카테고리를 '" <> cat.category_value <> "'(으)로 변경했습니다.")
-                  Error(_) -> respond("카테고리 변경에 실패했습니다.")
+                    respond("카테고리를 '" <> cat.category_value <> "'(으)로 바꿨당!")
+                  Error(_) -> respond("앗 카테고리 바꾸다 에러났어 ㅠㅠ")
                 }
-              Error(_) -> respond("인증 토큰을 가져올 수 없습니다.")
+              Error(_) -> respond("앗 인증 토큰을 못 가져왔어 ㅠㅠ")
             }
           }
-          Ok([]) -> respond("'" <> keyword <> "' 카테고리를 찾을 수 없습니다.")
-          Error(_) -> respond("카테고리 검색에 실패했습니다.")
+          Ok([]) -> respond("'" <> keyword <> "' 카테고리를 못 찾았어 ㅠㅠ")
+          Error(_) -> respond("앗 카테고리 검색하다 에러났어 ㅠㅠ")
         }
       }
     }
@@ -163,10 +163,10 @@ fn handle_slowmode(
         case get_token() {
           Ok(token) ->
             case api.update_chat_settings(token, body) {
-              Ok(Nil) -> respond("슬로우모드를 해제했습니다.")
-              Error(_) -> respond("슬로우모드 해제에 실패했습니다.")
+              Ok(Nil) -> respond("슬로우모드 껐당!")
+              Error(_) -> respond("앗 슬로우모드 끄다 에러났어 ㅠㅠ")
             }
-          Error(_) -> respond("인증 토큰을 가져올 수 없습니다.")
+          Error(_) -> respond("앗 인증 토큰을 못 가져왔어 ㅠㅠ")
         }
       }
       [seconds_str] ->
@@ -180,15 +180,15 @@ fn handle_slowmode(
               Ok(token) ->
                 case api.update_chat_settings(token, body) {
                   Ok(Nil) ->
-                    respond("슬로우모드를 " <> int.to_string(seconds) <> "초로 설정했습니다.")
-                  Error(_) -> respond("슬로우모드 설정에 실패했습니다.")
+                    respond("슬로우모드 " <> int.to_string(seconds) <> "초로 맞췄당!")
+                  Error(_) -> respond("앗 슬로우모드 설정하다 에러났어 ㅠㅠ")
                 }
-              Error(_) -> respond("인증 토큰을 가져올 수 없습니다.")
+              Error(_) -> respond("앗 인증 토큰을 못 가져왔어 ㅠㅠ")
             }
           }
-          Error(_) -> respond("사용법: !슬로우모드 <초> 또는 !슬로우모드 끄기")
+          Error(_) -> respond("이렇게 써줘용 !슬로우모드 <초> 또는 !슬로우모드 끄기")
         }
-      _ -> respond("사용법: !슬로우모드 <초> 또는 !슬로우모드 끄기")
+      _ -> respond("이렇게 써줘용 !슬로우모드 <초> 또는 !슬로우모드 끄기")
     }
   })
 }
@@ -201,8 +201,8 @@ fn handle_follower_only(
 ) -> List(Event) {
   require_mod(role, fn() {
     let #(group, msg) = case args {
-      ["끄기"] -> #("ALL", "팔로워전용 모드를 해제했습니다.")
-      _ -> #("FOLLOWER", "팔로워전용 모드를 설정했습니다.")
+      ["끄기"] -> #("ALL", "팔로워전용 모드 껐당!")
+      _ -> #("FOLLOWER", "팔로워전용 모드 켰당!")
     }
     let body =
       json.to_string(json.object([#("allowedGroup", json.string(group))]))
@@ -210,9 +210,9 @@ fn handle_follower_only(
       Ok(token) ->
         case api.update_chat_settings(token, body) {
           Ok(Nil) -> respond(msg)
-          Error(_) -> respond("채팅 설정 변경에 실패했습니다.")
+          Error(_) -> respond("앗 채팅 설정 바꾸다 에러났어 ㅠㅠ")
         }
-      Error(_) -> respond("인증 토큰을 가져올 수 없습니다.")
+      Error(_) -> respond("앗 인증 토큰을 못 가져왔어 ㅠㅠ")
     }
   })
 }
@@ -225,16 +225,16 @@ fn handle_notice(
 ) -> List(Event) {
   require_mod(role, fn() {
     case args {
-      [] -> respond("사용법: !공지 <메시지>")
+      [] -> respond("이렇게 써줘용 !공지 <메시지>")
       _ -> {
         let message = string.join(args, " ")
         case get_token() {
           Ok(token) ->
             case api.send_notice(token, message) {
-              Ok(Nil) -> respond("공지를 등록했습니다.")
-              Error(_) -> respond("공지 등록에 실패했습니다.")
+              Ok(Nil) -> respond("공지 올렸당!")
+              Error(_) -> respond("앗 공지 올리다 에러났어 ㅠㅠ")
             }
-          Error(_) -> respond("인증 토큰을 가져올 수 없습니다.")
+          Error(_) -> respond("앗 인증 토큰을 못 가져왔어 ㅠㅠ")
         }
       }
     }
@@ -248,17 +248,17 @@ fn handle_live_status(api: CimeApi, channel_id: String) -> List(Event) {
         True -> {
           let title = case status.title {
             Some(t) -> t
-            None -> "(제목 없음)"
+            None -> "(제목 없당..)"
           }
           let started = case status.opened_at {
             Some(t) -> " (시작: " <> t <> ")"
             None -> ""
           }
-          respond("방송 중: " <> title <> started)
+          respond("방송 중이에용 " <> title <> started)
         }
-        False -> respond("현재 방송 중이 아닙니다.")
+        False -> respond("지금은 방송 안 하고 있당")
       }
-    Error(_) -> respond("방송 상태 조회에 실패했습니다.")
+    Error(_) -> respond("앗 방송 상태 불러오다 에러났어 ㅠㅠ")
   }
 }
 
@@ -266,7 +266,7 @@ fn handle_live_list(api: CimeApi) -> List(Event) {
   case api.get_lives(5, None) {
     Ok(#(lives, _)) ->
       case lives {
-        [] -> respond("현재 방송 중인 채널이 없습니다.")
+        [] -> respond("지금 방송 중인 채널이 없당")
         _ -> {
           let entries =
             list.map(lives, fn(live) {
@@ -277,10 +277,10 @@ fn handle_live_list(api: CimeApi) -> List(Event) {
               <> int.to_string(live.concurrent_user_count)
               <> "명)"
             })
-          respond("라이브 목록: " <> string.join(entries, " | "))
+          respond("라이브 목록이에용 " <> string.join(entries, " | "))
         }
       }
-    Error(_) -> respond("라이브 목록 조회에 실패했습니다.")
+    Error(_) -> respond("앗 라이브 목록 불러오다 에러났어 ㅠㅠ")
   }
 }
 

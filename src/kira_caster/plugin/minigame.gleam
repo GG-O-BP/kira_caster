@@ -23,7 +23,7 @@ fn handle(
     plugin.Command(user: _, name: "게임", args: _, role: _) -> [
       plugin.PluginResponse(
         plugin: "minigame",
-        message: "사용법: !게임 주사위 / !게임 가위바위보 <가위|바위|보>",
+        message: "이렇게 써줘용 !게임 주사위 / !게임 가위바위보 <가위|바위|보>",
       ),
     ]
     _ -> []
@@ -39,7 +39,7 @@ fn play_dice(user: String, win_pts: Int, loss_pts: Int) -> List(Event) {
       plugin.PluginResponse(
         plugin: "minigame",
         message: user
-          <> " 승리! ["
+          <> " 이겼당!! ["
           <> dice_str
           <> "] (+"
           <> int.to_string(win_pts)
@@ -57,7 +57,7 @@ fn play_dice(user: String, win_pts: Int, loss_pts: Int) -> List(Event) {
       plugin.PluginResponse(
         plugin: "minigame",
         message: user
-          <> " 패배... ["
+          <> " 졌어 ㅠㅠ ["
           <> dice_str
           <> "] ("
           <> int.to_string(loss_pts)
@@ -78,7 +78,7 @@ fn play_rps(
     False -> [
       plugin.PluginResponse(
         plugin: "minigame",
-        message: "가위, 바위, 보 중 하나를 선택해주세요.",
+        message: "가위, 바위, 보 중에 하나 골라줘용",
       ),
     ]
     True -> {
@@ -94,7 +94,7 @@ fn play_rps(
           plugin.PluginResponse(
             plugin: "minigame",
             message: user
-              <> " 승리! ["
+              <> " 이겼당!! ["
               <> result_str
               <> "] (+"
               <> int.to_string(win_pts)
@@ -112,7 +112,7 @@ fn play_rps(
           plugin.PluginResponse(
             plugin: "minigame",
             message: user
-              <> " 패배... ["
+              <> " 졌어 ㅠㅠ ["
               <> result_str
               <> "] ("
               <> int.to_string(loss_pts)

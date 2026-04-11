@@ -45,7 +45,7 @@ pub fn viewer_cannot_start_vote_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "vote", message: "권한이 없습니다. (관리자 전용)"),
+      plugin.PluginResponse(plugin: "vote", message: "헐 이건 관리자만 할 수 있어용 ㅠ"),
     ]
 }
 
@@ -64,7 +64,7 @@ pub fn cast_vote_no_active_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "vote", message: "현재 진행 중인 투표가 없습니다."),
+      plugin.PluginResponse(plugin: "vote", message: "지금 진행 중인 투표가 없당.."),
     ]
 }
 
@@ -83,7 +83,7 @@ pub fn cast_vote_with_active_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "vote", message: "alice님이 '빨강'에 투표했습니다."),
+      plugin.PluginResponse(plugin: "vote", message: "alice님이 '빨강'에 투표했당!"),
     ]
 }
 
@@ -160,7 +160,7 @@ pub fn help_message_test() {
     [plugin.PluginResponse(plugin: "vote", message: msg)] -> {
       assert {
         case msg {
-          "사용법: " <> _ -> True
+          "이렇게 써줘용 " <> _ -> True
           _ -> False
         }
       }
@@ -200,7 +200,7 @@ pub fn start_vote_one_option_rejected_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "vote", message: "선택지를 2개 이상 입력해주세요."),
+      plugin.PluginResponse(plugin: "vote", message: "선택지를 2개 이상 넣어줘용"),
     ]
 }
 
@@ -219,6 +219,6 @@ pub fn viewer_cannot_end_vote_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "vote", message: "권한이 없습니다. (관리자 전용)"),
+      plugin.PluginResponse(plugin: "vote", message: "헐 이건 관리자만 할 수 있어용 ㅠ"),
     ]
 }

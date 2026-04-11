@@ -21,7 +21,7 @@ fn player_body() -> Element(msg) {
     html.div([attribute.id("player-wrap")], [
       html.div([attribute.id("yt-player")], []),
       html.div([attribute.class("idle-msg"), attribute.id("idle")], [
-        text("대기 중..."),
+        text("기다리는 중이에용..."),
       ]),
     ]),
     html.div(

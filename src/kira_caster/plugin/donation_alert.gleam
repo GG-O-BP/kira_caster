@@ -38,7 +38,7 @@ fn handle_donation(
 
   // Format alert message
   let type_label = case donation_type {
-    "VIDEO" -> " (영상 후원)"
+    "VIDEO" -> " (영상 후원이에용)"
     _ -> ""
   }
 
@@ -46,14 +46,14 @@ fn handle_donation(
     None ->
       "익명님이 "
       <> amount
-      <> "빔을 후원했습니다!"
+      <> "빔 후원해줬당!"
       <> type_label
       <> format_donation_message(message)
     Some(_) ->
       user
       <> "님이 "
       <> amount
-      <> "빔을 후원했습니다!"
+      <> "빔 후원해줬당!"
       <> type_label
       <> format_donation_message(message)
   }
@@ -75,7 +75,7 @@ fn handle_ranking(repo: Repository) -> List(Event) {
         [] -> [
           plugin.PluginResponse(
             plugin: "donation_alert",
-            message: "후원 기록이 없습니다.",
+            message: "후원 기록이 없당..",
           ),
         ]
         _ -> {
@@ -83,7 +83,7 @@ fn handle_ranking(repo: Repository) -> List(Event) {
             list.index_map(ranking, fn(entry, i) {
               int.to_string(i + 1) <> ". " <> entry.0 <> " - " <> entry.1 <> "빔"
             })
-          let msg = "후원 순위: " <> string.join(entries, " | ")
+          let msg = "후원 순위이에용 " <> string.join(entries, " | ")
           [plugin.PluginResponse(plugin: "donation_alert", message: msg)]
         }
       }
@@ -91,7 +91,7 @@ fn handle_ranking(repo: Repository) -> List(Event) {
     Error(_) -> [
       plugin.PluginResponse(
         plugin: "donation_alert",
-        message: "후원 순위 조회 중 오류가 발생했습니다.",
+        message: "앗 후원 순위 불러오다 에러났어 ㅠㅠ",
       ),
     ]
   }

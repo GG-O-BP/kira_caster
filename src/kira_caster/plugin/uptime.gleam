@@ -16,13 +16,13 @@ fn handle(start_time_ms: Int, event: Event) -> List(Event) {
       let minutes = { elapsed_s % 3600 } / 60
       let seconds = elapsed_s % 60
       let msg =
-        "가동 시간: "
+        "켜진 지 "
         <> int.to_string(hours)
         <> "시간 "
         <> int.to_string(minutes)
         <> "분 "
         <> int.to_string(seconds)
-        <> "초"
+        <> "초째 열심히 일하는 중이에용 ㅎㅎ"
       [plugin.PluginResponse(plugin: "uptime", message: msg)]
     }
     _ -> []

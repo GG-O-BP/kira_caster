@@ -22,7 +22,7 @@ pub fn attendance_new_user_test() {
     == [
       plugin.PluginResponse(
         plugin: "attendance",
-        message: "alice 출석 완료! (총 1회, +10포인트)",
+        message: "alice 출석 완료당! (총 1회, +10포인트)",
       ),
     ]
 }
@@ -47,7 +47,7 @@ pub fn attendance_existing_user_test() {
     == [
       plugin.PluginResponse(
         plugin: "attendance",
-        message: "bob 출석 완료! (총 6회, +10포인트)",
+        message: "bob 출석 완료당! (총 6회, +10포인트)",
       ),
     ]
 }
@@ -78,7 +78,7 @@ pub fn duplicate_attendance_blocked_test() {
     == [
       plugin.PluginResponse(
         plugin: "attendance",
-        message: "alice님, 오늘은 이미 출석했습니다!",
+        message: "alice님, 오늘 이미 출석했잖아용 ㅋㅋ",
       ),
     ]
 }
@@ -109,7 +109,7 @@ pub fn attendance_next_day_allowed_test() {
     == [
       plugin.PluginResponse(
         plugin: "attendance",
-        message: "alice 출석 완료! (총 2회, +10포인트)",
+        message: "alice 출석 완료당! (총 2회, +10포인트)",
       ),
     ]
 }

@@ -17,7 +17,7 @@ pub fn first_subscription_shows_first_test() {
     )
   let assert [plugin.PluginResponse(plugin: "subscription_alert", message: msg)] =
     events
-  let assert True = msg == "bob님이 첫 구독! \"구독합니다!\""
+  let assert True = msg == "bob님이 첫 구독이당! \"구독합니다!\""
 }
 
 pub fn multi_month_shows_consecutive_test() {
@@ -35,7 +35,7 @@ pub fn multi_month_shows_consecutive_test() {
     )
   let assert [plugin.PluginResponse(plugin: "subscription_alert", message: msg)] =
     events
-  let assert True = msg == "charlie님이 3개월 연속 구독!"
+  let assert True = msg == "charlie님이 3개월 연속 구독이에용!"
 }
 
 pub fn tier_above_one_shows_tier_info_test() {
@@ -53,7 +53,7 @@ pub fn tier_above_one_shows_tier_info_test() {
     )
   let assert [plugin.PluginResponse(plugin: "subscription_alert", message: msg)] =
     events
-  let assert True = msg == "dave님이 2개월 연속 구독 (3티어)!"
+  let assert True = msg == "dave님이 2개월 연속 구독이에용 (3티어)!"
 }
 
 pub fn long_term_subscriber_shows_special_test() {
@@ -71,7 +71,7 @@ pub fn long_term_subscriber_shows_special_test() {
     )
   let assert [plugin.PluginResponse(plugin: "subscription_alert", message: msg)] =
     events
-  let assert True = msg == "eve님이 6개월 연속 구독! 장기 구독자입니다! \"오래 봤네요\""
+  let assert True = msg == "eve님이 6개월 연속 구독이에용! 완전 오래 구독해줬당 ㅎㅎ! \"오래 봤네요\""
 }
 
 pub fn unrelated_event_ignored_test() {

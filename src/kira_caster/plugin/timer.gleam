@@ -12,7 +12,7 @@ fn handle(on_response: fn(plugin.Event) -> Nil, event: Event) -> List(Event) {
     plugin.Command(user:, name: "타이머", args: [seconds_str, ..rest], role: _) ->
       start_timer(on_response, user, seconds_str, rest)
     plugin.Command(user: _, name: "타이머", args: _, role: _) -> [
-      plugin.PluginResponse(plugin: "timer", message: "사용법: !타이머 <초> [메시지]"),
+      plugin.PluginResponse(plugin: "timer", message: "이렇게 써줘용 !타이머 <초> [메시지]"),
     ]
     _ -> []
   }
@@ -26,16 +26,16 @@ fn start_timer(
 ) -> List(Event) {
   case int.parse(seconds_str) {
     Error(_) -> [
-      plugin.PluginResponse(plugin: "timer", message: "초 단위 숫자를 입력해주세요."),
+      plugin.PluginResponse(plugin: "timer", message: "초 단위로 숫자를 넣어줘용"),
     ]
     Ok(seconds) ->
       case seconds > 0 && seconds <= 3600 {
         False -> [
-          plugin.PluginResponse(plugin: "timer", message: "1~3600초 사이로 설정해주세요."),
+          plugin.PluginResponse(plugin: "timer", message: "1~3600초 사이로 해줘용"),
         ]
         True -> {
           let msg = case rest {
-            [] -> user <> "님의 타이머가 울렸습니다!"
+            [] -> user <> "님 타이머 울렸당! 띠리리링"
             _ -> user <> "님: " <> string.join(rest, " ")
           }
           process.spawn(fn() {
@@ -45,7 +45,7 @@ fn start_timer(
           [
             plugin.PluginResponse(
               plugin: "timer",
-              message: int.to_string(seconds) <> "초 타이머가 설정되었습니다.",
+              message: int.to_string(seconds) <> "초 타이머 맞춰놨당!",
             ),
           ]
         }

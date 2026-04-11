@@ -112,7 +112,7 @@ fn load_users(repo: Repository) -> Effect(Msg) {
       Ok(users) -> dispatch(model.UsersLoaded(users))
       Error(_) ->
         dispatch(model.ShowToast(
-          "유저 목록을 불러올 수 없습���다. 잠시 후 자동으로 다시 시도합니다",
+          "앗 유저 목록을 못 불러왔어 ㅠㅠ 잠깐 후에 다시 해볼게용",
           model.ErrorToast,
         ))
     }
@@ -125,7 +125,7 @@ fn load_words(repo: Repository) -> Effect(Msg) {
       Ok(words) -> dispatch(model.WordsLoaded(words))
       Error(_) ->
         dispatch(model.ShowToast(
-          "금칙어 목록을 불러��� 수 없습니다. 잠시 �� ��동으로 다시 시도합니다",
+          "앗 금칙어 목록을 못 불러왔어 ㅠㅠ 잠깐 후에 다시 해볼게용",
           model.ErrorToast,
         ))
     }
@@ -138,7 +138,7 @@ fn load_commands(repo: Repository) -> Effect(Msg) {
       Ok(cmds) -> dispatch(model.CommandsLoaded(cmds))
       Error(_) ->
         dispatch(model.ShowToast(
-          "명령어 목록을 불러올 수 없습니다. 잠시 ��� 자동으로 다시 시도합니다",
+          "앗 명령어 목록을 못 불러왔어 ㅠㅠ 잠깐 후에 다시 해볼게용",
           model.ErrorToast,
         ))
     }
@@ -151,7 +151,7 @@ fn load_quizzes(repo: Repository) -> Effect(Msg) {
       Ok(q) -> dispatch(model.QuizzesLoaded(q))
       Error(_) ->
         dispatch(model.ShowToast(
-          "퀴즈 목록을 불러올 수 없습니다. 잠시 후 자동으로 다시 시도���니다",
+          "앗 퀴즈 목록을 못 불러왔어 ㅠㅠ 잠깐 후에 다시 해볼게용",
           model.ErrorToast,
         ))
     }
@@ -179,22 +179,22 @@ fn load_votes(repo: Repository) -> Effect(Msg) {
 fn load_plugins(repo: Repository) -> Effect(Msg) {
   async(fn(dispatch) {
     let all_plugins = [
-      #("attendance", "출석 체크 (하루 1회, 포인트 보상)"),
-      #("points", "포인트 조회 및 순위"),
-      #("minigame", "미니게임 (주사위, 가위바위보)"),
-      #("filter", "채팅 필터 (금칙어 자동 감지)"),
+      #("attendance", "출석 체크 (하루 1번, 포인트 받긔)"),
+      #("points", "포인트 확인이랑 순위 보긔"),
+      #("minigame", "미니게임 (주사위, 가위바위보 ㅎㅎ)"),
+      #("filter", "채팅 필터 (금칙어 자동으로 잡아줌!)"),
       #("custom_command", "커스텀 명령어"),
-      #("uptime", "봇 가동 시간 조회"),
+      #("uptime", "봇 얼마나 켜져있나 보긔"),
       #("vote", "투표 시스템"),
-      #("roulette", "룰렛 (확률 기반 포인트)"),
-      #("quiz", "퀴즈 (정답 맞추기)"),
-      #("timer", "타이머 (비동기 알림)"),
-      #("song_request", "신청곡 (YouTube 대기열)"),
+      #("roulette", "룰렛 (운빨 포인트 ㅋㅋ)"),
+      #("quiz", "퀴즈 (정답 맞춰보긔)"),
+      #("timer", "타이머 (알림 울려줌!)"),
+      #("song_request", "신청곡 (YouTube 틀어줌)"),
       #("donation_alert", "후원 알림 (채팅/영상 후원)"),
       #("subscription_alert", "구독 알림"),
       #("broadcast_control", "방송 제어 (제목/태그/카테고리)"),
-      #("block", "차단 관리 (유저 차단/해제)"),
-      #("follower", "팔로워 추적 (신규 환영)"),
+      #("block", "차단 관리 (유저 차단/풀기)"),
+      #("follower", "팔로워 추적 (새 팔로워 환영해줌 ㅎㅎ)"),
     ]
     case repo.get_disabled_plugins() {
       Ok(disabled) -> {
@@ -207,7 +207,7 @@ fn load_plugins(repo: Repository) -> Effect(Msg) {
       }
       Error(_) ->
         dispatch(model.ShowToast(
-          "플러그인 목록을 불러올 수 없습니다. 잠시 후 자동으로 다시 시도합니다",
+          "앗 플러그인 목록을 못 불러왔어 ㅠㅠ 잠깐 후에 다시 해볼게용",
           model.ErrorToast,
         ))
     }
@@ -220,7 +220,7 @@ fn load_settings(repo: Repository) -> Effect(Msg) {
       Ok(s) -> dispatch(model.SettingsLoaded(s))
       Error(_) ->
         dispatch(model.ShowToast(
-          "설정을 불러올 수 없습니다. 잠시 후 자동으로 다시 시도합니다",
+          "앗 설정을 못 불러왔어 ㅠㅠ 잠깐 후에 다시 해볼게용",
           model.ErrorToast,
         ))
     }
@@ -408,16 +408,16 @@ fn load_stream_key(ctx: DashboardContext) -> Effect(Msg) {
 pub fn add_word(repo: Repository, word: String) -> Effect(Msg) {
   crud(
     fn() { repo.add_banned_word(string.lowercase(word)) },
-    "단어 추가 완료",
-    "단어 추가에 실패했습니다. 이미 등록된 단어일 수 있습니다",
+    "단어 추가했당!",
+    "앗 단어 추가가 안 됐어 ㅠㅠ 이미 있는 단어일 수도 있당",
   )
 }
 
 pub fn delete_word(repo: Repository, word: String) -> Effect(Msg) {
   crud(
     fn() { repo.remove_banned_word(word) },
-    "단어 삭제 완료",
-    "단어 삭제에 실패했습니다. 이미 삭제된 단어일 수 있습니다",
+    "단어 삭제했당!",
+    "앗 단어 삭제가 안 됐어 ㅠㅠ 이미 없는 단어일 수도 있당",
   )
 }
 
@@ -428,16 +428,16 @@ pub fn add_command(
 ) -> Effect(Msg) {
   crud(
     fn() { repo.set_command(name, response) },
-    "명���어 추가 완료",
-    "명령어를 저장할 수 없습니다. 다시 시도하거나, 이름에 특수문자가 없는지 확인해주세요",
+    "명령어 추가했당!",
+    "앗 명령어 저장이 안 됐어 ㅠㅠ 이름에 특수문자 없는지 확인해줘용",
   )
 }
 
 pub fn delete_command(repo: Repository, name: String) -> Effect(Msg) {
   crud(
     fn() { repo.delete_command(name) },
-    "명령어 삭제 완료",
-    "명령어 삭제에 실패했습니다. 이미 삭제된 명령어일 수 있습니다",
+    "명령어 삭제했당!",
+    "앗 명령어 삭제가 안 됐어 ㅠㅠ 이미 없는 명령어일 수도 있당",
   )
 }
 
@@ -448,8 +448,8 @@ pub fn add_advanced_command(
 ) -> Effect(Msg) {
   crud(
     fn() { repo.set_advanced_command(name, source, "컴파일 오류") },
-    "고급 명령어 추가 완료",
-    "고급 명령어 저장에 실패했습니다. 소스 코드를 확인해주세요",
+    "고급 명령어 추가했당!",
+    "앗 고급 명령어 저장이 안 됐어 ㅠㅠ 소스 코드 확인해줘용",
   )
 }
 
@@ -461,16 +461,16 @@ pub fn add_quiz(
 ) -> Effect(Msg) {
   crud(
     fn() { repo.add_quiz(question, answer, reward) },
-    "퀴즈 추가 완료",
-    "퀴즈 추가에 실패했습니다. 같은 문제가 이미 등록되어 있을 수 있습니다",
+    "퀴즈 추가했당!",
+    "앗 퀴즈 추가가 안 됐어 ㅠㅠ 같은 문제가 이미 있을 수도 있당",
   )
 }
 
 pub fn delete_quiz(repo: Repository, question: String) -> Effect(Msg) {
   crud(
     fn() { repo.delete_quiz(question) },
-    "퀴즈 삭제 완료",
-    "퀴즈를 삭제할 수 없습니다. 목록을 새로고침해주세요",
+    "퀴즈 삭제했당!",
+    "앗 퀴즈 삭제가 안 됐어 ㅠㅠ 목록 새로고침 해줘용",
   )
 }
 
@@ -481,16 +481,16 @@ pub fn start_vote(
 ) -> Effect(Msg) {
   crud(
     fn() { repo.start_vote(topic, options) },
-    "투표 시작 완료",
-    "투표 시작에 실패했습니다. 이미 진행 중인 투표가 있을 수 있습니다",
+    "투표 시작했당!",
+    "앗 투표 시작이 안 됐어 ㅠㅠ 이미 하고 있는 투표가 있을 수도 있당",
   )
 }
 
 pub fn end_vote(repo: Repository) -> Effect(Msg) {
   crud(
     fn() { repo.end_vote() },
-    "투표 종료 완료",
-    "투표 종료에 실패했습니다. 진행 중인 투표가 없을 수 있습니다",
+    "투표 끝났당!",
+    "앗 투표 종료가 안 됐어 ㅠㅠ 진행 중인 투표가 없을 수도 있당",
   )
 }
 
@@ -501,8 +501,8 @@ pub fn toggle_plugin(
   bus: Option(process.Subject(event_bus.EventBusMessage)),
 ) -> Effect(Msg) {
   let label = case enabled {
-    True -> "활성화"
-    False -> "비활성화"
+    True -> "켰당"
+    False -> "껐당"
   }
   async(fn(dispatch) {
     case repo.set_plugin_enabled(name, enabled) {
@@ -519,7 +519,7 @@ pub fn toggle_plugin(
         dispatch(model.OpDone(Ok(Nil)))
       }
       Error(_) ->
-        dispatch(model.ShowToast("플러그인 상태 변경에 실패했습니다", model.ErrorToast))
+        dispatch(model.ShowToast("앗 플러그인 상태 바꾸다 에러났어 ㅠㅠ", model.ErrorToast))
     }
   })
 }
@@ -541,12 +541,12 @@ pub fn save_setting(
             }
           _, _ -> Nil
         }
-        dispatch(model.ShowToast("설정 저장 완료", model.SuccessToast))
+        dispatch(model.ShowToast("설정 저장했당!", model.SuccessToast))
         dispatch(model.OpDone(Ok(Nil)))
       }
       Error(_) ->
         dispatch(model.ShowToast(
-          "'" <> setting_label(key) <> "' 설정을 저장할 수 없습니다. 입력한 값을 확인해주세요",
+          "'" <> setting_label(key) <> "' 설정 저장이 안 됐어 ㅠㅠ 입력한 값 확인해줘용",
           model.ErrorToast,
         ))
     }
@@ -574,13 +574,13 @@ fn do_restart() -> Nil
 
 pub fn restart_app() -> Effect(Msg) {
   async(fn(dispatch) {
-    dispatch(model.ShowToast("재시작 중... 잠시 후 페이지가 새로고침됩니다", model.SuccessToast))
+    dispatch(model.ShowToast("재시작하는 중이에용 잠깐만 기다려줘용...", model.SuccessToast))
     do_restart()
   })
 }
 
 pub fn delete_song(repo: Repository, id: Int) -> Effect(Msg) {
-  crud(fn() { repo.remove_song(id) }, "곡 삭제 완료", "곡 삭제에 실패했습니다")
+  crud(fn() { repo.remove_song(id) }, "곡 삭제했당!", "앗 곡 삭제가 안 됐어 ㅠㅠ")
 }
 
 pub fn song_next(repo: Repository) -> Effect(Msg) {
@@ -632,7 +632,7 @@ pub fn song_next(repo: Repository) -> Effect(Msg) {
               }
               Error(_) ->
                 dispatch(model.ShowToast(
-                  "곡 목록을 불러올 수 없습니다. 페이지를 새로고침해주세요",
+                  "앗 곡 목록을 못 불러왔어 ㅠㅠ 페이지 새로고침 해줘용",
                   model.ErrorToast,
                 ))
             }
@@ -695,7 +695,7 @@ pub fn song_prev(repo: Repository) -> Effect(Msg) {
               }
               Error(_) ->
                 dispatch(model.ShowToast(
-                  "곡 목록을 불러올 수 없습니다. 페이지를 새로고침해주세요",
+                  "앗 곡 목록을 못 불러왔어 ㅠㅠ 페이지 새로고침 해줘용",
                   model.ErrorToast,
                 ))
             }
@@ -720,7 +720,7 @@ pub fn song_replay(repo: Repository) -> Effect(Msg) {
       Ok(_) -> dispatch(model.OpDone(Ok(Nil)))
       Error(_) ->
         dispatch(model.ShowToast(
-          "재생 상태를 저장할 수 없습니다. 다시 시도해주세요",
+          "앗 재생 상태 저장이 안 됐어 ㅠㅠ 다시 해줘용",
           model.ErrorToast,
         ))
     }
@@ -728,7 +728,7 @@ pub fn song_replay(repo: Repository) -> Effect(Msg) {
 }
 
 pub fn reorder_song(repo: Repository, id: Int, new_pos: Int) -> Effect(Msg) {
-  crud(fn() { repo.reorder_song(id, new_pos) }, "순서 변경 완료", "순서 변경에 실패했습니다")
+  crud(fn() { repo.reorder_song(id, new_pos) }, "순서 바꿨당!", "앗 순서 바꾸다 에러났어 ㅠㅠ")
 }
 
 pub fn add_song(repo: Repository, video_id: String) -> Effect(Msg) {
@@ -737,8 +737,8 @@ pub fn add_song(repo: Repository, video_id: String) -> Effect(Msg) {
       repo.add_song(video_id, video_id, 0, "dashboard")
       |> result_to_nil
     },
-    "곡 추가 완료",
-    "곡 추가에 실패했습니다. URL을 확인해주세요",
+    "곡 추가했당!",
+    "앗 곡 추가가 안 됐어 ㅠㅠ URL 확인해줘용",
   )
 }
 

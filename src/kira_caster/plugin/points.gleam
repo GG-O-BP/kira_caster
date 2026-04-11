@@ -28,7 +28,7 @@ fn check_balance(repo: Repository, user: String) -> List(Event) {
   [
     plugin.PluginResponse(
       plugin: "points",
-      message: user <> "님의 포인트: " <> int.to_string(points),
+      message: user <> "님 포인트: " <> int.to_string(points),
     ),
   ]
 }
@@ -53,7 +53,7 @@ fn apply_points_change(
   case repo.save_user(updated) {
     Ok(Nil) -> []
     Error(_) -> [
-      plugin.PluginResponse(plugin: "points", message: "포인트 처리 중 오류가 발생했습니다."),
+      plugin.PluginResponse(plugin: "points", message: "앗 포인트 처리하다 에러났어 ㅠㅠ"),
     ]
   }
 }
@@ -76,13 +76,13 @@ fn show_ranking(repo: Repository) -> List(Event) {
           <> "pt"
         })
       let message = case lines {
-        [] -> "등록된 유저가 없습니다."
-        _ -> "포인트 순위:\n" <> string.join(lines, "\n")
+        [] -> "아직 유저가 없당.."
+        _ -> "포인트 순위!\n" <> string.join(lines, "\n")
       }
       [plugin.PluginResponse(plugin: "points", message:)]
     }
     Error(_) -> [
-      plugin.PluginResponse(plugin: "points", message: "순위 조회에 실패했습니다."),
+      plugin.PluginResponse(plugin: "points", message: "순위 불러오다 에러났어 ㅠㅠ"),
     ]
   }
 }

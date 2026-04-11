@@ -36,7 +36,7 @@ fn respond(message: String) -> List(Event) {
 fn require_mod(role: permission.Role, f: fn() -> List(Event)) -> List(Event) {
   case permission.check(role, permission.Moderator) {
     Ok(Nil) -> f()
-    Error(_) -> respond("권한이 없습니다. (관리자 전용)")
+    Error(_) -> respond("헐 이건 관리자만 할 수 있어용 ㅠ")
   }
 }
 
@@ -50,10 +50,10 @@ fn handle_block(
     case get_token() {
       Ok(token) ->
         case api.block_user(token, target) {
-          Ok(Nil) -> respond(target <> " 유저를 차단했습니다.")
-          Error(_) -> respond("차단에 실패했습니다.")
+          Ok(Nil) -> respond(target <> " 차단했당!")
+          Error(_) -> respond("앗 차단하다 에러났어 ㅠㅠ")
         }
-      Error(_) -> respond("인증 토큰을 가져올 수 없습니다.")
+      Error(_) -> respond("앗 인증 토큰을 못 가져왔어 ㅠㅠ")
     }
   })
 }
@@ -68,10 +68,10 @@ fn handle_unblock(
     case get_token() {
       Ok(token) ->
         case api.unblock_user(token, target) {
-          Ok(Nil) -> respond(target <> " 유저의 차단을 해제했습니다.")
-          Error(_) -> respond("차단 해제에 실패했습니다.")
+          Ok(Nil) -> respond(target <> " 차단 풀어줬당!")
+          Error(_) -> respond("앗 차단 풀다 에러났어 ㅠㅠ")
         }
-      Error(_) -> respond("인증 토큰을 가져올 수 없습니다.")
+      Error(_) -> respond("앗 인증 토큰을 못 가져왔어 ㅠㅠ")
     }
   })
 }
@@ -87,16 +87,16 @@ fn handle_list(
         case api.get_blocked_users(token, 20, option.None) {
           Ok(#(users, _)) ->
             case users {
-              [] -> respond("차단된 유저가 없습니다.")
+              [] -> respond("차단된 유저가 없당")
               _ -> {
                 let names =
                   list.map(users, fn(u) { u.name <> "(" <> u.handle <> ")" })
-                respond("차단 목록: " <> string.join(names, ", "))
+                respond("차단 목록이에용 " <> string.join(names, ", "))
               }
             }
-          Error(_) -> respond("차단 목록 조회에 실패했습니다.")
+          Error(_) -> respond("앗 차단 목록 불러오다 에러났어 ㅠㅠ")
         }
-      Error(_) -> respond("인증 토큰을 가져올 수 없습니다.")
+      Error(_) -> respond("앗 인증 토큰을 못 가져왔어 ㅠㅠ")
     }
   })
 }
@@ -115,7 +115,7 @@ fn handle_auto_block(
           [
             plugin.PluginResponse(
               plugin: "block",
-              message: "필터 위반으로 자동 차단되었습니다.",
+              message: "필터 위반이라 자동으로 차단했당!",
             ),
           ]
         }

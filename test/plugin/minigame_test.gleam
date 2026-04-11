@@ -41,7 +41,7 @@ pub fn help_message_test() {
     == [
       plugin.PluginResponse(
         plugin: "minigame",
-        message: "사용법: !게임 주사위 / !게임 가위바위보 <가위|바위|보>",
+        message: "이렇게 써줘용 !게임 주사위 / !게임 가위바위보 <가위|바위|보>",
       ),
     ]
 }
@@ -62,7 +62,7 @@ pub fn unknown_game_shows_help_test() {
     == [
       plugin.PluginResponse(
         plugin: "minigame",
-        message: "사용법: !게임 주사위 / !게임 가위바위보 <가위|바위|보>",
+        message: "이렇게 써줘용 !게임 주사위 / !게임 가위바위보 <가위|바위|보>",
       ),
     ]
 }
@@ -103,7 +103,7 @@ pub fn rps_invalid_choice_test() {
     == [
       plugin.PluginResponse(
         plugin: "minigame",
-        message: "가위, 바위, 보 중 하나를 선택해주세요.",
+        message: "가위, 바위, 보 중에 하나 골라줘용",
       ),
     ]
 }

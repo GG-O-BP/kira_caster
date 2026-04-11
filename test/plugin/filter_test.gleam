@@ -169,7 +169,7 @@ pub fn moderator_add_word_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "filter", message: "'나쁜말' 단어를 필터에 추가했습니다."),
+      plugin.PluginResponse(plugin: "filter", message: "'나쁜말' 추가했당!"),
     ]
 }
 
@@ -187,7 +187,7 @@ pub fn viewer_cannot_add_word_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "filter", message: "권한이 없습니다. (관리자 전용)"),
+      plugin.PluginResponse(plugin: "filter", message: "헐 이건 관리자만 할 수 있어용 ㅠ"),
     ]
 }
 
@@ -207,7 +207,7 @@ pub fn moderator_remove_word_test() {
     == [
       plugin.PluginResponse(
         plugin: "filter",
-        message: "'spam' 단어를 필터에서 삭제했습니다.",
+        message: "'spam' 삭제했당!",
       ),
     ]
 }
@@ -249,7 +249,7 @@ pub fn moderator_list_words_test() {
     [plugin.PluginResponse(plugin: "filter", message: msg)] -> {
       assert {
         case msg {
-          "금지어 목록: " <> _ -> True
+          "금지어 목록이에용 " <> _ -> True
           _ -> False
         }
       }

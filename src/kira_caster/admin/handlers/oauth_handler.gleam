@@ -37,29 +37,29 @@ pub fn handle_callback(
           auto_fetch_channel_id(mgr, cime_api, repo)
           oauth_result_page(
             True,
-            "씨미 연동 완료!",
-            "씨미 계정이 성공적으로 연결되었습니다. 이제 실제 채팅에서 봇이 자동으로 동작합니다. 대시보드로 이동해서 기능을 확인해보세요.",
+            "씨미 연동 완료당!",
+            "씨미 계정 연결했당! 이제 진짜 채팅에서 봇이 자동으로 움직여용 ㅎㅎ 대시보드 가서 확인해봐용",
           )
         }
         Error(_reason) ->
           oauth_result_page(
             False,
-            "씨미 연동 실패",
-            "씨미 인증에 실패했습니다. 씨미 개발자 센터(ci.me/developer)에서 앱 ID와 비밀키가 맞는지 다시 확인해주세요. 확인 후 대시보드 '설정' 탭에서 값을 수정하고 '변경사항 적용' 버튼을 누른 뒤 다시 시도해주세요.",
+            "씨미 연동 실패 ㅠㅠ",
+            "앗 씨미 인증이 안 됐어 ㅠㅠ 씨미 개발자 센터(ci.me/developer)에서 앱 ID랑 비밀키가 맞는지 확인해줘용 대시보드 '설정' 탭에서 고치고 '변경사항 적용' 누른 다음에 다시 해봐용!",
           )
       }
     }
     None, _ ->
       oauth_result_page(
         False,
-        "씨미 연동 실패",
-        "씨미에서 인증 정보를 받지 못했습니다. 대시보드의 '씨미 연동' 탭에서 '연결하기' 버튼을 다시 클릭해주세요.",
+        "씨미 연동 실패 ㅠㅠ",
+        "앗 씨미에서 인증 정보를 못 받았어 ㅠㅠ 대시보드 '씨미 연동' 탭에서 '연결하기' 버튼 다시 눌러줘용",
       )
     _, None ->
       oauth_result_page(
         False,
-        "씨미 연동 준비가 필요합니다",
-        "먼저 대시보드 '설정' 탭에서 씨미 앱 ID와 비밀키를 입력하고 '변경사항 적용' 버튼을 눌러주세요. 그 후 '씨미 연동' 탭에서 연결할 수 있습니다.",
+        "씨미 연동 준비가 필요해용",
+        "먼저 대시보드 '설정' 탭에서 씨미 앱 ID랑 비밀키 넣고 '변경사항 적용' 버튼 눌러줘용 그다음에 '씨미 연동' 탭에서 연결할 수 있당!",
       )
   }
 }
@@ -91,7 +91,7 @@ fn oauth_result_page(success: Bool, title: String, message: String) -> Response 
         html.div([attribute.class(status_class)], [text(title)]),
         html.p([], [text(message)]),
         html.a([attribute.href("/"), attr("style", "")], [
-          text("대시보드로 이동"),
+          text("대시보드로 가긔"),
         ]),
       ]),
     ]),
@@ -158,7 +158,7 @@ pub fn handle_status(
         json.to_string(
           json.object([
             #("authenticated", json.bool(False)),
-            #("message", json.string("씨미 연동 미설정")),
+            #("message", json.string("씨미 연동 아직 안 했어용")),
           ]),
         ),
         200,
@@ -178,7 +178,7 @@ pub fn handle_disconnect(
             json.to_string(
               json.object([
                 #("status", json.string("ok")),
-                #("message", json.string("연결 해제 완료")),
+                #("message", json.string("연결 끊었당!")),
               ]),
             ),
             200,
@@ -200,7 +200,7 @@ pub fn handle_disconnect(
         json.to_string(
           json.object([
             #("status", json.string("error")),
-            #("message", json.string("씨미 연동이 설정되지 않아 연결을 해제할 수 없습니다")),
+            #("message", json.string("씨미 연동이 안 돼있어서 끊을 게 없당..")),
           ]),
         ),
         503,

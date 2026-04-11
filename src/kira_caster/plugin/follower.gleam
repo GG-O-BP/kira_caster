@@ -56,7 +56,7 @@ fn handle_poll(
               list.map(new_followers, fn(f) {
                 plugin.PluginResponse(
                   plugin: "follower",
-                  message: f.channel_name <> "님이 팔로우했습니다! 환영합니다!",
+                  message: f.channel_name <> "님이 팔로우해줬당! 환영해용 ㅎㅎ!",
                 )
               })
             }
@@ -81,19 +81,19 @@ fn handle_follower_count(
           [
             plugin.PluginResponse(
               plugin: "follower",
-              message: "현재 팔로워: " <> int.to_string(count) <> "명",
+              message: "지금 팔로워 " <> int.to_string(count) <> "명",
             ),
           ]
         }
         Error(_) -> [
           plugin.PluginResponse(
             plugin: "follower",
-            message: "팔로워 수를 조회할 수 없습니다.",
+            message: "앗 팔로워 수를 못 불러왔어 ㅠㅠ",
           ),
         ]
       }
     Error(_) -> [
-      plugin.PluginResponse(plugin: "follower", message: "인증 토큰을 가져올 수 없습니다."),
+      plugin.PluginResponse(plugin: "follower", message: "앗 인증 토큰을 못 가져왔어 ㅠㅠ"),
     ]
   }
 }

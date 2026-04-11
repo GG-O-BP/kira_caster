@@ -21,7 +21,7 @@ pub fn moderator_block_user_test() {
       ),
     )
   let assert [plugin.PluginResponse(plugin: "block", message: msg)] = events
-  let assert True = msg == "target_id 유저를 차단했습니다."
+  let assert True = msg == "target_id 차단했당!"
 }
 
 pub fn viewer_block_denied_test() {
@@ -37,7 +37,7 @@ pub fn viewer_block_denied_test() {
       ),
     )
   let assert [plugin.PluginResponse(plugin: "block", message: msg)] = events
-  let assert True = msg == "권한이 없습니다. (관리자 전용)"
+  let assert True = msg == "헐 이건 관리자만 할 수 있어용 ㅠ"
 }
 
 pub fn moderator_unblock_user_test() {
@@ -53,7 +53,7 @@ pub fn moderator_unblock_user_test() {
       ),
     )
   let assert [plugin.PluginResponse(plugin: "block", message: msg)] = events
-  let assert True = msg == "target_id 유저의 차단을 해제했습니다."
+  let assert True = msg == "target_id 차단 풀어줬당!"
 }
 
 pub fn moderator_block_list_empty_test() {
@@ -69,7 +69,7 @@ pub fn moderator_block_list_empty_test() {
       ),
     )
   let assert [plugin.PluginResponse(plugin: "block", message: msg)] = events
-  let assert True = msg == "차단된 유저가 없습니다."
+  let assert True = msg == "차단된 유저가 없당"
 }
 
 pub fn auto_block_system_event_test() {
@@ -77,7 +77,7 @@ pub fn auto_block_system_event_test() {
   let events =
     plugin.handle(p, plugin.SystemEvent(kind: "auto_block", data: "ch789"))
   let assert [plugin.PluginResponse(plugin: "block", message: msg)] = events
-  let assert True = msg == "필터 위반으로 자동 차단되었습니다."
+  let assert True = msg == "필터 위반이라 자동으로 차단했당!"
 }
 
 pub fn unrelated_event_ignored_test() {

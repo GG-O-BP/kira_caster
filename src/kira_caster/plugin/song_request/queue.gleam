@@ -10,8 +10,8 @@ import kira_caster/util/youtube
 
 pub fn handle_list(repo: Repository) -> List(Event) {
   case repo.get_song_queue() {
-    Error(_) -> [resp("대기열 조회 중 오류가 발생했습니다.")]
-    Ok([]) -> [resp("대기열이 비어 있습니다.")]
+    Error(_) -> [resp("앗 대기열 불러오다 에러났어 ㅠㅠ")]
+    Ok([]) -> [resp("대기열이 비어있당 곡을 넣어줘용!")]
     Ok(songs) -> {
       let current_id = settings.get_setting_str(repo, "song_current_id", "")
       let lines =
@@ -36,7 +36,7 @@ pub fn handle_list(repo: Repository) -> List(Event) {
         True -> "\n... 외 " <> int.to_string(total - 5) <> "곡"
         False -> ""
       }
-      [resp("대기열:\n" <> string.join(lines, "\n") <> footer)]
+      [resp("대기열이에용!\n" <> string.join(lines, "\n") <> footer)]
     }
   }
 }
@@ -44,14 +44,14 @@ pub fn handle_list(repo: Repository) -> List(Event) {
 pub fn handle_current(repo: Repository) -> List(Event) {
   let current_id = settings.get_setting_str(repo, "song_current_id", "")
   case current_id {
-    "" -> [resp("현재 재생 중인 곡이 없습니다.")]
+    "" -> [resp("지금 재생 중인 곡이 없당..")]
     _ ->
       case repo.get_song_queue() {
         Ok(songs) ->
           case list.find(songs, fn(s) { int.to_string(s.id) == current_id }) {
             Ok(s) -> [
               resp(
-                "현재 재생: "
+                "지금 듣고 있는 거 "
                 <> s.title
                 <> " ("
                 <> youtube.format_duration(s.duration_seconds)
@@ -59,26 +59,26 @@ pub fn handle_current(repo: Repository) -> List(Event) {
                 <> s.requested_by,
               ),
             ]
-            Error(_) -> [resp("현재 재생 중인 곡이 없습니다.")]
+            Error(_) -> [resp("지금 재생 중인 곡이 없당..")]
           }
-        Error(_) -> [resp("대기열 조회 중 오류가 발생했습니다.")]
+        Error(_) -> [resp("앗 대기열 불러오다 에러났어 ㅠㅠ")]
       }
   }
 }
 
 pub fn handle_skip(repo: Repository, role: permission.Role) -> List(Event) {
   case permission.check(role, permission.Moderator) {
-    Error(_) -> [resp("권한이 없습니다. (관리자 전용)")]
+    Error(_) -> [resp("헐 이건 관리자만 할 수 있어용 ㅠ")]
     Ok(Nil) -> {
       case advance_song(repo, Forward) {
         Ok(next) -> [
-          resp("다음 곡: " <> format_song(next)),
+          resp("다음 곡이에용 " <> format_song(next)),
         ]
         Error("end") -> {
           let _ = repo.set_setting("song_current_id", "")
-          [resp("대기열의 마지막 곡입니다.")]
+          [resp("이게 마지막 곡이에용!")]
         }
-        Error(_) -> [resp("스킵 처리 중 오류가 발생했습니다.")]
+        Error(_) -> [resp("앗 스킵하다 에러났어 ㅠㅠ")]
       }
     }
   }
@@ -90,10 +90,10 @@ pub fn handle_remove(
   num_str: String,
 ) -> List(Event) {
   case permission.check(role, permission.Moderator) {
-    Error(_) -> [resp("권한이 없습니다. (관리자 전용)")]
+    Error(_) -> [resp("헐 이건 관리자만 할 수 있어용 ㅠ")]
     Ok(Nil) ->
       case int.parse(num_str) {
-        Error(_) -> [resp("번호를 입력해주세요. (예: !노래 삭제 1)")]
+        Error(_) -> [resp("번호를 넣어줘용 (예: !노래 삭제 1)")]
         Ok(num) ->
           case repo.get_song_queue() {
             Ok(songs) ->
@@ -101,13 +101,13 @@ pub fn handle_remove(
                 Ok(song) ->
                   case repo.remove_song(song.id) {
                     Ok(Nil) -> [
-                      resp(song.title <> " 이(가) 대기열에서 삭제되었습니다."),
+                      resp(song.title <> " 대기열에서 삭제했당!"),
                     ]
-                    Error(_) -> [resp("삭제 중 오류가 발생했습니다.")]
+                    Error(_) -> [resp("앗 삭제하다 에러났어 ㅠㅠ")]
                   }
-                Error(_) -> [resp("해당 번호의 곡이 없습니다.")]
+                Error(_) -> [resp("그 번호에 곡이 없당..")]
               }
-            Error(_) -> [resp("대기열 조회 중 오류가 발생했습니다.")]
+            Error(_) -> [resp("앗 대기열 불러오다 에러났어 ㅠㅠ")]
           }
       }
   }
@@ -115,15 +115,15 @@ pub fn handle_remove(
 
 pub fn handle_clear(repo: Repository, role: permission.Role) -> List(Event) {
   case permission.check(role, permission.Moderator) {
-    Error(_) -> [resp("권한이 없습니다. (관리자 전용)")]
+    Error(_) -> [resp("헐 이건 관리자만 할 수 있어용 ㅠ")]
     Ok(Nil) ->
       case repo.clear_song_queue() {
         Ok(Nil) -> {
           let _ = repo.set_setting("song_current_id", "")
           let _ = repo.set_setting("song_current_version", "0")
-          [resp("대기열이 초기화되었습니다.")]
+          [resp("대기열 싹 비웠당!")]
         }
-        Error(_) -> [resp("초기화 중 오류가 발생했습니다.")]
+        Error(_) -> [resp("앗 초기화하다 에러났어 ㅠㅠ")]
       }
   }
 }

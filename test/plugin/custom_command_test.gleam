@@ -21,7 +21,7 @@ pub fn moderator_add_command_test() {
     == [
       plugin.PluginResponse(
         plugin: "custom_command",
-        message: "'인사' 명령이 등록되었습니다.",
+        message: "'인사' 명령 등록했당!",
       ),
     ]
 }
@@ -43,7 +43,7 @@ pub fn viewer_cannot_add_command_test() {
     == [
       plugin.PluginResponse(
         plugin: "custom_command",
-        message: "권한이 없습니다. (관리자 전용)",
+        message: "헐 이건 관리자만 할 수 있어용 ㅠ",
       ),
     ]
 }
@@ -65,7 +65,7 @@ pub fn moderator_delete_command_test() {
     == [
       plugin.PluginResponse(
         plugin: "custom_command",
-        message: "'인사' 명령이 삭제되었습니다.",
+        message: "'인사' 명령 삭제했당!",
       ),
     ]
 }

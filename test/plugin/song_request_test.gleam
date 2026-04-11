@@ -110,7 +110,7 @@ pub fn request_song_duplicate_prevented_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "song_request", message: "이미 대기열에 있는 곡입니다."),
+      plugin.PluginResponse(plugin: "song_request", message: "이 곡 이미 대기열에 있당 ㅋㅋ"),
     ]
 }
 
@@ -145,7 +145,7 @@ pub fn request_song_user_limit_test() {
     == [
       plugin.PluginResponse(
         plugin: "song_request",
-        message: "신청 한도를 초과했습니다. (최대 1곡)",
+        message: "신청 한도 넘었어용 ㅠㅠ (최대 1곡)",
       ),
     ]
 }
@@ -185,7 +185,7 @@ pub fn request_song_insufficient_points_test() {
     == [
       plugin.PluginResponse(
         plugin: "song_request",
-        message: "포인트가 부족합니다. (필요: 100, 보유: 50)",
+        message: "포인트가 모자라용 ㅠㅠ (필요: 100, 보유: 50)",
       ),
     ]
 }
@@ -248,7 +248,7 @@ pub fn skip_requires_moderator_test() {
     == [
       plugin.PluginResponse(
         plugin: "song_request",
-        message: "권한이 없습니다. (관리자 전용)",
+        message: "헐 이건 관리자만 할 수 있어용 ㅠ",
       ),
     ]
 }
@@ -270,7 +270,7 @@ pub fn clear_requires_moderator_test() {
     == [
       plugin.PluginResponse(
         plugin: "song_request",
-        message: "권한이 없습니다. (관리자 전용)",
+        message: "헐 이건 관리자만 할 수 있어용 ㅠ",
       ),
     ]
 }
@@ -290,7 +290,7 @@ pub fn clear_as_moderator_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "song_request", message: "대기열이 초기화되었습니다."),
+      plugin.PluginResponse(plugin: "song_request", message: "대기열 싹 비웠당!"),
     ]
 }
 
@@ -309,7 +309,7 @@ pub fn list_empty_queue_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "song_request", message: "대기열이 비어 있습니다."),
+      plugin.PluginResponse(plugin: "song_request", message: "대기열이 비어있당 곡을 넣어줘용!"),
     ]
 }
 
@@ -330,7 +330,7 @@ pub fn list_with_songs_test() {
     [plugin.PluginResponse(plugin: "song_request", message: msg)] -> {
       assert {
         case msg {
-          "대기열:\n" <> _ -> True
+          "대기열이에용!\n" <> _ -> True
           _ -> False
         }
       }
@@ -356,7 +356,7 @@ pub fn current_song_test() {
     [plugin.PluginResponse(plugin: "song_request", message: msg)] -> {
       assert {
         case msg {
-          "현재 재생: " <> _ -> True
+          "지금 듣고 있는 거 " <> _ -> True
           _ -> False
         }
       }
@@ -382,7 +382,7 @@ pub fn help_message_test() {
     [plugin.PluginResponse(plugin: "song_request", message: msg)] -> {
       assert {
         case msg {
-          "사용법: " <> _ -> True
+          "이렇게 써줘용 " <> _ -> True
           _ -> False
         }
       }
@@ -424,7 +424,7 @@ pub fn remove_requires_moderator_test() {
     == [
       plugin.PluginResponse(
         plugin: "song_request",
-        message: "권한이 없습니다. (관리자 전용)",
+        message: "헐 이건 관리자만 할 수 있어용 ㅠ",
       ),
     ]
 }

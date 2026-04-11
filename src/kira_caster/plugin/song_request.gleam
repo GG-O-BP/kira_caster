@@ -29,7 +29,7 @@ fn handle(repo: Repository, api_key: String, event: Event) -> List(Event) {
       validator.validate_and_add(repo, api_key, user, url)
     plugin.Command(user: _, name: "노래", args: _, role: _) -> [
       resp(
-        "사용법: !노래 <YouTube URL> / !노래 목록 / !노래 현재 / !노래 스킵 / !노래 삭제 <번호> / !노래 비우기 / !노래 공지",
+        "이렇게 써줘용 !노래 <YouTube URL> / !노래 목록 / !노래 현재 / !노래 스킵 / !노래 삭제 <번호> / !노래 비우기 / !노래 공지",
       ),
     ]
     _ -> []
@@ -38,14 +38,14 @@ fn handle(repo: Repository, api_key: String, event: Event) -> List(Event) {
 
 fn handle_notice(repo: Repository, role: permission.Role) -> List(Event) {
   case permission.check(role, permission.Moderator) {
-    Error(_) -> [resp("권한이 없습니다. (관리자 전용)")]
+    Error(_) -> [resp("헐 이건 관리자만 할 수 있어용 ㅠ")]
     Ok(Nil) ->
       case queue.handle_current_info(repo) {
         Ok(title) -> [
-          plugin.SystemEvent(kind: "chat_notice", data: "현재 재생: " <> title),
-          resp("현재곡을 공지로 등록했습니다."),
+          plugin.SystemEvent(kind: "chat_notice", data: "지금 듣고 있는 거 " <> title),
+          resp("지금 곡을 공지로 올렸당!"),
         ]
-        Error(_) -> [resp("현재 재생 중인 곡이 없습니다.")]
+        Error(_) -> [resp("지금 재생 중인 곡이 없당..")]
       }
   }
 }

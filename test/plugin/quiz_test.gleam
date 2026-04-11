@@ -21,7 +21,7 @@ pub fn quiz_start_moderator_test() {
     [plugin.PluginResponse(plugin: "quiz", message: msg)] -> {
       assert {
         case msg {
-          "퀴즈! " <> _ -> True
+          "퀴즈 나간당! " <> _ -> True
           _ -> False
         }
       }
@@ -45,7 +45,7 @@ pub fn quiz_start_viewer_denied_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "quiz", message: "권한이 없습니다. (관리자 전용)"),
+      plugin.PluginResponse(plugin: "quiz", message: "헐 이건 관리자만 할 수 있어용 ㅠ"),
     ]
 }
 
@@ -64,7 +64,7 @@ pub fn quiz_answer_no_active_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "quiz", message: "현재 진행 중인 퀴즈가 없습니다."),
+      plugin.PluginResponse(plugin: "quiz", message: "지금 진행 중인 퀴즈가 없당.."),
     ]
 }
 
@@ -130,7 +130,7 @@ pub fn help_message_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "quiz", message: "사용법: !퀴즈 시작 / !퀴즈 <답>"),
+      plugin.PluginResponse(plugin: "quiz", message: "이렇게 써줘용 !퀴즈 시작 / !퀴즈 <답>"),
     ]
 }
 

@@ -38,8 +38,8 @@ pub fn main() -> Nil {
   case start() {
     Ok(Nil) -> logger.info("kira_caster running")
     Error(reason) -> {
-      logger.error("시작 실패: " <> reason)
-      logger.error("해결 방법: .env 파일의 설정을 확인하거나, 환경변수가 올바른지 확인해주세요")
+      logger.error("앗 시작 실패했어 ㅠㅠ: " <> reason)
+      logger.error("해결 방법: .env 파일이나 환경변수 확인해줘용")
     }
   }
 }
@@ -51,9 +51,9 @@ fn start() -> Result(Nil, String) {
   use repo <- result.try(
     sqlight_repo.new(base_config.db_path)
     |> result.map_error(fn(_) {
-      "데이터베이스를 열 수 없습니다 (경로: "
+      "앗 데이터베이스를 못 열었어 ㅠㅠ (경로: "
       <> base_config.db_path
-      <> "). 파일 경로와 쓰기 권한을 확인해주세요"
+      <> "). 파일 경로랑 쓰기 권한 확인해줘용"
     }),
   )
 
@@ -63,7 +63,7 @@ fn start() -> Result(Nil, String) {
   use #(_sup, bus, bus_name) <- result.try(
     supervisor.start(config)
     |> result.map_error(fn(_) {
-      "내부 서비스를 시작할 수 없습니다. Erlang/OTP가 올바르게 설치되었는지 확인해주세요"
+      "앗 내부 서비스를 못 켰어 ㅠㅠ Erlang/OTP가 잘 설치됐는지 확인해줘용"
     }),
   )
 
@@ -102,7 +102,7 @@ fn start() -> Result(Nil, String) {
 
   use _ <- result.try(
     adapter.connect()
-    |> result.map_error(fn(_) { "어댑터 연결에 실패했습니다. 네트워크 상태를 확인해주세요" }),
+    |> result.map_error(fn(_) { "앗 어댑터 연결이 안 됐어 ㅠㅠ 네트워크 확인해줘용" }),
   )
 
   let make_response_handler = fn() {

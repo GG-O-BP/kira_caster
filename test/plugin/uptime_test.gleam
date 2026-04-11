@@ -20,7 +20,7 @@ pub fn uptime_responds_test() {
     [plugin.PluginResponse(plugin: "uptime", message: msg)] -> {
       assert {
         case msg {
-          "가동 시간: " <> _ -> True
+          "켜진 지 " <> _ -> True
           _ -> False
         }
       }

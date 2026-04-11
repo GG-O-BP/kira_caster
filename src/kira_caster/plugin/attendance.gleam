@@ -39,7 +39,7 @@ fn record_attendance(
     True -> [
       plugin.PluginResponse(
         plugin: "attendance",
-        message: user <> "님, 오늘은 이미 출석했습니다!",
+        message: user <> "님, 오늘 이미 출석했잖아용 ㅋㅋ",
       ),
     ]
     False -> {
@@ -55,7 +55,7 @@ fn record_attendance(
           plugin.PluginResponse(
             plugin: "attendance",
             message: user
-              <> " 출석 완료! (총 "
+              <> " 출석 완료당! (총 "
               <> int.to_string(updated.attendance_count)
               <> "회, +"
               <> int.to_string(reward_points)
@@ -65,7 +65,7 @@ fn record_attendance(
         Error(_) -> [
           plugin.PluginResponse(
             plugin: "attendance",
-            message: "출석 처리 중 오류가 발생했습니다.",
+            message: "앗 출석하다가 뭔가 잘못됐어 ㅠㅠ",
           ),
         ]
       }

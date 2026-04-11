@@ -95,14 +95,14 @@ fn handle_login(req: Request, ctx: RouterContext) -> Response {
       use form <- wisp.require_form(req)
       let password = find_form_value(form.values, "password")
       case password {
-        "" -> login_page.handle_login("비밀번호를 입력해주세요")
+        "" -> login_page.handle_login("비밀번호를 넣어줘용")
         pw ->
           case pw == ctx.admin_key {
             True -> {
               wisp.redirect("/")
               |> auth.set_session(req, ctx.admin_key)
             }
-            False -> login_page.handle_login("비밀번호가 일치하지 않습니다")
+            False -> login_page.handle_login("비밀번호가 틀렸어 ㅠㅠ 다시 해줘용")
           }
       }
     }

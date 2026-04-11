@@ -16,7 +16,7 @@ fn handle(repo: Repository, event: Event) -> List(Event) {
     plugin.Command(user:, name: "퀴즈", args: [answer], role: _) ->
       handle_answer(repo, user, answer)
     plugin.Command(user: _, name: "퀴즈", args: _, role: _) -> [
-      plugin.PluginResponse(plugin: "quiz", message: "사용법: !퀴즈 시작 / !퀴즈 <답>"),
+      plugin.PluginResponse(plugin: "quiz", message: "이렇게 써줘용 !퀴즈 시작 / !퀴즈 <답>"),
     ]
     _ -> []
   }
@@ -25,7 +25,7 @@ fn handle(repo: Repository, event: Event) -> List(Event) {
 fn handle_start(repo: Repository, role: permission.Role) -> List(Event) {
   case permission.check(role, permission.Moderator) {
     Error(_) -> [
-      plugin.PluginResponse(plugin: "quiz", message: "권한이 없습니다. (관리자 전용)"),
+      plugin.PluginResponse(plugin: "quiz", message: "헐 이건 관리자만 할 수 있어용 ㅠ"),
     ]
     Ok(Nil) -> {
       // DB 퀴즈가 있으면 DB에서, 없으면 내장 데이터에서 출제
@@ -49,7 +49,7 @@ fn handle_start(repo: Repository, role: permission.Role) -> List(Event) {
           answers_str <> "|" <> int.to_string(reward),
         )
       [
-        plugin.PluginResponse(plugin: "quiz", message: "퀴즈! " <> question),
+        plugin.PluginResponse(plugin: "quiz", message: "퀴즈 나간당! " <> question),
       ]
     }
   }
@@ -58,7 +58,7 @@ fn handle_start(repo: Repository, role: permission.Role) -> List(Event) {
 fn handle_answer(repo: Repository, user: String, answer: String) -> List(Event) {
   case repo.get_command("__quiz_answer") {
     Error(_) -> [
-      plugin.PluginResponse(plugin: "quiz", message: "현재 진행 중인 퀴즈가 없습니다."),
+      plugin.PluginResponse(plugin: "quiz", message: "지금 진행 중인 퀴즈가 없당.."),
     ]
     Ok(data) ->
       case string.split_once(data, "|") {
@@ -76,7 +76,7 @@ fn handle_answer(repo: Repository, user: String, answer: String) -> List(Event) 
               [
                 plugin.PluginResponse(
                   plugin: "quiz",
-                  message: user <> "님 정답! (+" <> int.to_string(reward) <> "포인트)",
+                  message: user <> "님 정답이당!! ㅋㅋ (+" <> int.to_string(reward) <> "포인트)",
                 ),
                 plugin.PointsChange(user: user, amount: reward, reason: "quiz"),
               ]

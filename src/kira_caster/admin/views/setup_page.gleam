@@ -37,7 +37,7 @@ fn setup_done_body() -> Element(Nil) {
       html.div([attribute.class("setup-card")], [
         html.h1([attribute.class("setup-title")], [text("kira_caster")]),
         html.div([attribute.class("setup-success")], [
-          text("설정이 저장되었습니다!"),
+          text("설정 저장 완료당!"),
         ]),
         html.div([attribute.class("setup-done")], [
           html.div(
@@ -49,10 +49,10 @@ fn setup_done_body() -> Element(Nil) {
             ],
             [],
           ),
-          html.p([], [text("설정을 저장했습니다. 잠시만 기다려주세요...")]),
+          html.p([], [text("설정 저장했당 잠깐만 기다려줘용...")]),
           html.p(
             [attr("style", "margin-top:12px;font-size:0.85em;color:#888")],
-            [text("약 5초 후 자동으로 관리 화면으로 이동합니다. 이 화면을 닫지 않아도 됩니다.")],
+            [text("5초쯤 지나면 자동으로 넘어가니까 이 화면 안 닫아도 돼용 ㅎㅎ")],
           ),
         ]),
       ]),
@@ -61,7 +61,7 @@ fn setup_done_body() -> Element(Nil) {
 }
 
 fn setup_script() -> String {
-  "<script>function copyUri(btn){var t=document.getElementById('redirect-uri');if(t){navigator.clipboard.writeText(t.textContent).then(function(){btn.textContent='복사됨!';setTimeout(function(){btn.textContent='복사'},2000)}).catch(function(){var r=document.createRange();r.selectNodeContents(t);var s=window.getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');btn.textContent='복사됨!';setTimeout(function(){btn.textContent='복사'},2000)})}}function togglePw(id,btn){var i=document.getElementById(id);if(i){if(i.type==='password'){i.type='text';btn.textContent='숨기기'}else{i.type='password';btn.textContent='보기'}}}</script>"
+  "<script>function copyUri(btn){var t=document.getElementById('redirect-uri');if(t){navigator.clipboard.writeText(t.textContent).then(function(){btn.textContent='복사했당!';setTimeout(function(){btn.textContent='복사'},2000)}).catch(function(){var r=document.createRange();r.selectNodeContents(t);var s=window.getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');btn.textContent='복사했당!';setTimeout(function(){btn.textContent='복사'},2000)})}}function togglePw(id,btn){var i=document.getElementById(id);if(i){if(i.type==='password'){i.type='text';btn.textContent='숨기긔'}else{i.type='password';btn.textContent='보긔'}}}</script>"
 }
 
 fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
@@ -70,7 +70,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
       html.div([attribute.class("setup-card")], [
         html.h1([attribute.class("setup-title")], [text("kira_caster")]),
         html.p([attribute.class("setup-subtitle")], [
-          text("처음 오셨군요! 기본 설정을 진행해주세요."),
+          text("어머 처음이당! 같이 설정하자 ㅎㅎ"),
         ]),
         case message {
           "" -> text("")
@@ -79,9 +79,9 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
         html.form([attr("method", "POST"), attr("action", "/setup")], [
           // Step 1: Admin password
           html.div([attribute.class("setup-section")], [
-            html.h3([], [text("1. 관리자 비밀번호")]),
+            html.h3([], [text("1. 관리자 비밀번호 정하기")]),
             html.p([attribute.class("setup-hint")], [
-              text("대시보드에 접속할 때 사용할 비밀번호입니다."),
+              text("대시보드 들어갈 때 쓸 비밀번호야용"),
             ]),
             html.p(
               [
@@ -92,7 +92,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
               ],
               [
                 text(
-                  "비밀번호를 비워두면 같은 네트워크에 있는 누구나 봇을 조종할 수 있습니다. 꼭 비밀번호를 설정하는 것을 권장합니다.",
+                  "비밀번호 안 정하면 아무나 들어올 수 있어서 위험하거든용 ㅠㅠ 꼭 정해줘잉!",
                 ),
               ],
             ),
@@ -105,7 +105,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
                   attribute.type_("password"),
                   attr("name", "admin_key"),
                   attr("id", "admin-key-input"),
-                  attribute.placeholder("비밀번호를 입력하세요"),
+                  attribute.placeholder("비밀번호를 여기에"),
                   attr("style", "flex:1"),
                 ]),
                 html.button(
@@ -117,38 +117,38 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
                       "padding:8px 14px;font-size:0.85em;margin-top:0;white-space:nowrap",
                     ),
                   ],
-                  [text("보기")],
+                  [text("보긔")],
                 ),
               ],
             ),
           ]),
           // Step 2: CIME settings
           html.div([attribute.class("setup-section")], [
-            html.h3([], [text("2. 씨미(ci.me) 연동")]),
+            html.h3([], [text("2. 씨미(ci.me) 연결하기")]),
             html.p([attribute.class("setup-hint")], [
               text(
-                "씨미 방송과 연동하면 채팅에서 봇이 자동으로 응답합니다. 지금 건너뛰고 나중에 대시보드에서 설정할 수도 있습니다.",
+                "씨미 방송이랑 연결하면 채팅에서 봇이 자동으로 대답해줘용 지금 안 해도 나중에 할 수 있으니까 걱정 ㄴㄴ!",
               ),
             ]),
             html.div([attribute.class("setup-guide")], [
               html.p([attr("style", "font-weight:600;margin-bottom:6px")], [
-                text("준비 방법:"),
+                text("준비하는 방법!"),
               ]),
               html.ol([attr("style", "padding-left:20px;line-height:1.8")], [
                 html.li([], [
-                  text("아래 '씨미 개발자 센터 열기' 버튼을 클릭하세요 (씨미 로그인이 필요합니다)"),
+                  text("아래 '씨미 개발자 센터 열기' 버튼 눌러줘용 (씨미 로그인이 필요해용)"),
                 ]),
                 html.li([], [
-                  text("화면 오른쪽 위의 '새 앱 만들기' 버튼을 클릭하세요"),
+                  text("오른쪽 위에 '새 앱 만들기' 버튼 눌러줘용"),
                 ]),
                 html.li([], [
-                  text("앱 이름을 자유롭게 입력하세요"),
+                  text("앱 이름은 아무거나 넣어도 돼용 ㅎㅎ"),
                 ]),
                 html.li([], [
-                  text("'Redirect URI' 칸에 아래 주소를 복사해서 붙여넣으세요"),
+                  text("'Redirect URI' 칸에 아래 주소를 복사해서 넣어줘용"),
                 ]),
                 html.li([], [
-                  text("앱을 만들면 '앱 ID'와 '비밀키'가 표시됩니다. 이 두 값을 아래 칸에 붙여넣으세요"),
+                  text("앱 만들면 '앱 ID'랑 '비밀키'가 나오거든용 그거 아래 칸에 넣어주면 돼용"),
                 ]),
               ]),
               html.div(
@@ -193,7 +193,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
             ]),
             html.input([
               attr("name", "cime_client_id"),
-              attribute.placeholder("앱 ID - 개발자 센터에서 복사한 값"),
+              attribute.placeholder("앱 ID - 개발자 센터에서 복사한 거"),
             ]),
             html.div(
               [
@@ -202,7 +202,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
               [
                 html.input([
                   attr("name", "cime_client_secret"),
-                  attribute.placeholder("앱 비밀키 - 개발자 센터에서 복사한 값"),
+                  attribute.placeholder("앱 비밀키 - 개발자 센터에서 복사한 거"),
                   attribute.type_("password"),
                   attr("id", "cime-secret-input"),
                   attr("style", "flex:1"),
@@ -216,7 +216,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
                       "padding:8px 14px;font-size:0.85em;margin-top:0;white-space:nowrap",
                     ),
                   ],
-                  [text("보기")],
+                  [text("보긔")],
                 ),
               ],
             ),
@@ -229,30 +229,30 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
                     "font-size:0.85em;color:var(--color-primary);cursor:pointer;font-weight:600;margin-top:8px",
                   ),
                 ],
-                [text("이게 뭔가요?")],
+                [text("이게 뭔뎅??")],
               ),
               html.p([attribute.class("setup-hint")], [
                 text(
-                  "씨미에서 봇을 사용하려면 '앱'을 등록해야 합니다. 마치 새 계정을 만드는 것과 비슷해요. 앱 ID와 비밀키는 봇의 아이디/비밀번호라고 생각하면 됩니다. 위의 주소(Redirect URI)는 자동으로 채워져 있으니 그대로 복사해서 붙여넣기만 하면 됩니다. 채널 정보는 연동 후 자동으로 가져옵니다.",
+                  "씨미에서 봇 쓰려면 '앱'을 만들어야 하거든용 새 계정 만드는 거랑 비슷해용 ㅎㅎ 앱 ID랑 비밀키는 봇의 아이디/비밀번호라고 생각하면 돼용! 위에 주소(Redirect URI)는 그냥 복사해서 붙여넣기만 하면 되고, 채널 정보는 연결하면 알아서 가져와용",
                 ),
               ]),
             ]),
           ]),
-          html.button([attribute.type_("submit")], [text("설정 완료")]),
+          html.button([attribute.type_("submit")], [text("설정 끝!")]),
           html.div([attr("style", "text-align:center;margin-top:16px")], [
             html.a(
               [
                 attribute.href("/setup?skip=true"),
                 attribute.class("skip-link"),
               ],
-              [text("씨미 연결 없이 시작하기")],
+              [text("씨미 없이 일단 시작하긔")],
             ),
             html.p(
               [
                 attr("style", "font-size:0.78em;color:#aaa;margin-top:6px"),
               ],
               [
-                text("나중에 대시보드 설정에서 언제든 씨미를 연결할 수 있습니다"),
+                text("나중에 대시보드에서 언제든 연결할 수 있으니까 걱정 ㄴㄴ용"),
               ],
             ),
           ]),

@@ -41,17 +41,17 @@ fn mode_badge(mode: model.AdapterMode) -> Element(Msg) {
       html.span(
         [
           attribute.class("mode-badge cime"),
-          attr("title", "씨미 방송과 연결되어 실제 채팅에서 봇이 동작합니다"),
+          attr("title", "씨미 방송이랑 연결돼서 진짜 채팅에서 봇이 움직여용"),
         ],
-        [text("씨미 연동 중")],
+        [text("씨미 연결됐당")],
       )
     model.MockMode ->
       html.span(
         [
           attribute.class("mode-badge mock"),
-          attr("title", "씨미와 연결되지 않은 상태입니다. 아래 '씨미 연동' 탭에서 연결할 수 있습니다"),
+          attr("title", "씨미랑 아직 연결 안 됐어용 아래 '씨미 연동' 탭에서 연결해줘용"),
         ],
-        [text("테스트 모드 — 씨미 미연결")],
+        [text("테스트 모드 — 씨미 아직이에용")],
       )
   }
 }
@@ -132,28 +132,28 @@ fn active_panel(model: Model) -> Element(Msg) {
   let #(desc, content) = case model.active_tab {
     model.Status -> #("", status_view(model))
     model.Users -> #(
-      "채팅에 참여한 시청자 목록입니다. 각 시청자의 포인트와 출석 횟수를 확인할 수 있습니다",
+      "채팅에 참여한 시청자 목록이에용 포인트랑 출석 횟수도 볼 수 있당 ㅎㅎ",
       users_view(model),
     )
-    model.Words -> #("이 목록에 추가한 단어가 채팅에 입력되면 자동으로 삭제됩니다", words_view(model))
+    model.Words -> #("여기에 추가한 단어가 채팅에 나오면 자동으로 삭제해줄게용", words_view(model))
     model.Commands -> #(
-      "시청자가 채팅에 !명령어를 입력하면 봇이 자동으로 답변합니다. 예: !인사 → 안녕하세요!",
+      "시청자가 !명령어 치면 봇이 자동으로 대답해줘용 예: !인사 → 안녕하세요!",
       commands_view(model),
     )
     model.Quizzes -> #(
-      "채팅에서 퀴즈를 낼 수 있습니다. 시청자가 정답을 맞히면 포인트를 받습니다",
+      "채팅에서 퀴즈 낼 수 있당! 정답 맞히면 포인트 받아용 ㅎㅎ",
       quizzes_view(model),
     )
-    model.Votes -> #("시청자에게 투표를 받을 수 있습니다. 예: 오늘 할 게임 투표", votes_view(model))
+    model.Votes -> #("시청자한테 투표 받을 수 있당! 예: 오늘 할 게임 투표", votes_view(model))
     model.Plugins -> #(
-      "봇의 각 기능을 켜거나 끌 수 있습니다. 필요 없는 기능은 꺼두세요",
+      "봇 기능을 켜고 끌 수 있어용 필요 없는 건 꺼두긔",
       plugins_view(model),
     )
     model.Settings -> #(
-      "포인트, 명령어 사용 간격 등 봇의 세부 동작을 조정합니다",
+      "포인트, 명령어 간격 같은 세부 설정을 바꿀 수 있당",
       settings_view(model),
     )
-    model.Songs -> #("시청자가 채팅으로 신청한 YouTube 노래를 관리합니다", songs_view(model))
+    model.Songs -> #("시청자가 신청한 YouTube 노래를 관리할 수 있당", songs_view(model))
     model.CimeAuth -> #("", cime_auth_view(model))
     model.Broadcast -> #("", broadcast_view(model))
     model.ChatSettings -> #("", chat_settings_view(model))
@@ -182,12 +182,12 @@ fn status_view(model: Model) -> Element(Msg) {
   fragment([
     html.div([attr("style", "font-size:1.1em")], [
       html.div([attribute.class("form-row")], [
-        html.span([attribute.class("dot green")], [text("실행 중")]),
+        html.span([attribute.class("dot green")], [text("열심히 일하는 중이에용")]),
         case model.adapter_mode {
           model.CimeMode -> connection_status_badge(model.connection_state)
           model.MockMode ->
             html.span([attr("style", "color:#888;font-size:0.85em")], [
-              text("씨미와 연결되지 않음 — 아래 '씨미 연동'에서 연결하세요"),
+              text("씨미랑 아직 안 연결됐어용 '씨미 연동'에서 연결해줘용"),
             ])
         },
       ]),
@@ -210,37 +210,37 @@ fn status_view(model: Model) -> Element(Msg) {
       model.MockMode ->
         html.div([attribute.class("welcome-card")], [
           html.h3([attr("style", "margin-bottom:12px;font-size:1.1em")], [
-            text("kira_caster에 오신 것을 환영합니다!"),
+            text("kira_caster에 온 걸 환영해용!"),
           ]),
           html.p(
             [attr("style", "margin-bottom:12px;color:#888;line-height:1.5")],
             [
               text(
-                "현재 테스트 모드입니다. 실제 채팅방 연동 없이 봇의 기능을 미리 체험할 수 있습니다. 실제 채팅방에서 봇을 사용하려면 아래 '씨미 연동'에서 연결해주세요.",
+                "지금은 테스트 모드야용 채팅방 연결 없이 봇 기능 미리 써볼 수 있당 ㅎㅎ 진짜 채팅방에서 쓰려면 아래 '씨미 연동'에서 연결해줘용",
               ),
             ],
           ),
           html.p(
             [attr("style", "margin-bottom:12px;color:#888;font-size:0.9em")],
-            [text("아래 순서로 시작해보세요:")],
+            [text("이 순서로 해보긔!")],
           ),
           html.div([attribute.class("welcome-steps")], [
             welcome_step(
               "1",
-              "씨미 연동 — 봇을 채팅방에 연결하기",
-              "씨미 계정을 연결하면 실제 방송 채팅에서 봇이 자동으로 동작합니다. 여기를 클릭하세요",
+              "씨미 연동 — 봇을 채팅방에 연결하긔",
+              "씨미 계정 연결하면 진짜 방송 채팅에서 봇이 움직여용 여기 눌러줘용",
               model.CimeAuth,
             ),
             welcome_step(
               "2",
-              "명령어 — 봇이 할 말 정하기",
-              "시청자가 !명령어를 입력하면 봇이 답변합니다. 예: !인사 → '안녕하세요!'",
+              "명령어 — 봇이 할 말 정하긔",
+              "시청자가 !명령어 치면 봇이 대답해줘용 예: !인사 → '안녕하세요!'",
               model.Commands,
             ),
             welcome_step(
               "3",
-              "설정 — 포인트와 게임 규칙 조정하기",
-              "출석 포인트, 게임 보상 등을 자유롭게 바꿀 수 있습니다",
+              "설정 — 포인트랑 게임 규칙 바꾸긔",
+              "출석 포인트, 게임 보상 같은 거 맘대로 바꿀 수 있당 ㅎㅎ",
               model.Settings,
             ),
           ]),
@@ -272,9 +272,9 @@ fn welcome_step(
 fn connection_status_badge(state: model.CimeConnectionState) -> Element(Msg) {
   case state {
     model.CsConnected ->
-      html.span([attribute.class("dot green")], [text("씨미 연결됨")])
+      html.span([attribute.class("dot green")], [text("씨미 연결됐당!")])
     model.CsDisconnected ->
-      html.span([attribute.class("dot red")], [text("씨미 연결 끊김")])
+      html.span([attribute.class("dot red")], [text("씨미 연결 끊겼어 ㅠㅠ")])
     model.CsReconnecting(attempt, max) ->
       html.span([attribute.class("dot yellow")], [
         text(
@@ -301,7 +301,7 @@ fn users_view(model: Model) -> Element(Msg) {
   fragment([
     html.div([attribute.class("form-row")], [
       html.input([
-        attribute.placeholder("유저 검색..."),
+        attribute.placeholder("유저 검색해보긔"),
         attribute.value(model.user_filter),
         event.on_input(model.UpdateUserFilter),
       ]),
@@ -337,7 +337,7 @@ fn words_view(model: Model) -> Element(Msg) {
   fragment([
     html.div([attribute.class("form-row")], [
       html.input([
-        attribute.placeholder("금칙어"),
+        attribute.placeholder("금칙어를 넣어줘용"),
         attribute.value(model.new_word),
         event.on_input(model.UpdateNewWord),
       ]),
@@ -389,7 +389,7 @@ fn commands_view(model: Model) -> Element(Msg) {
         ),
       ]),
       html.input([
-        attribute.placeholder("명령어 이름"),
+        attribute.placeholder("명령어 이름을 넣어줘용"),
         attribute.value(model.cmd_name),
         event.on_input(model.UpdateCmdName),
       ]),
@@ -399,7 +399,7 @@ fn commands_view(model: Model) -> Element(Msg) {
         fragment([
           html.div([attribute.class("form-row")], [
             html.input([
-              attribute.placeholder("응답"),
+              attribute.placeholder("응답 내용"),
               attribute.value(model.cmd_response),
               event.on_input(model.UpdateCmdResponse),
             ]),
@@ -414,7 +414,7 @@ fn commands_view(model: Model) -> Element(Msg) {
             ],
             [
               text(
-                "사용 가능한 변수: {{user}} = 사용자 이름, {{points}} = 보유 포인트, {{count}} = 출석 횟수",
+                "쓸 수 있는 변수이에용 {{user}} = 이름, {{points}} = 포인트, {{count}} = 출석 횟수",
               ),
             ],
           ),
@@ -423,13 +423,13 @@ fn commands_view(model: Model) -> Element(Msg) {
         html.div([attribute.class("form-row")], [
           html.textarea(
             [
-              attribute.placeholder("Gleam 소스 코드"),
+              attribute.placeholder("Gleam 소스 코드를 여기에"),
               event.on_input(model.UpdateCmdSource),
             ],
             model.cmd_source,
           ),
           html.button([event.on_click(model.AddGleamCmd)], [
-            text("컴파일 및 추가"),
+            text("컴파일하고 추가하긔"),
           ]),
         ])
     },
@@ -530,21 +530,21 @@ fn votes_view(model: Model) -> Element(Msg) {
     False ->
       fragment([
         html.div([attribute.class("empty")], [
-          text("진행중인 투표가 없습니다"),
+          text("진행 중인 투표가 없당"),
         ]),
         section_heading_top("새 투표"),
         html.div([attribute.class("form-row")], [
           html.input([
-            attribute.placeholder("투표 주제"),
+            attribute.placeholder("투표 주제를 넣어줘용"),
             attribute.value(model.vote_topic),
             event.on_input(model.UpdateVoteTopic),
           ]),
           html.input([
-            attribute.placeholder("선택지 (쉼표 구분)"),
+            attribute.placeholder("선택지 (쉼표로 구분해줘용)"),
             attribute.value(model.vote_options),
             event.on_input(model.UpdateVoteOptions),
           ]),
-          html.button([event.on_click(model.StartVote)], [text("투표 시작")]),
+          html.button([event.on_click(model.StartVote)], [text("투표 시작하긔!")]),
         ]),
       ])
     True -> {
@@ -555,7 +555,7 @@ fn votes_view(model: Model) -> Element(Msg) {
           html.span([attribute.class("tag")], [text("실시간")]),
           html.button(
             [attribute.class("danger"), event.on_click(model.EndVote)],
-            [text("투표 종료")],
+            [text("투표 끝내긔")],
           ),
         ]),
         html.div(
@@ -629,7 +629,7 @@ fn plugins_view(model: Model) -> Element(Msg) {
                       attribute.class("danger"),
                       event.on_click(model.TogglePlugin(p.name, False)),
                     ],
-                    [text("비활성화")],
+                    [text("끄긔")],
                   )
                 False ->
                   html.button(
@@ -637,7 +637,7 @@ fn plugins_view(model: Model) -> Element(Msg) {
                       attribute.class("success"),
                       event.on_click(model.TogglePlugin(p.name, True)),
                     ],
-                    [text("활성화")],
+                    [text("켜긔")],
                   )
               },
             ]),
@@ -656,28 +656,28 @@ fn settings_view(model: Model) -> Element(Msg) {
       "관리자 비밀번호",
       "",
       True,
-      "이 관리 화면에 접속할 때 사용하는 비밀번호입니다. 비워두면 누구나 접근할 수 있으니 꼭 설정하세요",
+      "이 관리 화면 들어갈 때 쓰는 비밀번호야용 안 정하면 아무나 들어올 수 있으니까 꼭 정해줘잉",
     ),
     #(
       "cime_client_id",
       "씨미 앱 ID",
       "",
       False,
-      "씨미 개발자 센터(ci.me/developer)에서 앱을 만들면 발급되는 ID입니다",
+      "씨미 개발자 센터(ci.me/developer)에서 앱 만들면 나오는 ID야용",
     ),
     #(
       "cime_client_secret",
       "씨미 앱 비밀키",
       "",
       True,
-      "씨미 개발자 센터에서 앱을 만들면 발급되는 비밀키입니다. 다른 사람에게 절대 공유하지 마세요",
+      "씨미 개발자 센터에서 앱 만들면 나오는 비밀키야용 절대 다른 사람한테 주면 안 돼용!!",
     ),
     #(
       "youtube_api_key",
       "YouTube API 키",
       "",
       False,
-      "신청곡의 제목과 길이를 자동으로 가져오는 데 사용됩니다. 비워두면 URL만 표시되며, 대부분 비워둬도 됩니다",
+      "신청곡 제목이랑 길이 자동으로 가져올 때 써용 비워도 대부분 ㄱㅊ ㅎㅎ",
     ),
   ]
   let game_defs = [
@@ -686,31 +686,31 @@ fn settings_view(model: Model) -> Element(Msg) {
       "명령어 사용 간격",
       "5000",
       False,
-      "같은 명령어를 다시 쓸 수 있을 때까지 기다리는 시간입니다. 숫자가 클수록 천천히 사용 가능합니다",
+      "같은 명령어 다시 쓸 때까지 기다리는 시간이에용 숫자가 크면 더 천천히 쓸 수 있당",
     ),
-    #("attendance_points", "출석 보상", "10", False, "시청자가 하루 한 번 출석하면 받는 포인트입니다"),
-    #("dice_win_points", "주사위 이김 보상", "50", False, "주사위 게임에서 이기면 받는 포인트입니다"),
+    #("attendance_points", "출석 보상", "10", False, "하루 한 번 출석하면 받는 포인트야용"),
+    #("dice_win_points", "주사위 이김 보상", "50", False, "주사위 이기면 받는 포인트야용"),
     #(
       "dice_loss_points",
       "주사위 짐 감점",
       "-20",
       False,
-      "주사위 게임에서 지면 깎이는 포인트입니다. 음수(-)로 입력하세요",
+      "주사위 지면 깎이는 포인트야용 음수(-)로 넣어줘용",
     ),
-    #("rps_win_points", "가위바위보 이김 보상", "30", False, "가위바위보에서 이기면 받는 포인트입니다"),
+    #("rps_win_points", "가위바위보 이김 보상", "30", False, "가위바위보 이기면 받는 포인트야용"),
     #(
       "rps_loss_points",
       "가위바위보 짐 감점",
       "-10",
       False,
-      "가위바위보에서 지면 깎이는 포인트입니다. 음수(-)로 입력하세요",
+      "가위바위보 지면 깎이는 포인트야용 음수(-)로 넣어줘용",
     ),
   ]
   fragment([
     section_heading("시스템 설정"),
     html.p([attr("style", "font-size:0.85em;color:#888;margin-bottom:8px")], [
       text(
-        "이 설정은 변경 후 아래 '변경사항 적용' 버튼을 눌러야 반영됩니다. 버튼을 누르면 프로그램이 자동으로 다시 시작됩니다.",
+        "이 설정은 바꾸고 아래 '변경사항 적용' 버튼 눌러야 돼용 버튼 누르면 프로그램이 자동으로 다시 시작돼용!",
       ),
     ]),
     html.div(
@@ -723,12 +723,12 @@ fn settings_view(model: Model) -> Element(Msg) {
     html.div([attr("style", "margin-top:12px")], [
       html.button(
         [attribute.class("primary"), event.on_click(model.RestartApp)],
-        [text("변경사항 적용 (재시작)")],
+        [text("변경사항 적용하긔 (재시작)")],
       ),
     ]),
     section_heading_top("게임 설정"),
     html.p([attr("style", "font-size:0.85em;color:#888;margin-bottom:8px")], [
-      text("이 설정은 저장하면 바로 적용됩니다. 재시작할 필요가 없습니다."),
+      text("이건 저장하면 바로 적용돼용 재시작 안 해도 돼 ㅎㅎ"),
     ]),
     html.div(
       [],
@@ -773,8 +773,8 @@ fn setting_row(
             ],
             [
               text(case is_visible {
-                True -> "숨기기"
-                False -> "보기"
+                True -> "숨기긔"
+                False -> "보긔"
               }),
             ],
           )
@@ -804,19 +804,19 @@ fn ms_hint(key: String, val: String) -> Element(Msg) {
           let sec = ms / 1000
           let remainder = ms % 1000
           case sec, remainder {
-            0, _ -> text(" (1초 미만)")
-            s, 0 -> text(" → 약 " <> int.to_string(s) <> "초마다 명령어 사용 가능")
+            0, _ -> text(" (1초도 안 됨 ㅋㅋ)")
+            s, 0 -> text(" → 약 " <> int.to_string(s) <> "초마다 명령어 쓸 수 있당")
             s, _ ->
               text(
                 " → 약 "
                 <> int.to_string(s)
                 <> "."
                 <> int.to_string(remainder / 100)
-                <> "초마다 명령어 사용 가능",
+                <> "초마다 명령어 쓸 수 있당",
               )
           }
         }
-        Error(_) -> text(" (숫자를 입력해주세요)")
+        Error(_) -> text(" (숫자를 넣어줘용)")
       }
     _ -> text("")
   }
@@ -839,7 +839,7 @@ fn songs_view(model: Model) -> Element(Msg) {
   fragment([
     section_heading("현재 재생"),
     html.div([attribute.class("form-row")], case model.current_song {
-      None -> [text("재생 중인 곡이 없습니다")]
+      None -> [text("재생 중인 곡이 없당")]
       Some(song) -> [
         html.strong([], [text(song.title)]),
         html.span([], [
@@ -862,7 +862,7 @@ fn songs_view(model: Model) -> Element(Msg) {
     html.div([attribute.class("form-row")], [
       html.input([
         attribute.placeholder(
-          "YouTube 영상 주소 (예: https://youtube.com/watch?v=...)",
+          "YouTube 주소를 넣어줘용 (예: https://youtube.com/watch?v=...)",
         ),
         attribute.value(model.song_url),
         event.on_input(model.UpdateSongUrl),
@@ -923,8 +923,8 @@ fn cime_auth_view(model: Model) -> Element(Msg) {
     section_heading("씨미 연동 상태"),
     html.div([attribute.class("form-row")], [
       case model.cime_authenticated {
-        True -> html.span([attribute.class("dot green")], [text("연결됨")])
-        False -> html.span([attribute.class("dot red")], [text("연결 안 됨")])
+        True -> html.span([attribute.class("dot green")], [text("연결됐당!")])
+        False -> html.span([attribute.class("dot red")], [text("아직 안 연결됐어용")])
       },
     ]),
     case model.cime_authenticated {
@@ -939,7 +939,7 @@ fn cime_auth_view(model: Model) -> Element(Msg) {
           html.div([attribute.class("form-row")], [
             html.button(
               [attribute.class("danger"), event.on_click(model.CimeDisconnect)],
-              [text("연결 해제")],
+              [text("연결 끊기")],
             ),
           ]),
         ])
@@ -947,7 +947,7 @@ fn cime_auth_view(model: Model) -> Element(Msg) {
         html.div([attribute.class("form-row")], [
           html.a(
             [attribute.href("/oauth/authorize"), attr("target", "_blank")],
-            [text("연결하기")],
+            [text("연결하긔!")],
           ),
         ])
     },
@@ -1066,7 +1066,7 @@ fn block_manage_view(model: Model) -> Element(Msg) {
     section_heading("차단 관리"),
     html.div([attribute.class("form-row")], [
       html.input([
-        attribute.placeholder("사용자 닉네임 또는 채널 ID"),
+        attribute.placeholder("닉네임이나 채널 ID 넣어줘용"),
         attribute.value(model.block_target),
         event.on_input(model.UpdateBlockTarget),
       ]),
@@ -1126,7 +1126,7 @@ fn channel_info_view(model: Model) -> Element(Msg) {
       case model.ch_live {
         True ->
           fragment([
-            html.span([attribute.class("dot green")], [text("방송 중")]),
+            html.span([attribute.class("dot green")], [text("방송 중이에용")]),
             html.span([], [
               text(
                 " - "
@@ -1137,7 +1137,7 @@ fn channel_info_view(model: Model) -> Element(Msg) {
               ),
             ]),
           ])
-        False -> html.span([attribute.class("dot red")], [text("오프라인")])
+        False -> html.span([attribute.class("dot red")], [text("오프라인이에용")])
       },
     ]),
     section_heading_top("스트림 키"),
@@ -1151,8 +1151,8 @@ fn channel_info_view(model: Model) -> Element(Msg) {
       },
       html.button([event.on_click(model.ToggleStreamKey)], [
         text(case model.stream_key_visible {
-          True -> "숨기기"
-          False -> "표시"
+          True -> "숨기긔"
+          False -> "보긔"
         }),
       ]),
     ]),
@@ -1168,7 +1168,7 @@ fn th(label: String) -> Element(Msg) {
 fn empty_row(cols: Int) -> Element(Msg) {
   html.tr([], [
     html.td([attr("colspan", int.to_string(cols)), attribute.class("empty")], [
-      text("데이터가 없습니다"),
+      text("아직 데이터가 없당"),
     ]),
   ])
 }

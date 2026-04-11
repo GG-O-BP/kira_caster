@@ -20,7 +20,7 @@ pub fn validate_and_add(
       case prevent_dup {
         True ->
           case repo.has_song_with_video_id(video_id) {
-            Ok(True) -> [resp("이미 대기열에 있는 곡입니다.")]
+            Ok(True) -> [resp("이 곡 이미 대기열에 있당 ㅋㅋ")]
             _ -> check_user_limit(repo, api_key, user, video_id)
           }
         False -> check_user_limit(repo, api_key, user, video_id)
@@ -37,7 +37,7 @@ fn check_user_limit(
 ) -> List(Event) {
   let max_per_user = settings.get_setting_int(repo, "song_max_per_user", 1)
   case repo.get_songs_by_user(user) {
-    Error(_) -> [resp("대기열 조회 중 오류가 발생했습니다.")]
+    Error(_) -> [resp("앗 대기열 불러오다 에러났어 ㅠㅠ")]
     Ok(user_songs) -> {
       let count = list.length(user_songs)
       let count = case
@@ -60,7 +60,7 @@ fn check_user_limit(
       }
       case count >= max_per_user {
         True -> [
-          resp("신청 한도를 초과했습니다. (최대 " <> int.to_string(max_per_user) <> "곡)"),
+          resp("신청 한도 넘었어용 ㅠㅠ (최대 " <> int.to_string(max_per_user) <> "곡)"),
         ]
         False -> check_points_and_fetch(repo, api_key, user, video_id)
       }
@@ -83,7 +83,7 @@ fn check_points_and_fetch(
             True -> fetch_and_add(repo, api_key, user, video_id, cost)
             False -> [
               resp(
-                "포인트가 부족합니다. (필요: "
+                "포인트가 모자라용 ㅠㅠ (필요: "
                 <> int.to_string(cost)
                 <> ", 보유: "
                 <> int.to_string(u.points)
@@ -92,7 +92,7 @@ fn check_points_and_fetch(
             ]
           }
         Error(_) -> [
-          resp("포인트가 부족합니다. (필요: " <> int.to_string(cost) <> ")"),
+          resp("포인트가 모자라용 ㅠㅠ (필요: " <> int.to_string(cost) <> ")"),
         ]
       }
     False -> fetch_and_add(repo, api_key, user, video_id, 0)
@@ -112,7 +112,7 @@ fn fetch_and_add(
       let max_dur = settings.get_setting_int(repo, "song_max_duration", 0)
       case max_dur > 0 && info.duration_seconds > max_dur {
         True -> [
-          resp("영상이 너무 깁니다. (최대 " <> youtube.format_duration(max_dur) <> ")"),
+          resp("영상이 너무 길당 ㅠㅠ (최대 " <> youtube.format_duration(max_dur) <> ")"),
         ]
         False ->
           case
@@ -128,7 +128,7 @@ fn fetch_and_add(
                 info.title
                 <> " ("
                 <> youtube.format_duration(info.duration_seconds)
-                <> ") 이(가) 대기열에 추가되었습니다."
+                <> ") 대기열에 넣었당!"
               case cost > 0 {
                 True -> [
                   resp(msg),
@@ -141,7 +141,7 @@ fn fetch_and_add(
                 False -> [resp(msg)]
               }
             }
-            Error(_) -> [resp("대기열 추가 중 오류가 발생했습니다.")]
+            Error(_) -> [resp("앗 대기열에 넣다가 에러났어 ㅠㅠ")]
           }
       }
     }

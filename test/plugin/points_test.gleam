@@ -27,7 +27,7 @@ pub fn check_balance_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "points", message: "alice님의 포인트: 150"),
+      plugin.PluginResponse(plugin: "points", message: "alice님 포인트: 150"),
     ]
 }
 
@@ -46,7 +46,7 @@ pub fn check_balance_unknown_user_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "points", message: "nobody님의 포인트: 0"),
+      plugin.PluginResponse(plugin: "points", message: "nobody님 포인트: 0"),
     ]
 }
 
@@ -81,7 +81,7 @@ pub fn ranking_test() {
     [plugin.PluginResponse(plugin: "points", message: msg)] -> {
       assert {
         case msg {
-          "포인트 순위:\n" <> _ -> True
+          "포인트 순위!\n" <> _ -> True
           _ -> False
         }
       }

@@ -26,12 +26,12 @@ fn handle_subscription(
   }
 
   let duration_text = case month {
-    1 -> "첫 구독"
-    n -> int.to_string(n) <> "개월 연속 구독"
+    1 -> "첫 구독이당"
+    n -> int.to_string(n) <> "개월 연속 구독이에용"
   }
 
   let special = case month >= 6 {
-    True -> " 장기 구독자입니다!"
+    True -> " 완전 오래 구독해줬당 ㅎㅎ!"
     False -> ""
   }
 

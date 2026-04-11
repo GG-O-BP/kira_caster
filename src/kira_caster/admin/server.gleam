@@ -42,7 +42,7 @@ pub fn start(ctx: router.RouterContext, config: Config) -> Result(Nil, String) {
   {
     Ok(_) -> {
       logger.info("=====================================")
-      logger.info("  kira_caster 대시보드")
+      logger.info("  kira_caster 대시보드이에용")
       logger.info("  http://localhost:" <> int.to_string(config.admin_port))
       logger.info("=====================================")
       Ok(Nil)

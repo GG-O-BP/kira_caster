@@ -66,20 +66,20 @@ fn handle_add_word(
 ) -> List(Event) {
   case permission.check(role, permission.Moderator) {
     Error(_) -> [
-      plugin.PluginResponse(plugin: "filter", message: "권한이 없습니다. (관리자 전용)"),
+      plugin.PluginResponse(plugin: "filter", message: "헐 이건 관리자만 할 수 있어용 ㅠ"),
     ]
     Ok(Nil) ->
       case repo.add_banned_word(string.lowercase(word)) {
         Ok(Nil) -> [
           plugin.PluginResponse(
             plugin: "filter",
-            message: "'" <> word <> "' 단어를 필터에 추가했습니다.",
+            message: "'" <> word <> "' 추가했당!",
           ),
         ]
         Error(_) -> [
           plugin.PluginResponse(
             plugin: "filter",
-            message: "필터 추가 중 오류가 발생했습니다.",
+            message: "앗 추가하다 에러났어 ㅠㅠ",
           ),
         ]
       }
@@ -93,20 +93,20 @@ fn handle_remove_word(
 ) -> List(Event) {
   case permission.check(role, permission.Moderator) {
     Error(_) -> [
-      plugin.PluginResponse(plugin: "filter", message: "권한이 없습니다. (관리자 전용)"),
+      plugin.PluginResponse(plugin: "filter", message: "헐 이건 관리자만 할 수 있어용 ㅠ"),
     ]
     Ok(Nil) ->
       case repo.remove_banned_word(string.lowercase(word)) {
         Ok(Nil) -> [
           plugin.PluginResponse(
             plugin: "filter",
-            message: "'" <> word <> "' 단어를 필터에서 삭제했습니다.",
+            message: "'" <> word <> "' 삭제했당!",
           ),
         ]
         Error(_) -> [
           plugin.PluginResponse(
             plugin: "filter",
-            message: "필터 삭제 중 오류가 발생했습니다.",
+            message: "앗 삭제하다 에러났어 ㅠㅠ",
           ),
         ]
       }
@@ -120,13 +120,13 @@ fn handle_list_words(
 ) -> List(Event) {
   case permission.check(role, permission.Moderator) {
     Error(_) -> [
-      plugin.PluginResponse(plugin: "filter", message: "권한이 없습니다. (관리자 전용)"),
+      plugin.PluginResponse(plugin: "filter", message: "헐 이건 관리자만 할 수 있어용 ㅠ"),
     ]
     Ok(Nil) -> {
       let all = get_all_banned(repo, default_words)
       let msg = case all {
-        [] -> "등록된 금지어가 없습니다."
-        _ -> "금지어 목록: " <> string.join(all, ", ")
+        [] -> "등록된 금지어가 없당"
+        _ -> "금지어 목록이에용 " <> string.join(all, ", ")
       }
       [plugin.PluginResponse(plugin: "filter", message: msg)]
     }

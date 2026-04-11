@@ -38,14 +38,14 @@ fn handle_add(
   response: String,
 ) -> List(Event) {
   case permission.check(role, permission.Moderator) {
-    Error(_) -> [resp("권한이 없습니다. (관리자 전용)")]
+    Error(_) -> [resp("헐 이건 관리자만 할 수 있어용 ㅠ")]
     Ok(Nil) ->
       case response {
-        "" -> [resp("사용법: !명령 추가 <이름> <응답>")]
+        "" -> [resp("이렇게 써줘용 !명령 추가 <이름> <응답>")]
         _ ->
           case repo.set_command(name, response) {
-            Ok(Nil) -> [resp("'" <> name <> "' 명령이 등록되었습니다.")]
-            Error(_) -> [resp("명령 등록 중 오류가 발생했습니다.")]
+            Ok(Nil) -> [resp("'" <> name <> "' 명령 등록했당!")]
+            Error(_) -> [resp("앗 명령 등록하다 에러났어 ㅠㅠ")]
           }
       }
   }
@@ -57,28 +57,28 @@ fn handle_delete(
   name: String,
 ) -> List(Event) {
   case permission.check(role, permission.Moderator) {
-    Error(_) -> [resp("권한이 없습니다. (관리자 전용)")]
+    Error(_) -> [resp("헐 이건 관리자만 할 수 있어용 ㅠ")]
     Ok(Nil) ->
       case repo.delete_command(name) {
-        Ok(Nil) -> [resp("'" <> name <> "' 명령이 삭제되었습니다.")]
-        Error(_) -> [resp("명령 삭제 중 오류가 발생했습니다.")]
+        Ok(Nil) -> [resp("'" <> name <> "' 명령 삭제했당!")]
+        Error(_) -> [resp("앗 명령 삭제하다 에러났어 ㅠㅠ")]
       }
   }
 }
 
 fn handle_list(repo: Repository, role: permission.Role) -> List(Event) {
   case permission.check(role, permission.Moderator) {
-    Error(_) -> [resp("권한이 없습니다. (관리자 전용)")]
+    Error(_) -> [resp("헐 이건 관리자만 할 수 있어용 ㅠ")]
     Ok(Nil) ->
       case repo.get_all_commands() {
         Ok(commands) -> {
           let msg = case commands {
-            [] -> "등록된 명령이 없습니다."
-            _ -> "명령 목록: " <> string.join(list_map_commands(commands), ", ")
+            [] -> "등록된 명령이 없당"
+            _ -> "명령 목록이에용 " <> string.join(list_map_commands(commands), ", ")
           }
           [resp(msg)]
         }
-        Error(_) -> [resp("명령 조회 중 오류가 발생했습니다.")]
+        Error(_) -> [resp("앗 명령 목록 불러오다 에러났어 ㅠㅠ")]
       }
   }
 }
@@ -97,22 +97,22 @@ fn handle_add_advanced(
   source: String,
 ) -> List(Event) {
   case permission.check(role, permission.Broadcaster) {
-    Error(_) -> [resp("권한이 없습니다. (방송자 전용)")]
+    Error(_) -> [resp("헐 이건 방송자만 할 수 있어용 ㅠ")]
     Ok(Nil) ->
       case source {
-        "" -> [resp("사용법: !명령 고급추가 <이름> <Gleam 코드>")]
+        "" -> [resp("이렇게 써줘용 !명령 고급추가 <이름> <Gleam 코드>")]
         _ ->
           case repo.set_advanced_command(name, source, "실행 오류") {
             Ok(Nil) ->
               case advanced_command.compile_and_load(name, source) {
                 Ok(Nil) -> [
-                  resp("고급 명령 '" <> name <> "' 컴파일 및 등록 완료."),
+                  resp("고급 명령 '" <> name <> "' 컴파일하고 등록했당!"),
                 ]
                 Error(e) -> [
                   resp("저장 완료, " <> advanced_command.error_to_string(e)),
                 ]
               }
-            Error(_) -> [resp("고급 명령 저장 중 오류가 발생했습니다.")]
+            Error(_) -> [resp("앗 고급 명령 저장하다 에러났어 ㅠㅠ")]
           }
       }
   }
@@ -124,12 +124,12 @@ fn handle_delete_advanced(
   name: String,
 ) -> List(Event) {
   case permission.check(role, permission.Broadcaster) {
-    Error(_) -> [resp("권한이 없습니다. (방송자 전용)")]
+    Error(_) -> [resp("헐 이건 방송자만 할 수 있어용 ㅠ")]
     Ok(Nil) -> {
       advanced_command.unload(name)
       case repo.delete_command(name) {
-        Ok(Nil) -> [resp("고급 명령 '" <> name <> "' 삭제 완료.")]
-        Error(_) -> [resp("고급 명령 삭제 중 오류가 발생했습니다.")]
+        Ok(Nil) -> [resp("고급 명령 '" <> name <> "' 삭제했당!")]
+        Error(_) -> [resp("앗 고급 명령 삭제하다 에러났어 ㅠㅠ")]
       }
     }
   }

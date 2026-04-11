@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# Erlang 런타임을 포함한 자체 실행 가능 릴리스 패키지를 생성합니다.
+# 사용법: ./scripts/package_release.sh [target-name]
+set -e
+
+TARGET="${1:-$(uname -s)-$(uname -m)}"
+RELEASE_DIR="kira_caster-${TARGET}"
+
+echo "=== kira_caster 릴리스 패키징 ==="
+echo "Target: ${TARGET}"
+
+# 1. Gleam 빌드 확인
+if [ ! -d "build/dev/erlang" ]; then
+  echo "빌드 디렉토리가 없습니다. gleam build를 먼저 실행하세요."
+  exit 1
+fi
+
+# 2. Erlang 경로 탐지
+ERL_ROOT=$(erl -noshell -eval 'io:format("~s",[code:root_dir()])' -s init stop)
+ERTS_DIR=$(ls -d "${ERL_ROOT}"/erts-* 2>/dev/null | head -1)
+ERTS_VERSION=$(basename "$ERTS_DIR")
+
+if [ -z "$ERTS_DIR" ] || [ ! -d "$ERTS_DIR" ]; then
+  echo "Erlang ERTS를 찾을 수 없습니다."
+  exit 1
+fi
+
+echo "Erlang root: ${ERL_ROOT}"
+echo "ERTS: ${ERTS_VERSION}"
+
+# 3. 릴리스 디렉토리 구성
+rm -rf "$RELEASE_DIR"
+mkdir -p "${RELEASE_DIR}/erts/bin"
+mkdir -p "${RELEASE_DIR}/lib"
+mkdir -p "${RELEASE_DIR}/erlang"
+
+# 4. ERTS 바이너리 복사 (erl, erlexec, beam.smp 등)
+cp -r "${ERTS_DIR}/bin/"* "${RELEASE_DIR}/erts/bin/"
+
+# 5. 필수 OTP 라이브러리 복사
+REQUIRED_LIBS="kernel stdlib compiler crypto ssl inets public_key asn1"
+for lib in $REQUIRED_LIBS; do
+  LIB_DIR=$(ls -d "${ERL_ROOT}/lib/${lib}-"* 2>/dev/null | head -1)
+  if [ -d "$LIB_DIR" ]; then
+    cp -r "$LIB_DIR" "${RELEASE_DIR}/lib/"
+  fi
+done
+
+# 6. 앱 BEAM 파일 복사
+cp -r build/dev/erlang/* "${RELEASE_DIR}/erlang/"
+
+# 7. 설정 파일 복사
+cp gleam.toml "${RELEASE_DIR}/"
+cp .env.example "${RELEASE_DIR}/"
+
+# 8. 시작 스크립트 생성
+cat > "${RELEASE_DIR}/start.sh" << 'LAUNCHER'
+#!/usr/bin/env bash
+set -e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# .env 로드
+if [ -f .env ]; then
+  set -a; source .env; set +a
+fi
+
+PORT="${KIRA_ADMIN_PORT:-8080}"
+echo "kira_caster 시작 중... http://localhost:$PORT"
+
+# 브라우저 자동 열기
+if command -v xdg-open &>/dev/null; then
+  (sleep 2 && xdg-open "http://localhost:$PORT") &
+elif command -v open &>/dev/null; then
+  (sleep 2 && open "http://localhost:$PORT") &
+fi
+
+# 번들된 ERTS 사용
+export ROOTDIR="$SCRIPT_DIR"
+export BINDIR="$SCRIPT_DIR/erts/bin"
+export EMU=beam
+export PROGNAME=erl
+
+ERL_LIBS="$SCRIPT_DIR/lib"
+for d in "$SCRIPT_DIR/erlang"/*/ebin; do
+  ERL_LIBS="$ERL_LIBS:$(dirname "$d")"
+done
+export ERL_LIBS
+
+exec "$BINDIR/erl" \
+  -pa erlang/*/ebin \
+  -noshell \
+  -eval "gleam@@main:run(kira_caster)"
+LAUNCHER
+chmod +x "${RELEASE_DIR}/start.sh"
+
+# Windows batch (Erlang 별도 설치 필요 - ERTS cross-compile 불가)
+cat > "${RELEASE_DIR}/start.bat" << 'BATCH'
+@echo off
+chcp 65001 >nul
+cd /d "%~dp0"
+if exist .env (for /f "usebackq tokens=1,* delims==" %%a in (".env") do set "%%a=%%b")
+if not defined KIRA_ADMIN_PORT set KIRA_ADMIN_PORT=8080
+echo kira_caster starting on http://localhost:%KIRA_ADMIN_PORT%
+start "" "http://localhost:%KIRA_ADMIN_PORT%"
+erl -pa erlang/*/ebin -noshell -eval "gleam@@main:run(kira_caster)"
+BATCH
+
+# 9. 패키징
+tar czf "kira_caster-${TARGET}.tar.gz" "$RELEASE_DIR"
+echo ""
+echo "=== 패키징 완료 ==="
+echo "파일: kira_caster-${TARGET}.tar.gz"
+echo "크기: $(du -sh "kira_caster-${TARGET}.tar.gz" | cut -f1)"

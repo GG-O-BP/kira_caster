@@ -37,7 +37,7 @@ fn handle_get_songs(repo: Repository) -> Response {
   case repo.get_song_queue() {
     Ok(songs) ->
       wisp.json_response(json.to_string(json.array(songs, song_to_json)), 200)
-    Error(_) -> wisp.internal_server_error()
+    Error(_) -> error_json("곡 목록을 불러올 수 없습니다")
   }
 }
 
@@ -58,7 +58,7 @@ fn handle_add_song(req: Request, repo: Repository) -> Response {
     Ok(#(video_id, title, duration, requested_by)) ->
       case repo.add_song(video_id, title, duration, requested_by) {
         Ok(song) -> wisp.json_response(json.to_string(song_to_json(song)), 201)
-        Error(_) -> wisp.internal_server_error()
+        Error(_) -> error_json("곡 추가에 실패했습니다")
       }
     Error(_) -> wisp.bad_request("invalid request body")
   }
@@ -141,7 +141,7 @@ fn handle_get_current_song(repo: Repository) -> Response {
                 200,
               )
           }
-        Error(_) -> wisp.internal_server_error()
+        Error(_) -> error_json("곡 목록을 불러올 수 없습니다")
       }
   }
 }
@@ -166,7 +166,7 @@ fn handle_replay_song(repo: Repository) -> Response {
 
 fn advance_and_respond(repo: Repository, direction: String) -> Response {
   case repo.get_song_queue() {
-    Error(_) -> wisp.internal_server_error()
+    Error(_) -> error_json("곡 목록을 불러올 수 없습니다")
     Ok(songs) -> {
       let current_id = get_song_setting(repo, "song_current_id", "")
       let next = case current_id {
@@ -259,4 +259,16 @@ fn get_song_setting(repo: Repository, key: String, default: String) -> String {
     Ok(val) -> val
     Error(_) -> default
   }
+}
+
+fn error_json(message: String) -> Response {
+  wisp.json_response(
+    json.to_string(
+      json.object([
+        #("status", json.string("error")),
+        #("message", json.string(message)),
+      ]),
+    ),
+    500,
+  )
 }

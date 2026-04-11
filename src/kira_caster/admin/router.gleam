@@ -10,16 +10,19 @@ import kira_caster/admin/handlers/oauth_handler
 import kira_caster/admin/handlers/plugin_handler
 import kira_caster/admin/handlers/quiz_handler
 import kira_caster/admin/handlers/settings_handler
+import kira_caster/admin/handlers/setup_handler
 import kira_caster/admin/handlers/song_handler
 import kira_caster/admin/handlers/status_handler
 import kira_caster/admin/handlers/user_handler
 import kira_caster/admin/handlers/vote_handler
 import kira_caster/admin/views/dashboard_page
+import kira_caster/admin/views/login_page
 import kira_caster/admin/views/player_page
 import kira_caster/core/config.{type Config}
 import kira_caster/event_bus
 import kira_caster/platform/cime/api.{type CimeApi}
 import kira_caster/platform/cime/token_manager.{type TokenMessage}
+import kira_caster/platform/cime/ws_manager.{type WsMessage}
 import kira_caster/storage/repository.{type Repository}
 import wisp.{type Request, type Response}
 
@@ -33,6 +36,7 @@ pub type RouterContext {
     token_manager: Option(process.Subject(TokenMessage)),
     cime_api: Option(CimeApi),
     get_token: Option(fn() -> Result(String, String)),
+    ws_manager: Option(process.Subject(WsMessage)),
   )
 }
 
@@ -42,12 +46,80 @@ pub fn handle_request(req: Request, ctx: RouterContext) -> Response {
     ["songs", ..] -> song_handler.route_songs(req, ctx.repo)
     // OAuth callback is unauthenticated (redirect from ci.me)
     ["oauth", "callback"] ->
-      oauth_handler.handle_callback(req, ctx.token_manager)
+      oauth_handler.handle_callback(
+        req,
+        ctx.token_manager,
+        ctx.cime_api,
+        ctx.repo,
+      )
+    // Setup wizard (unauthenticated, first-run only)
+    ["setup"] -> handle_setup_route(req, ctx)
+    // Login routes (unauthenticated)
+    ["login"] -> handle_login(req, ctx)
+    ["logout"] -> handle_logout(req)
     _ ->
-      case auth.check_auth(req, ctx.admin_key) {
-        False -> wisp.response(401) |> wisp.string_body("Unauthorized")
-        True -> route(req, ctx)
+      // First-run: redirect to setup wizard
+      case setup_handler.is_setup_complete(ctx.repo) {
+        False -> wisp.redirect("/setup")
+        True ->
+          case auth.check_auth(req, ctx.admin_key) {
+            False -> {
+              // If admin_key is set but not authenticated, show login page
+              case ctx.admin_key {
+                "" -> route(req, ctx)
+                _ -> wisp.redirect("/login")
+              }
+            }
+            True -> route(req, ctx)
+          }
       }
+  }
+}
+
+fn handle_setup_route(req: Request, ctx: RouterContext) -> Response {
+  case setup_handler.is_setup_complete(ctx.repo) {
+    True -> wisp.redirect("/")
+    False ->
+      case req.method {
+        http.Get -> setup_handler.handle_setup(req, ctx.repo)
+        http.Post -> setup_handler.handle_setup_submit(req, ctx.repo)
+        _ -> wisp.method_not_allowed([http.Get, http.Post])
+      }
+  }
+}
+
+fn handle_login(req: Request, ctx: RouterContext) -> Response {
+  case req.method {
+    http.Get -> login_page.handle_login("")
+    http.Post -> {
+      use form <- wisp.require_form(req)
+      let password = find_form_value(form.values, "password")
+      case password {
+        "" -> login_page.handle_login("비밀번호를 입력해주세요")
+        pw ->
+          case pw == ctx.admin_key {
+            True -> {
+              wisp.redirect("/")
+              |> auth.set_session(req, ctx.admin_key)
+            }
+            False -> login_page.handle_login("비밀번호가 일치하지 않습니다")
+          }
+      }
+    }
+    _ -> wisp.method_not_allowed([http.Get, http.Post])
+  }
+}
+
+fn handle_logout(req: Request) -> Response {
+  wisp.redirect("/login")
+  |> auth.clear_session(req)
+}
+
+fn find_form_value(values: List(#(String, String)), key: String) -> String {
+  case values {
+    [] -> ""
+    [#(k, v), ..] if k == key -> v
+    [_, ..rest] -> find_form_value(rest, key)
   }
 }
 

@@ -7,6 +7,8 @@ import kira_caster/admin/dashboard/model.{
   type DashboardContext, type Msg, type Tab,
 }
 import kira_caster/event_bus
+import kira_caster/platform/cime/ws_manager
+import kira_caster/platform/ws
 import kira_caster/storage/repository.{type Repository}
 import kira_caster/util/time
 import lustre/effect.{type Effect}
@@ -22,14 +24,18 @@ fn async(f: fn(fn(Msg) -> Nil) -> Nil) -> Effect(Msg) {
   })
 }
 
-fn crud(op: fn() -> Result(a, b), success_msg: String) -> Effect(Msg) {
+fn crud(
+  op: fn() -> Result(a, b),
+  success_msg: String,
+  error_msg: String,
+) -> Effect(Msg) {
   async(fn(dispatch) {
     case op() {
       Ok(_) -> {
         dispatch(model.ShowToast(success_msg, model.SuccessToast))
         dispatch(model.OpDone(Ok(Nil)))
       }
-      Error(_) -> dispatch(model.ShowToast("실패", model.ErrorToast))
+      Error(_) -> dispatch(model.ShowToast(error_msg, model.ErrorToast))
     }
   })
 }
@@ -58,7 +64,7 @@ pub fn dismiss_toast_after(id: Int) -> Effect(Msg) {
 
 pub fn load_tab(tab: Tab, ctx: DashboardContext) -> Effect(Msg) {
   case tab {
-    model.Status -> load_status(ctx.start_time)
+    model.Status -> load_status(ctx.start_time, ctx)
     model.Users -> load_users(ctx.repo)
     model.Words -> load_words(ctx.repo)
     model.Commands -> load_commands(ctx.repo)
@@ -79,10 +85,24 @@ pub fn load_tab(tab: Tab, ctx: DashboardContext) -> Effect(Msg) {
 // Tab loaders (private)
 // ---------------------------------------------------------------------------
 
-fn load_status(start_time: Int) -> Effect(Msg) {
+fn load_status(start_time: Int, ctx: DashboardContext) -> Effect(Msg) {
   async(fn(dispatch) {
     let uptime = { time.now_ms() - start_time } / 1000
     dispatch(model.StatusLoaded(uptime))
+
+    // Also load connection status if ws_manager is available
+    case ctx.ws_manager {
+      Some(ws_mgr) -> {
+        let status = ws_manager.get_connection_status(ws_mgr)
+        let state = case status.state {
+          ws.Connected -> model.CsConnected
+          ws.Disconnected -> model.CsDisconnected
+          ws.Reconnecting(n) -> model.CsReconnecting(n, status.max_reconnect)
+        }
+        dispatch(model.ConnectionStateLoaded(state))
+      }
+      None -> Nil
+    }
   })
 }
 
@@ -362,11 +382,19 @@ fn load_stream_key(ctx: DashboardContext) -> Effect(Msg) {
 // ---------------------------------------------------------------------------
 
 pub fn add_word(repo: Repository, word: String) -> Effect(Msg) {
-  crud(fn() { repo.add_banned_word(string.lowercase(word)) }, "단어 추가 완료")
+  crud(
+    fn() { repo.add_banned_word(string.lowercase(word)) },
+    "단어 추가 완료",
+    "단어 추가에 실패했습니다. 이미 등록된 단어일 수 있습니다",
+  )
 }
 
 pub fn delete_word(repo: Repository, word: String) -> Effect(Msg) {
-  crud(fn() { repo.remove_banned_word(word) }, "단어 삭제 완료")
+  crud(
+    fn() { repo.remove_banned_word(word) },
+    "단어 삭제 완료",
+    "단어 삭제에 실패했습니다. 이미 삭제된 단어일 수 있습니다",
+  )
 }
 
 pub fn add_command(
@@ -374,11 +402,19 @@ pub fn add_command(
   name: String,
   response: String,
 ) -> Effect(Msg) {
-  crud(fn() { repo.set_command(name, response) }, "명령어 추가 완료")
+  crud(
+    fn() { repo.set_command(name, response) },
+    "명령어 추가 완료",
+    "명령어 저장에 실패했습니다. 데이터베이스 오류가 발생했습니다",
+  )
 }
 
 pub fn delete_command(repo: Repository, name: String) -> Effect(Msg) {
-  crud(fn() { repo.delete_command(name) }, "명령어 삭제 완료")
+  crud(
+    fn() { repo.delete_command(name) },
+    "명령어 삭제 완료",
+    "명령어 삭제에 실패했습니다. 이미 삭제된 명령어일 수 있습니다",
+  )
 }
 
 pub fn add_advanced_command(
@@ -389,6 +425,7 @@ pub fn add_advanced_command(
   crud(
     fn() { repo.set_advanced_command(name, source, "컴파일 오류") },
     "고급 명령어 추가 완료",
+    "고급 명령어 저장에 실패했습니다. 소스 코드를 확인해주세요",
   )
 }
 
@@ -398,11 +435,15 @@ pub fn add_quiz(
   answer: String,
   reward: Int,
 ) -> Effect(Msg) {
-  crud(fn() { repo.add_quiz(question, answer, reward) }, "퀴즈 추가 완료")
+  crud(
+    fn() { repo.add_quiz(question, answer, reward) },
+    "퀴즈 추가 완료",
+    "퀴즈 추가에 실패했습니다. 같은 문제가 이미 등록되어 있을 수 있습니다",
+  )
 }
 
 pub fn delete_quiz(repo: Repository, question: String) -> Effect(Msg) {
-  crud(fn() { repo.delete_quiz(question) }, "퀴즈 삭제 완료")
+  crud(fn() { repo.delete_quiz(question) }, "퀴즈 삭제 완료", "퀴즈 삭제에 실패했습니다")
 }
 
 pub fn start_vote(
@@ -410,11 +451,19 @@ pub fn start_vote(
   topic: String,
   options: List(String),
 ) -> Effect(Msg) {
-  crud(fn() { repo.start_vote(topic, options) }, "투표 시작 완료")
+  crud(
+    fn() { repo.start_vote(topic, options) },
+    "투표 시작 완료",
+    "투표 시작에 실패했습니다. 이미 진행 중인 투표가 있을 수 있습니다",
+  )
 }
 
 pub fn end_vote(repo: Repository) -> Effect(Msg) {
-  crud(fn() { repo.end_vote() }, "투표 종료 완료")
+  crud(
+    fn() { repo.end_vote() },
+    "투표 종료 완료",
+    "투표 종료에 실패했습니다. 진행 중인 투표가 없을 수 있습니다",
+  )
 }
 
 pub fn toggle_plugin(
@@ -441,7 +490,8 @@ pub fn toggle_plugin(
         dispatch(model.ShowToast("플러그인 " <> label <> " 완료", model.SuccessToast))
         dispatch(model.OpDone(Ok(Nil)))
       }
-      Error(_) -> dispatch(model.ShowToast("실패", model.ErrorToast))
+      Error(_) ->
+        dispatch(model.ShowToast("플러그인 상태 변경에 실패했습니다", model.ErrorToast))
     }
   })
 }
@@ -466,13 +516,14 @@ pub fn save_setting(
         dispatch(model.ShowToast("설정 저장 완료", model.SuccessToast))
         dispatch(model.OpDone(Ok(Nil)))
       }
-      Error(_) -> dispatch(model.ShowToast("실패", model.ErrorToast))
+      Error(_) ->
+        dispatch(model.ShowToast("설정 저장에 실패했습니다. 값을 확인해주세요", model.ErrorToast))
     }
   })
 }
 
 pub fn delete_song(repo: Repository, id: Int) -> Effect(Msg) {
-  crud(fn() { repo.remove_song(id) }, "곡 삭제 완료")
+  crud(fn() { repo.remove_song(id) }, "곡 삭제 완료", "곡 삭제에 실패했습니다")
 }
 
 pub fn song_next(repo: Repository) -> Effect(Msg) {
@@ -522,7 +573,8 @@ pub fn song_next(repo: Repository) -> Effect(Msg) {
                   Error(_) -> dispatch(model.OpDone(Ok(Nil)))
                 }
               }
-              Error(_) -> dispatch(model.ShowToast("실패", model.ErrorToast))
+              Error(_) ->
+                dispatch(model.ShowToast("곡 목록을 불러올 수 없습니다", model.ErrorToast))
             }
           Error(_) -> dispatch(model.OpDone(Ok(Nil)))
         }
@@ -581,7 +633,8 @@ pub fn song_prev(repo: Repository) -> Effect(Msg) {
                   Error(_) -> dispatch(model.OpDone(Ok(Nil)))
                 }
               }
-              Error(_) -> dispatch(model.ShowToast("실패", model.ErrorToast))
+              Error(_) ->
+                dispatch(model.ShowToast("곡 목록을 불러올 수 없습니다", model.ErrorToast))
             }
           Error(_) -> dispatch(model.OpDone(Ok(Nil)))
         }
@@ -602,13 +655,14 @@ pub fn song_replay(repo: Repository) -> Effect(Msg) {
     }
     case repo.set_setting("song_current_version", int.to_string(ver)) {
       Ok(_) -> dispatch(model.OpDone(Ok(Nil)))
-      Error(_) -> dispatch(model.ShowToast("실패", model.ErrorToast))
+      Error(_) ->
+        dispatch(model.ShowToast("곡 재생 상태를 저장할 수 없습니다", model.ErrorToast))
     }
   })
 }
 
 pub fn reorder_song(repo: Repository, id: Int, new_pos: Int) -> Effect(Msg) {
-  crud(fn() { repo.reorder_song(id, new_pos) }, "순서 변경 완료")
+  crud(fn() { repo.reorder_song(id, new_pos) }, "순서 변경 완료", "순서 변경에 실패했습니다")
 }
 
 pub fn add_song(repo: Repository, video_id: String) -> Effect(Msg) {
@@ -618,6 +672,7 @@ pub fn add_song(repo: Repository, video_id: String) -> Effect(Msg) {
       |> result_to_nil
     },
     "곡 추가 완료",
+    "곡 추가에 실패했습니다. URL을 확인해주세요",
   )
 }
 

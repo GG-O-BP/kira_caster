@@ -1,0 +1,82 @@
+import gleam/list
+import kira_caster/admin/views/setup_page
+import kira_caster/storage/repository.{type Repository}
+import wisp.{type Request, type Response}
+
+pub fn is_setup_complete(repo: Repository) -> Bool {
+  case repo.get_setting("setup_complete") {
+    Ok("true") -> True
+    _ -> False
+  }
+}
+
+pub fn handle_setup(req: Request, repo: Repository) -> Response {
+  case wisp.get_query(req) |> list.find(fn(p) { p.0 == "skip" }) {
+    Ok(_) -> handle_skip(repo)
+    Error(_) -> setup_page.handle_setup("", False)
+  }
+}
+
+pub fn handle_setup_submit(req: Request, repo: Repository) -> Response {
+  use form <- wisp.require_form(req)
+  let vals = form.values
+
+  let admin_key = find_value(vals, "admin_key")
+  let cime_client_id = find_value(vals, "cime_client_id")
+  let cime_client_secret = find_value(vals, "cime_client_secret")
+  let cime_redirect_uri = find_value(vals, "cime_redirect_uri")
+  let cime_channel_id = find_value(vals, "cime_channel_id")
+
+  // Save non-empty values to DB settings
+  save_if_set(repo, "admin_key", admin_key)
+  save_if_set(repo, "cime_client_id", cime_client_id)
+  save_if_set(repo, "cime_client_secret", cime_client_secret)
+  save_if_set(repo, "cime_channel_id", cime_channel_id)
+
+  // Redirect URI: use default if not provided
+  case cime_redirect_uri {
+    "" ->
+      case cime_client_id {
+        "" -> Nil
+        _ -> {
+          let _ =
+            repo.set_setting(
+              "cime_redirect_uri",
+              "http://localhost:8080/oauth/callback",
+            )
+          Nil
+        }
+      }
+    uri -> {
+      let _ = repo.set_setting("cime_redirect_uri", uri)
+      Nil
+    }
+  }
+
+  // Mark setup as complete
+  let _ = repo.set_setting("setup_complete", "true")
+
+  setup_page.handle_setup("설정이 저장되었습니다!", True)
+}
+
+fn handle_skip(repo: Repository) -> Response {
+  let _ = repo.set_setting("setup_complete", "true")
+  setup_page.handle_setup("테스트 모드로 시작합니다. 설정은 나중에 대시보드에서 변경할 수 있습니다.", True)
+}
+
+fn find_value(values: List(#(String, String)), key: String) -> String {
+  case list.find(values, fn(v) { v.0 == key }) {
+    Ok(#(_, v)) -> v
+    Error(_) -> ""
+  }
+}
+
+fn save_if_set(repo: Repository, key: String, value: String) -> Nil {
+  case value {
+    "" -> Nil
+    v -> {
+      let _ = repo.set_setting(key, v)
+      Nil
+    }
+  }
+}

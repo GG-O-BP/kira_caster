@@ -59,7 +59,11 @@ fn dashboard_css() -> String {
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: var(--font-body); background: var(--color-bg); color: var(--color-text); padding: 20px; }
-    h1 { font-family: var(--yuruka-font); background: var(--gradient-main); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 20px; font-weight: 700; }
+    h1 { font-family: var(--yuruka-font); background: var(--gradient-main); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0; font-weight: 700; }
+    .header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .mode-badge { display: inline-block; padding: 4px 12px; border-radius: var(--radius-pill); font-size: 0.75em; font-weight: 600; }
+    .mode-badge.cime { background: rgba(0,193,153,0.15); color: var(--color-success); }
+    .mode-badge.mock { background: rgba(84,87,122,0.1); color: var(--color-text); }
     .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
     .tab { padding: 8px 16px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-pill); cursor: pointer; color: var(--color-text); font-weight: 600; transition: all .2s; }
     .tab:hover { border-color: var(--color-primary); color: var(--color-primary); }
@@ -101,6 +105,8 @@ fn dashboard_css() -> String {
     .dot.green::before { background: var(--color-success); }
     .dot.red { color: var(--color-error); }
     .dot.red::before { background: var(--color-error); }
+    .dot.yellow { color: var(--color-warning); }
+    .dot.yellow::before { background: var(--color-warning); }
     .category-btn { background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); margin: 4px; transition: all .2s; }
     .category-btn:hover { border-color: var(--color-primary); color: var(--color-primary); background: rgba(253,113,155,0.08); }
     .tag-remove { background: none; color: var(--color-primary); border: none; padding: 0 4px; margin-left: 4px; font-size: 0.85em; min-height: auto; }

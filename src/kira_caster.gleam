@@ -37,29 +37,44 @@ import kira_caster/util/time
 pub fn main() -> Nil {
   case start() {
     Ok(Nil) -> logger.info("kira_caster running")
-    Error(reason) -> logger.error("Startup failed: " <> reason)
+    Error(reason) -> {
+      logger.error("시작 실패: " <> reason)
+      logger.error("해결 방법: .env 파일의 설정을 확인하거나, 환경변수가 올바른지 확인해주세요")
+    }
   }
 }
 
 fn start() -> Result(Nil, String) {
-  let config = config_loader.load()
+  let base_config = config_loader.load()
   let start_time = time.now_ms()
 
   use repo <- result.try(
-    sqlight_repo.new(config.db_path)
-    |> result.map_error(fn(_) { "Failed to open database" }),
+    sqlight_repo.new(base_config.db_path)
+    |> result.map_error(fn(_) {
+      "데이터베이스를 열 수 없습니다 (경로: "
+      <> base_config.db_path
+      <> "). 파일 경로와 쓰기 권한을 확인해주세요"
+    }),
   )
+
+  // DB에 저장된 설정을 config에 병합 (환경변수가 우선)
+  let config = config_loader.apply_db_settings(base_config, repo)
+
   use #(_sup, bus, bus_name) <- result.try(
     supervisor.start(config)
-    |> result.map_error(fn(_) { "Failed to start supervisor" }),
+    |> result.map_error(fn(_) {
+      "내부 서비스를 시작할 수 없습니다. Erlang/OTP가 올바르게 설치되었는지 확인해주세요"
+    }),
   )
 
   // Adapter selection: cime or mock
-  let #(adapter, cime_api, get_token, token_mgr) = case config.cime_client_id {
+  let #(adapter, cime_api, get_token, token_mgr, ws_mgr) = case
+    config.cime_client_id
+  {
     "" -> {
       logger.info("CIME_CLIENT_ID not set, using mock adapter")
       let adapter = mock_adapter.new()
-      #(adapter, None, None, None)
+      #(adapter, None, None, None, None)
     }
     _ -> {
       logger.info("CIME credentials found, connecting to ci.me...")
@@ -71,6 +86,7 @@ fn start() -> Result(Nil, String) {
             Some(conn.api),
             Some(conn.get_token),
             Some(conn.token_manager),
+            Some(conn.ws_manager),
           )
         }
         Error(reason) -> {
@@ -78,7 +94,7 @@ fn start() -> Result(Nil, String) {
             "ci.me adapter failed: " <> reason <> ", falling back to mock",
           )
           let adapter = mock_adapter.new()
-          #(adapter, None, None, None)
+          #(adapter, None, None, None, None)
         }
       }
     }
@@ -86,7 +102,7 @@ fn start() -> Result(Nil, String) {
 
   use _ <- result.try(
     adapter.connect()
-    |> result.map_error(fn(_) { "Failed to connect adapter" }),
+    |> result.map_error(fn(_) { "어댑터 연결에 실패했습니다. 네트워크 상태를 확인해주세요" }),
   )
 
   let make_response_handler = fn() {
@@ -156,6 +172,7 @@ fn start() -> Result(Nil, String) {
       token_manager: token_mgr,
       cime_api:,
       get_token:,
+      ws_manager: ws_mgr,
     )
 
   case admin_server.start(router_ctx, config) {

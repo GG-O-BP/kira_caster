@@ -1,0 +1,13 @@
+services:
+  kira_caster:
+    build: .
+    ports:
+      - "${KIRA_ADMIN_PORT:-8080}:8080"
+    volumes:
+      - kira_data:/app/data
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  kira_data:

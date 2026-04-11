@@ -7,8 +7,17 @@ import kira_caster/storage/repository
 import wisp/simulate
 
 fn make_ctx(admin_key: String) -> router.RouterContext {
+  let base_repo = repository.mock_repo([])
+  // Mark setup as complete so tests bypass the setup wizard
+  let repo =
+    repository.Repository(..base_repo, get_setting: fn(key) {
+      case key {
+        "setup_complete" -> Ok("true")
+        _ -> base_repo.get_setting(key)
+      }
+    })
   router.RouterContext(
-    repo: repository.mock_repo([]),
+    repo:,
     start_time: 0,
     admin_key:,
     config: config.default(),
@@ -16,6 +25,7 @@ fn make_ctx(admin_key: String) -> router.RouterContext {
     token_manager: None,
     cime_api: None,
     get_token: None,
+    ws_manager: None,
   )
 }
 
@@ -73,7 +83,8 @@ pub fn auth_required_no_header_test() {
   let response =
     simulate.request(http.Get, "/status")
     |> handle_with_key
-  assert response.status == 401
+  // Redirects to login page when not authenticated
+  assert response.status == 303
 }
 
 pub fn auth_required_wrong_key_test() {
@@ -81,7 +92,8 @@ pub fn auth_required_wrong_key_test() {
     simulate.request(http.Get, "/status")
     |> simulate.header("authorization", "Bearer wrong")
     |> handle_with_key
-  assert response.status == 401
+  // Redirects to login page when auth fails
+  assert response.status == 303
 }
 
 pub fn auth_required_correct_key_test() {

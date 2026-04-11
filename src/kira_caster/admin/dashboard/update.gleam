@@ -41,6 +41,12 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       effect.none(),
     )
 
+    // --- Connection status ---
+    model.ConnectionStateLoaded(state) -> #(
+      Model(..model, connection_state: state),
+      effect.none(),
+    )
+
     // --- Status ---
     model.StatusLoaded(uptime) -> #(
       Model(..model, uptime_seconds: uptime),

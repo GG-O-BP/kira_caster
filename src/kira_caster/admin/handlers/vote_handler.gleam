@@ -59,7 +59,7 @@ pub fn handle_start_vote(req: Request, repo: Repository) -> Response {
                 ),
                 201,
               )
-            Error(_) -> wisp.internal_server_error()
+            Error(_) -> error_json("투표 시작에 실패했습니다. 이미 진행 중인 투표가 있을 수 있습니다")
           }
       }
     Error(_) -> wisp.bad_request("invalid request body")
@@ -95,4 +95,16 @@ pub fn handle_end_vote(repo: Repository) -> Response {
       wisp.json_response(json.to_string(body), 200)
     }
   }
+}
+
+fn error_json(message: String) -> Response {
+  wisp.json_response(
+    json.to_string(
+      json.object([
+        #("status", json.string("error")),
+        #("message", json.string(message)),
+      ]),
+    ),
+    500,
+  )
 }

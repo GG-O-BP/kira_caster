@@ -59,6 +59,7 @@ fn handle_dashboard_ws(req, ctx: router.RouterContext) {
       cime_api: ctx.cime_api,
       get_token: ctx.get_token,
       bus: ctx.bus,
+      ws_manager: ctx.ws_manager,
     )
 
   let app = dashboard_app.create()

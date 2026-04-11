@@ -2,7 +2,10 @@ import gleam/erlang/process.{type Subject}
 import gleam/json
 import gleam/option.{type Option, None, Some}
 import kira_caster/core/config.{type Config}
+import kira_caster/logger
+import kira_caster/platform/cime/api.{type CimeApi}
 import kira_caster/platform/cime/token_manager.{type TokenMessage}
+import kira_caster/storage/repository.{type Repository}
 import wisp.{type Request, type Response}
 
 pub fn handle_authorize(_req: Request, config: Config) -> Response {
@@ -18,12 +21,17 @@ pub fn handle_authorize(_req: Request, config: Config) -> Response {
 pub fn handle_callback(
   req: Request,
   token_mgr: Option(Subject(TokenMessage)),
+  cime_api: Option(CimeApi),
+  repo: Repository,
 ) -> Response {
   let code = wisp.get_query(req) |> find_param("code")
   case code, token_mgr {
     Some(auth_code), Some(mgr) -> {
       case token_manager.set_auth_code(mgr, auth_code) {
-        Ok(Nil) ->
+        Ok(Nil) -> {
+          // Auto-fetch channel ID after successful auth
+          auto_fetch_channel_id(mgr, cime_api, repo)
+
           wisp.json_response(
             json.to_string(
               json.object([
@@ -33,6 +41,7 @@ pub fn handle_callback(
             ),
             200,
           )
+        }
         Error(reason) ->
           wisp.json_response(
             json.to_string(
@@ -65,6 +74,43 @@ pub fn handle_callback(
         ),
         503,
       )
+  }
+}
+
+fn auto_fetch_channel_id(
+  mgr: Subject(TokenMessage),
+  cime_api: Option(CimeApi),
+  repo: Repository,
+) -> Nil {
+  case cime_api {
+    Some(api) -> {
+      case token_manager.get_access_token(mgr) {
+        Ok(token) -> {
+          case api.get_me(token) {
+            Ok(me) -> {
+              let _ = repo.set_setting("cime_channel_id", me.channel_id)
+              logger.info(
+                "채널 ID 자동 조회 완료: "
+                <> me.channel_name
+                <> " ("
+                <> me.channel_id
+                <> ")",
+              )
+              Nil
+            }
+            Error(_) -> {
+              logger.warn("채널 ID 자동 조회 실패: API 호출 오류")
+              Nil
+            }
+          }
+        }
+        Error(_) -> {
+          logger.warn("채널 ID 자동 조회 실패: 토큰 조회 오류")
+          Nil
+        }
+      }
+    }
+    None -> Nil
   }
 }
 

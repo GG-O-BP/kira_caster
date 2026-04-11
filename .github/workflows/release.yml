@@ -1,0 +1,73 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-amd64
+          - os: macos-latest
+            target: macos-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "28"
+          gleam-version: "1.15.2"
+          rebar3-version: "3"
+
+      - name: Install SQLite (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - name: Install SQLite (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sqlite
+
+      - run: gleam deps download
+      - run: gleam build
+        env:
+          ESQLITE_USE_SYSTEM: "1"
+
+      - name: Package release with bundled ERTS
+        run: bash scripts/package_release.sh "${{ matrix.target }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kira_caster-${{ matrix.target }}
+          path: kira_caster-${{ matrix.target }}.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*.tar.gz"
+          generate_release_notes: true
+          body: |
+            ## 설치 방법
+
+            1. OS에 맞는 파일을 다운로드하세요
+            2. 압축을 풀어주세요: `tar xzf kira_caster-*.tar.gz`
+            3. `.env.example`을 `.env`로 복사하고 설정을 편집하세요
+            4. `./start.sh` 를 실행하세요 (Linux/Mac)
+            5. 브라우저가 자동으로 열립니다
+
+            > Erlang 런타임이 포함되어 있어 별도 설치가 필요 없습니다 (Linux/Mac).
+            > Windows는 [Erlang/OTP](https://www.erlang.org/downloads) 설치가 필요합니다.

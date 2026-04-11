@@ -16,11 +16,23 @@ import lustre/event
 
 pub fn view(model: Model) -> Element(Msg) {
   fragment([
-    html.h1([], [text("kira_caster 관리 대시보드")]),
+    html.div([attribute.class("header-row")], [
+      html.h1([], [text("kira_caster 관리 대시보드")]),
+      mode_badge(model.adapter_mode),
+    ]),
     tabs_bar(model.active_tab),
     html.div([attribute.class("panel active")], [active_panel(model)]),
     toast_container(model.toasts),
   ])
+}
+
+fn mode_badge(mode: model.AdapterMode) -> Element(Msg) {
+  case mode {
+    model.CimeMode ->
+      html.span([attribute.class("mode-badge cime")], [text("ci.me 연동")])
+    model.MockMode ->
+      html.span([attribute.class("mode-badge mock")], [text("테스트 모드")])
+  }
 }
 
 // --- Tabs bar ---------------------------------------------------------------
@@ -84,19 +96,79 @@ fn status_view(model: Model) -> Element(Msg) {
   let h = model.uptime_seconds / 3600
   let m = { model.uptime_seconds % 3600 } / 60
   let s = model.uptime_seconds % 60
-  html.div([attr("style", "font-size:1.1em;font-family:var(--font-number)")], [
-    text("상태: running"),
-    html.br([]),
-    text(
-      "가동 시간: "
-      <> int.to_string(h)
-      <> "시간 "
-      <> int.to_string(m)
-      <> "분 "
-      <> int.to_string(s)
-      <> "초",
-    ),
+  fragment([
+    html.div([attr("style", "font-size:1.1em")], [
+      html.div([attribute.class("form-row")], [
+        html.span([attribute.class("dot green")], [text("실행 중")]),
+        case model.adapter_mode {
+          model.CimeMode -> connection_status_badge(model.connection_state)
+          model.MockMode ->
+            html.span([attr("style", "color:#888;font-size:0.85em")], [
+              text("테스트 모드 (씨미 미연동)"),
+            ])
+        },
+      ]),
+      html.div(
+        [attr("style", "margin-top:12px;font-family:var(--font-number)")],
+        [
+          text(
+            "가동 시간: "
+            <> int.to_string(h)
+            <> "시간 "
+            <> int.to_string(m)
+            <> "분 "
+            <> int.to_string(s)
+            <> "초",
+          ),
+        ],
+      ),
+    ]),
+    case model.adapter_mode {
+      model.MockMode ->
+        html.div(
+          [
+            attr(
+              "style",
+              "margin-top:16px;padding:12px;background:rgba(253,113,155,0.08);border-radius:8px;font-size:0.9em;line-height:1.5",
+            ),
+          ],
+          [
+            text("씨미 계정을 연동하면 실제 채팅에서 봇을 사용할 수 있습니다. "),
+            html.a(
+              [
+                event.on_click(model.SwitchTab(model.CimeAuth)),
+                attr(
+                  "style",
+                  "cursor:pointer;color:var(--color-link);font-weight:600",
+                ),
+              ],
+              [text("씨미 연동 탭")],
+            ),
+            text("에서 설정하세요."),
+          ],
+        )
+      model.CimeMode -> text("")
+    },
   ])
+}
+
+fn connection_status_badge(state: model.CimeConnectionState) -> Element(Msg) {
+  case state {
+    model.CsConnected ->
+      html.span([attribute.class("dot green")], [text("씨미 연결됨")])
+    model.CsDisconnected ->
+      html.span([attribute.class("dot red")], [text("씨미 연결 끊김")])
+    model.CsReconnecting(attempt, max) ->
+      html.span([attribute.class("dot yellow")], [
+        text(
+          "재연결 중 ("
+          <> int.to_string(attempt)
+          <> "/"
+          <> int.to_string(max)
+          <> ")",
+        ),
+      ])
+  }
 }
 
 // --- 2. Users ---------------------------------------------------------------

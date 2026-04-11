@@ -60,7 +60,7 @@ pub fn handle_set_plugin(
             200,
           )
         }
-        Error(_) -> wisp.internal_server_error()
+        Error(_) -> error_json("플러그인 상태 변경에 실패했습니다")
       }
     Error(_) -> wisp.bad_request("invalid request body")
   }
@@ -97,4 +97,16 @@ fn is_in_list(item: String, items: List(String)) -> Bool {
         False -> is_in_list(item, rest)
       }
   }
+}
+
+fn error_json(message: String) -> Response {
+  wisp.json_response(
+    json.to_string(
+      json.object([
+        #("status", json.string("error")),
+        #("message", json.string(message)),
+      ]),
+    ),
+    500,
+  )
 }

@@ -122,19 +122,23 @@ pub fn mock_api() -> CimeApi {
       ))
     },
     get_live_setting: fn(_) {
-      Ok(types.LiveSetting(
-        default_live_title: "すとぷり 심야 잡담 방송",
-        category: Some(types.Category(
-          category_id: "cat_talk",
-          category_type: "TALK",
-          category_value: "토크/잡담",
-          poster_image_url: None,
-        )),
-        tags: ["すとぷり", "스토푸리", "잡담"],
-      ))
+      Ok(
+        types.LiveSetting(
+          default_live_title: "すとぷり 심야 잡담 방송",
+          category: Some(types.Category(
+            category_id: "cat_talk",
+            category_type: "TALK",
+            category_value: "토크/잡담",
+            poster_image_url: None,
+          )),
+          tags: ["すとぷり", "스토푸리", "잡담"],
+        ),
+      )
     },
     update_live_setting: fn(_, _) { Ok(Nil) },
-    get_stream_key: fn(_) { Ok(types.StreamKey(stream_key: "stpr_live_20160604")) },
+    get_stream_key: fn(_) {
+      Ok(types.StreamKey(stream_key: "stpr_live_20160604"))
+    },
     send_chat: fn(_, _) { Ok("mock_msg_id") },
     send_notice: fn(_, _) { Ok(Nil) },
     get_chat_settings: fn(_) {

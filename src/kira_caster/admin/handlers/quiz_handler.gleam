@@ -16,7 +16,7 @@ pub fn handle_get_quizzes(repo: Repository) -> Response {
         })
       wisp.json_response(json.to_string(body), 200)
     }
-    Error(_) -> wisp.internal_server_error()
+    Error(_) -> error_json("퀴즈 목록을 불러올 수 없습니다")
   }
 }
 
@@ -42,7 +42,7 @@ pub fn handle_add_quiz(req: Request, repo: Repository) -> Response {
             ),
             201,
           )
-        Error(_) -> wisp.internal_server_error()
+        Error(_) -> error_json("퀴즈 추가에 실패했습니다. 같은 문제가 이미 등록되어 있을 수 있습니다")
       }
     Error(_) -> wisp.bad_request("invalid request body")
   }
@@ -60,8 +60,20 @@ pub fn handle_delete_quiz(req: Request, repo: Repository) -> Response {
             json.to_string(json.object([#("deleted", json.string(question))])),
             200,
           )
-        Error(_) -> wisp.internal_server_error()
+        Error(_) -> error_json("퀴즈 삭제에 실패했습니다")
       }
     Error(_) -> wisp.bad_request("invalid request body")
   }
+}
+
+fn error_json(message: String) -> Response {
+  wisp.json_response(
+    json.to_string(
+      json.object([
+        #("status", json.string("error")),
+        #("message", json.string(message)),
+      ]),
+    ),
+    500,
+  )
 }

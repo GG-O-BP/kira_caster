@@ -33,6 +33,15 @@ pub type WsMessage {
   CheckLifecycle
   WsDisconnected(reason: String)
   Reconnect
+  GetConnectionStatus(reply: Subject(ConnectionStatus))
+}
+
+pub type ConnectionStatus {
+  ConnectionStatus(
+    state: ws.WsState,
+    reconnect_attempt: Int,
+    max_reconnect: Int,
+  )
 }
 
 pub type WsSessionState {
@@ -201,6 +210,22 @@ fn handle_message(
           )
         }
       }
+    }
+
+    GetConnectionStatus(reply) -> {
+      let attempt = case state.ws_state {
+        ws.Reconnecting(n) -> n
+        _ -> 0
+      }
+      process.send(
+        reply,
+        ConnectionStatus(
+          state: state.ws_state,
+          reconnect_attempt: attempt,
+          max_reconnect: state.max_reconnect,
+        ),
+      )
+      actor.continue(state)
     }
 
     Reconnect -> {
@@ -582,4 +607,8 @@ pub fn connect(manager: Subject(WsMessage)) -> Nil {
 
 pub fn disconnect(manager: Subject(WsMessage)) -> Nil {
   process.send(manager, Disconnect)
+}
+
+pub fn get_connection_status(manager: Subject(WsMessage)) -> ConnectionStatus {
+  process.call(manager, 5000, GetConnectionStatus)
 }

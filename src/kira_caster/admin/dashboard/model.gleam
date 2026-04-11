@@ -3,6 +3,7 @@ import gleam/option.{type Option, None}
 import kira_caster/core/config.{type Config}
 import kira_caster/event_bus.{type EventBusMessage}
 import kira_caster/platform/cime/api.{type CimeApi}
+import kira_caster/platform/cime/ws_manager.{type WsMessage}
 import kira_caster/storage/repository.{
   type Repository, type SongData, type UserData,
 }
@@ -50,6 +51,19 @@ pub type VoteResult {
   VoteResult(choice: String, count: Int)
 }
 
+// --- Adapter mode ---
+
+pub type AdapterMode {
+  MockMode
+  CimeMode
+}
+
+pub type CimeConnectionState {
+  CsDisconnected
+  CsConnected
+  CsReconnecting(attempt: Int, max: Int)
+}
+
 // --- Context ---
 
 pub type DashboardContext {
@@ -60,6 +74,7 @@ pub type DashboardContext {
     cime_api: Option(CimeApi),
     get_token: Option(fn() -> Result(String, String)),
     bus: Option(Subject(EventBusMessage)),
+    ws_manager: Option(Subject(WsMessage)),
   )
 }
 
@@ -71,6 +86,9 @@ pub type Model {
     active_tab: Tab,
     toasts: List(Toast),
     next_toast_id: Int,
+    // Adapter
+    adapter_mode: AdapterMode,
+    connection_state: CimeConnectionState,
     // Status
     uptime_seconds: Int,
     // Users
@@ -144,6 +162,8 @@ pub type Msg {
   RefreshTick
   ShowToast(String, ToastType)
   DismissToast(Int)
+  // Connection status
+  ConnectionStateLoaded(CimeConnectionState)
   // Status
   StatusLoaded(Int)
   // Users
@@ -230,11 +250,17 @@ pub type Msg {
 // --- Model constructor ---
 
 pub fn new(ctx: DashboardContext) -> Model {
+  let mode = case ctx.cime_api {
+    option.Some(_) -> CimeMode
+    option.None -> MockMode
+  }
   Model(
     ctx: ctx,
     active_tab: Status,
     toasts: [],
     next_toast_id: 0,
+    adapter_mode: mode,
+    connection_state: CsDisconnected,
     uptime_seconds: 0,
     users: [],
     user_filter: "",

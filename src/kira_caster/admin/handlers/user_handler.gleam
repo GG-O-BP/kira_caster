@@ -16,6 +16,15 @@ pub fn handle_users(repo: Repository) -> Response {
         })
       wisp.json_response(json.to_string(body), 200)
     }
-    Error(_) -> wisp.internal_server_error()
+    Error(_) ->
+      wisp.json_response(
+        json.to_string(
+          json.object([
+            #("status", json.string("error")),
+            #("message", json.string("유저 목록을 불러올 수 없습니다")),
+          ]),
+        ),
+        500,
+      )
   }
 }

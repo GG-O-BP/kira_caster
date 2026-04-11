@@ -31,35 +31,51 @@
 
 ## 시작하는 방법
 
-Gleam이랑 Erlang/OTP가 설치되어 있어야 해!
+### 방법 1: 릴리스 다운로드 (가장 쉬움!)
+
+1. [Releases](../../releases)에서 OS에 맞는 파일 다운로드
+2. 압축 풀기: `tar xzf kira_caster-*.tar.gz`
+3. `./start.sh` 실행 (Linux/Mac) 또는 `start.bat` (Windows)
+4. 브라우저가 자동으로 열리면 설정 마법사를 따라가면 끝!
+
+> Linux/Mac은 Erlang 런타임이 포함되어 있어서 별도 설치 필요 없어!
+
+### 방법 2: Docker (한 줄이면 끝!)
+
+```sh
+cp .env.example .env     # 설정 파일 복사 (원하면 편집)
+docker compose up         # 실행!
+```
+
+브라우저에서 `http://localhost:8080` 접속하면 설정 마법사가 나와!
+
+### 방법 3: 소스에서 직접 실행
+
+Gleam 1.15.2 + Erlang/OTP 28 설치 후:
 
 ```sh
 gleam deps download   # 필요한 것들 다운받기
 gleam build           # 빌드하기
-gleam run             # 실행하기!
-gleam test            # 테스트 돌리기 (265개나 있어!)
+./start.sh            # 실행! (브라우저 자동 열림)
+# 또는 gleam run
 ```
 
-실행하면 이렇게 나와!
+### 처음 실행하면?
 
-```
-kira_caster started with mock adapter
-kira_caster running
-Listening on http://127.0.0.1:8080
-```
+처음 실행하면 **설정 마법사**가 나와! 관리자 비밀번호랑 씨미 연동 정보를 입력할 수 있어. 건너뛰면 테스트 모드로 바로 시작해!
 
-씨미 환경변수를 설정하면 자동으로 씨미 어댑터로 연결돼! 설정 안 하면 연습용(mock) 모드로 돌아가~
+설정 마법사를 완료하면 대시보드로 이동하고, 비밀번호를 설정했으면 **로그인 페이지**가 나와. 브라우저가 비밀번호를 기억해줘서 한 번만 입력하면 돼!
 
 ### 환경변수로 설정 바꾸기
 
-전부 선택사항이야! 안 넣으면 기본값으로 돌아가~
+`.env.example`을 `.env`로 복사해서 편집하는 게 가장 쉬워! 전부 선택사항이야!
 
 | 환경변수 | 설명 | 기본값 |
 |----------|------|--------|
 | `KIRA_DB_PATH` | 데이터베이스 파일 경로 | `kira_caster.db` |
 | `KIRA_COOLDOWN_MS` | 명령어 쿨타임 (밀리초) | `5000` |
 | `KIRA_ADMIN_PORT` | 대시보드 포트 | `8080` |
-| `KIRA_ADMIN_KEY` | 대시보드 API 키 (비워두면 인증 없음) | `` |
+| `KIRA_ADMIN_KEY` | 대시보드 비밀번호 (비워두면 누구나 접근 가능) | `` |
 | `KIRA_SECRET_KEY` | 서버 암호화 키 | 기본값 있음 |
 | `KIRA_ATTENDANCE_POINTS` | 출석 보상 포인트 | `10` |
 | `KIRA_DICE_WIN_POINTS` | 주사위 승리 포인트 | `50` |
@@ -69,8 +85,10 @@ Listening on http://127.0.0.1:8080
 | `KIRA_YOUTUBE_API_KEY` | YouTube Data API v3 키 (없으면 제목 대신 영상 ID 사용) | `` |
 | `CIME_CLIENT_ID` | 씨미 앱 Client ID (설정하면 씨미 연동 활성화!) | `` |
 | `CIME_CLIENT_SECRET` | 씨미 앱 Client Secret | `` |
-| `CIME_REDIRECT_URI` | OAuth 콜백 URL (예: `http://localhost:8080/oauth/callback`) | `` |
-| `CIME_CHANNEL_ID` | 봇이 연결할 채널 ID | `` |
+| `CIME_REDIRECT_URI` | OAuth 콜백 URL | `http://localhost:8080/oauth/callback` |
+| `CIME_CHANNEL_ID` | 봇이 연결할 채널 ID (씨미 연동 후 자동 조회됨!) | `` |
+
+> 환경변수 대신 설정 마법사나 대시보드에서도 설정할 수 있어! DB에 저장되고 재시작하면 적용돼.
 
 ## 명령어 목록
 
@@ -220,21 +238,24 @@ pub fn handle(user: String, args: List(String)) -> String {
 
 ## 씨미(ci.me) 연동
 
-씨미 공식 OpenAPI를 통해 실제 방송 채팅과 연동할 수 있어! 환경변수 4개만 설정하면 자동으로 연결돼!
+씨미 공식 OpenAPI를 통해 실제 방송 채팅과 연동할 수 있어!
 
 ### 설정 방법
 
 1. [씨미 개발자 포털](https://ci.me)에서 앱 등록
-2. 환경변수 설정:
-   ```sh
-   export CIME_CLIENT_ID="너의_앱_ID"
-   export CIME_CLIENT_SECRET="너의_앱_Secret"
-   export CIME_REDIRECT_URI="http://localhost:8080/oauth/callback"
-   export CIME_CHANNEL_ID="연결할_채널_ID"
-   ```
-3. `gleam run` 실행
+2. 설정 입력 (둘 중 하나 선택):
+   - **설정 마법사**: 처음 실행 시 나오는 마법사에서 Client ID, Secret 입력
+   - **`.env` 파일**: `.env.example`을 `.env`로 복사 후 편집
+3. 프로그램 실행 (또는 재시작)
 4. 대시보드 `http://localhost:8080` → "씨미 연동" 탭에서 "연결하기" 클릭
 5. 씨미에서 권한 승인하면 자동으로 연결!
+
+> 채널 ID는 직접 입력하지 않아도 돼! OAuth 인증이 완료되면 자동으로 조회해서 저장해줘!
+
+대시보드 상태 탭에서 연결 상태를 실시간으로 확인할 수 있어:
+- **씨미 연결됨** (녹색) - 정상 작동 중
+- **씨미 연결 끊김** (빨간색) - 연결 안 됨
+- **재연결 중 (3/5)** (노란색) - 자동 재연결 시도 중
 
 ### 연동되는 기능들
 
@@ -310,7 +331,10 @@ curl http://localhost:8080/cime/stream-key
 curl "http://localhost:8080/cime/categories?keyword=게임"
 ```
 
-`KIRA_ADMIN_KEY`를 설정하면 Bearer 토큰 인증이 필요해져!
+`KIRA_ADMIN_KEY`(또는 설정 마법사에서 설정한 비밀번호)가 있으면 인증이 필요해져!
+
+- **브라우저**: 로그인 페이지에서 비밀번호 입력 (쿠키로 자동 기억)
+- **API**: Bearer 토큰 사용
 
 ```sh
 curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
@@ -362,9 +386,14 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] 플러그인 자동 재구독 (이벤트 버스 재시작 시)
 - [x] SQLite 데이터 저장 (마이그레이션 v6)
 - [x] 관리 대시보드 (Lustre 서버 컴포넌트, WebSocket 실시간 업데이트, 14개 탭!)
-- [x] Bearer 토큰 인증
+- [x] 로그인 페이지 (비밀번호 + 쿠키 세션, Bearer 토큰도 지원)
+- [x] 첫 실행 설정 마법사 (비밀번호, 씨미 연동 정보를 UI에서 입력)
+- [x] 씨미 연결 상태 실시간 표시 (연결됨/끊김/재연결 중)
+- [x] 채널 ID 자동 조회 (OAuth 인증 후 자동 저장)
+- [x] DB에서 설정 읽기 (환경변수 없이도 설정 마법사로 설정 가능)
+- [x] 구체적 에러 메시지 (한국어 안내 + 해결책)
 - [x] DB 마이그레이션 버전 관리
-- [x] Docker 지원
+- [x] Docker Compose 지원
 - [x] 대시보드 서버 사이드 렌더링 (Model-View-Update, DOM 패치 전송)
 - [x] 퀴즈 DB 관리 (대시보드)
 - [x] 플러그인 ON/OFF (대시보드, 17개 플러그인)
@@ -375,6 +404,8 @@ curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
 - [x] 대시보드 채팅 설정 (슬로우모드/팔로워전용)
 - [x] 대시보드 차단 관리 (차단/해제 UI)
 - [x] 대시보드 채널 정보 (봇 계정, 방송 상태, 스트림 키)
+- [x] 릴리스 패키징 (Erlang 런타임 포함, GitHub Actions CI)
+- [x] 시작 스크립트 (Linux/Mac/Windows, 브라우저 자동 열기)
 - [x] 테스트 265개! 전부 통과!
 
 ## 퀴즈 문제 목록
@@ -463,16 +494,17 @@ src/
 │   │   ├── migrations.gleam     # DB 마이그레이션 (v6)
 │   │   └── repos/               # 개별 테이블 구현
 │   ├── admin/                   # 관리 대시보드
-│   │   ├── router.gleam         # HTTP 라우터 (RouterContext)
+│   │   ├── router.gleam         # HTTP 라우터 (로그인/설정/인증 분기)
 │   │   ├── server.gleam         # HTTP + WebSocket 서버
-│   │   ├── handlers/            # 11개 REST 핸들러 (씨미 + OAuth 포함)
+│   │   ├── auth.gleam           # 인증 (쿠키 세션 + Bearer 토큰)
+│   │   ├── handlers/            # 12개 REST 핸들러 (씨미 + OAuth + 설정 마법사)
 │   │   ├── dashboard/           # Lustre 서버 컴포넌트 (MVU)
 │   │   │   ├── app.gleam        # 앱 생성 + init
-│   │   │   ├── model.gleam      # Model, Msg, Tab 타입
+│   │   │   ├── model.gleam      # Model, Msg, Tab, 연결 상태 타입
 │   │   │   ├── update.gleam     # 상태 전이
-│   │   │   ├── view.gleam       # 14개 탭 UI 렌더링
-│   │   │   └── effects.gleam    # 데이터 로딩 + CRUD 이펙트
-│   │   └── views/               # 셸 페이지 + 플레이어 (SSR)
+│   │   │   ├── view.gleam       # 14개 탭 UI + 연결 상태 배지
+│   │   │   └── effects.gleam    # 데이터 로딩 + CRUD + 연결 상태 조회
+│   │   └── views/               # 로그인/설정/대시보드/플레이어 (SSR)
 │   ├── util/
 │   │   ├── time.gleam           # 시간 유틸
 │   │   └── youtube.gleam        # YouTube URL 파서 + API 클라이언트

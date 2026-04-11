@@ -172,6 +172,9 @@ LAUNCHER
 chmod +x "${RELEASE_DIR}/start.sh"
 
 # 10. Windows 시작 스크립트 (번들 ERTS 사용, 별도 설치 불필요)
+# 주의: cmd.exe 괄호 블록 안에 한국어(UTF-8 멀티바이트)를 넣으면
+#       CP949 파싱 충돌로 "was unexpected at this time" 에러 발생.
+#       goto 기반 흐름 제어 + 영문 메시지로 회피.
 cat > "${RELEASE_DIR}/start.bat" << 'BATCH'
 @echo off
 setlocal EnableDelayedExpansion
@@ -179,42 +182,36 @@ chcp 65001 >nul 2>&1
 title kira_caster
 cd /d "%~dp0"
 
-:: .env 파일 로드 (없으면 기본값 사용)
-if exist .env (
-  for /f "usebackq eol=# tokens=1,* delims==" %%a in (".env") do (
-    set "%%a=%%b"
-  )
-)
+:: .env
+if not exist .env goto :env_done
+for /f "usebackq eol=# tokens=1,* delims==" %%a in (".env") do set "%%a=%%b"
+:env_done
 if not defined KIRA_ADMIN_PORT set "KIRA_ADMIN_PORT=9693"
 
-:: 포트 사용 중 확인
+:: port check
 netstat -an 2>nul | findstr ":%KIRA_ADMIN_PORT% " | findstr "LISTENING" >nul 2>&1
-if not errorlevel 1 (
-  echo.
-  echo  [오류] 포트 %KIRA_ADMIN_PORT%번이 이미 사용 중입니다.
-  echo.
-  echo  이미 kira_caster가 실행 중이라면 먼저 종료해주세요.
-  echo  포트를 변경하려면 이 폴더의 .env 파일을 메모장으로 열고
-  echo  KIRA_ADMIN_PORT=8081 같이 수정하세요.
-  echo  ^(.env 파일이 없으면 .env.example 을 .env 로 복사 후 수정^)
-  echo.
-  pause
-  exit /b 1
-)
+if errorlevel 1 goto :port_ok
+echo.
+echo  [!] %KIRA_ADMIN_PORT% port is already in use.
+echo  Close existing kira_caster first, or change port in .env file.
+echo.
+pause
+exit /b 1
+:port_ok
 
-:: 번들된 Erlang 런타임(ERTS) 찾기
+:: find bundled ERTS
 set "ERTS_DIR="
 for /d %%d in (erts-*) do set "ERTS_DIR=%%d"
-if not defined ERTS_DIR (
-  echo.
-  echo  [오류] Erlang 런타임(erts)을 찾을 수 없습니다.
-  echo  파일이 손상되었을 수 있습니다. 프로그램을 다시 다운로드해주세요.
-  echo.
-  pause
-  exit /b 1
-)
+if defined ERTS_DIR goto :erts_ok
+echo.
+echo  [!] Erlang runtime (erts) not found.
+echo  Files may be corrupted. Please re-download.
+echo.
+pause
+exit /b 1
+:erts_ok
 
-:: Erlang 환경 설정 — 번들 ERTS 사용 (별도 설치 불필요)
+:: setup
 set "ROOTDIR=%~dp0"
 if "!ROOTDIR:~-1!"=="\" set "ROOTDIR=!ROOTDIR:~0,-1!"
 set "BINDIR=!ROOTDIR!\!ERTS_DIR!\bin"
@@ -222,32 +219,32 @@ set "EMU=beam"
 set "PROGNAME=erl"
 set "ERL_LIBS=!ROOTDIR!\lib;!ROOTDIR!\erlang"
 
-:: Gleam 패키지 코드 경로 (-pa)
 set "PA="
-for /d %%d in (erlang\*) do (
-  if exist "%%d\ebin" set "PA=!PA! -pa %%d\ebin"
-)
+for /d %%d in (erlang\*) do if exist "%%d\ebin" set "PA=!PA! -pa %%d\ebin"
 
 echo.
-echo  kira_caster 시작 중...
+echo  kira_caster starting...
 echo  http://localhost:%KIRA_ADMIN_PORT%
 echo.
-echo  종료하려면 이 창을 닫거나 Ctrl+C 를 누르세요.
+echo  Close this window or press Ctrl+C to stop.
 echo.
 
-:: 3초 후 브라우저 자동 열기
 start /b cmd /c "timeout /t 3 /nobreak >nul 2>&1 && start http://localhost:%KIRA_ADMIN_PORT%"
 
-:: 번들된 erl.exe로 앱 실행
 "!BINDIR!\erl.exe" -boot "!ROOTDIR!\bin\start" !PA! -noshell -eval "kira_caster@@main:run(kira_caster)"
 
 echo.
-echo  [알림] 프로그램이 종료되었습니다.
-echo  문제가 반복되면 이 폴더의 erl_crash.dump 파일을
-echo  개발자에게 보내주세요.
+echo  Program has stopped.
+echo  If this keeps happening, send erl_crash.dump to the developer.
 echo.
 pause
 BATCH
+# LF → CRLF 변환 (cmd.exe 호환성)
+if command -v sed &>/dev/null; then
+  sed -i 's/$/\r/' "${RELEASE_DIR}/start.bat"
+elif command -v unix2dos &>/dev/null; then
+  unix2dos "${RELEASE_DIR}/start.bat" 2>/dev/null
+fi
 
 # 11. 패키징
 tar czf "kira_caster-${TARGET}.tar.gz" "$RELEASE_DIR"

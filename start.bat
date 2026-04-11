@@ -9,7 +9,7 @@ if exist .env (
   )
 )
 
-if not defined KIRA_ADMIN_PORT set KIRA_ADMIN_PORT=8080
+if not defined KIRA_ADMIN_PORT set KIRA_ADMIN_PORT=9693
 
 :: Check port availability
 netstat -an 2>nul | findstr ":%KIRA_ADMIN_PORT% " | findstr "LISTENING" >nul 2>&1

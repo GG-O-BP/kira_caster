@@ -10,7 +10,7 @@ if [ -f .env ]; then
   set +a
 fi
 
-PORT="${KIRA_ADMIN_PORT:-8080}"
+PORT="${KIRA_ADMIN_PORT:-9693}"
 
 # Check dependencies
 check_command() {

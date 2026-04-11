@@ -10,7 +10,7 @@ pub fn default_values_test() {
   assert c.rps_win_points == 30
   assert c.rps_loss_points == -10
   assert c.max_reconnect_attempts == 5
-  assert c.admin_port == 8080
+  assert c.admin_port == 9693
 }
 
 pub fn default_banned_words_test() {

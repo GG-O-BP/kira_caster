@@ -2,14 +2,14 @@ services:
   kira_caster:
     build: .
     ports:
-      - "${KIRA_ADMIN_PORT:-8080}:8080"
+      - "${KIRA_ADMIN_PORT:-9693}:9693"
     volumes:
       - kira_data:/app/data
     env_file:
       - .env
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/status"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9693/status"]
       interval: 10s
       timeout: 3s
       retries: 3

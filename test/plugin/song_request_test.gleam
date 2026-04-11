@@ -110,7 +110,10 @@ pub fn request_song_duplicate_prevented_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "song_request", message: "이 곡 이미 대기열에 있당 ㅋㅋ"),
+      plugin.PluginResponse(
+        plugin: "song_request",
+        message: "이 곡 이미 대기열에 있당 ㅋㅋ",
+      ),
     ]
 }
 
@@ -309,7 +312,10 @@ pub fn list_empty_queue_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(plugin: "song_request", message: "대기열이 비어있당 곡을 넣어줘용!"),
+      plugin.PluginResponse(
+        plugin: "song_request",
+        message: "대기열이 비어있당 곡을 넣어줘용!",
+      ),
     ]
 }
 

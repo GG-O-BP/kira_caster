@@ -77,10 +77,7 @@ fn handle_add_word(
           ),
         ]
         Error(_) -> [
-          plugin.PluginResponse(
-            plugin: "filter",
-            message: "앗 추가하다 에러났어 ㅠㅠ",
-          ),
+          plugin.PluginResponse(plugin: "filter", message: "앗 추가하다 에러났어 ㅠㅠ"),
         ]
       }
   }
@@ -104,10 +101,7 @@ fn handle_remove_word(
           ),
         ]
         Error(_) -> [
-          plugin.PluginResponse(
-            plugin: "filter",
-            message: "앗 삭제하다 에러났어 ㅠㅠ",
-          ),
+          plugin.PluginResponse(plugin: "filter", message: "앗 삭제하다 에러났어 ㅠㅠ"),
         ]
       }
   }

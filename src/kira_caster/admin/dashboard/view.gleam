@@ -140,19 +140,10 @@ fn active_panel(model: Model) -> Element(Msg) {
       "시청자가 !명령어 치면 봇이 자동으로 대답해줘용 예: !인사 → 안녕하세요!",
       commands_view(model),
     )
-    model.Quizzes -> #(
-      "채팅에서 퀴즈 낼 수 있당! 정답 맞히면 포인트 받아용 ㅎㅎ",
-      quizzes_view(model),
-    )
+    model.Quizzes -> #("채팅에서 퀴즈 낼 수 있당! 정답 맞히면 포인트 받아용 ㅎㅎ", quizzes_view(model))
     model.Votes -> #("시청자한테 투표 받을 수 있당! 예: 오늘 할 게임 투표", votes_view(model))
-    model.Plugins -> #(
-      "봇 기능을 켜고 끌 수 있어용 필요 없는 건 꺼두긔",
-      plugins_view(model),
-    )
-    model.Settings -> #(
-      "포인트, 명령어 간격 같은 세부 설정을 바꿀 수 있당",
-      settings_view(model),
-    )
+    model.Plugins -> #("봇 기능을 켜고 끌 수 있어용 필요 없는 건 꺼두긔", plugins_view(model))
+    model.Settings -> #("포인트, 명령어 간격 같은 세부 설정을 바꿀 수 있당", settings_view(model))
     model.Songs -> #("시청자가 신청한 YouTube 노래를 관리할 수 있당", songs_view(model))
     model.CimeAuth -> #("", cime_auth_view(model))
     model.Broadcast -> #("", broadcast_view(model))
@@ -709,9 +700,7 @@ fn settings_view(model: Model) -> Element(Msg) {
   fragment([
     section_heading("시스템 설정"),
     html.p([attr("style", "font-size:0.85em;color:#888;margin-bottom:8px")], [
-      text(
-        "이 설정은 바꾸고 아래 '변경사항 적용' 버튼 눌러야 돼용 버튼 누르면 프로그램이 자동으로 다시 시작돼용!",
-      ),
+      text("이 설정은 바꾸고 아래 '변경사항 적용' 버튼 눌러야 돼용 버튼 누르면 프로그램이 자동으로 다시 시작돼용!"),
     ]),
     html.div(
       [],

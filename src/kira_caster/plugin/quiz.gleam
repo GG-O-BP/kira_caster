@@ -76,7 +76,10 @@ fn handle_answer(repo: Repository, user: String, answer: String) -> List(Event) 
               [
                 plugin.PluginResponse(
                   plugin: "quiz",
-                  message: user <> "님 정답이당!! ㅋㅋ (+" <> int.to_string(reward) <> "포인트)",
+                  message: user
+                    <> "님 정답이당!! ㅋㅋ (+"
+                    <> int.to_string(reward)
+                    <> "포인트)",
                 ),
                 plugin.PointsChange(user: user, amount: reward, reason: "quiz"),
               ]

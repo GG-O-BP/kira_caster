@@ -91,9 +91,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
                 ),
               ],
               [
-                text(
-                  "비밀번호 안 정하면 아무나 들어올 수 있어서 위험하거든용 ㅠㅠ 꼭 정해줘잉!",
-                ),
+                text("비밀번호 안 정하면 아무나 들어올 수 있어서 위험하거든용 ㅠㅠ 꼭 정해줘잉!"),
               ],
             ),
             html.div(

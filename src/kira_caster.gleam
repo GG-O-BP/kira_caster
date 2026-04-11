@@ -62,9 +62,7 @@ fn start() -> Result(Nil, String) {
 
   use #(_sup, bus, bus_name) <- result.try(
     supervisor.start(config)
-    |> result.map_error(fn(_) {
-      "앗 내부 서비스를 못 켰어 ㅠㅠ Erlang/OTP가 잘 설치됐는지 확인해줘용"
-    }),
+    |> result.map_error(fn(_) { "앗 내부 서비스를 못 켰어 ㅠㅠ Erlang/OTP가 잘 설치됐는지 확인해줘용" }),
   )
 
   // Adapter selection: cime or mock

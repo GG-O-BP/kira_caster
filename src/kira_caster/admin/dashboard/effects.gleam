@@ -719,10 +719,7 @@ pub fn song_replay(repo: Repository) -> Effect(Msg) {
     case repo.set_setting("song_current_version", int.to_string(ver)) {
       Ok(_) -> dispatch(model.OpDone(Ok(Nil)))
       Error(_) ->
-        dispatch(model.ShowToast(
-          "앗 재생 상태 저장이 안 됐어 ㅠㅠ 다시 해줘용",
-          model.ErrorToast,
-        ))
+        dispatch(model.ShowToast("앗 재생 상태 저장이 안 됐어 ㅠㅠ 다시 해줘용", model.ErrorToast))
     }
   })
 }

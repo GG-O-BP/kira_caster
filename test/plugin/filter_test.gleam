@@ -205,10 +205,7 @@ pub fn moderator_remove_word_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(
-        plugin: "filter",
-        message: "'spam' 삭제했당!",
-      ),
+      plugin.PluginResponse(plugin: "filter", message: "'spam' 삭제했당!"),
     ]
 }
 

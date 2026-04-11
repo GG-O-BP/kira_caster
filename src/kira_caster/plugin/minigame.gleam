@@ -76,10 +76,7 @@ fn play_rps(
 ) -> List(Event) {
   case choice == "가위" || choice == "바위" || choice == "보" {
     False -> [
-      plugin.PluginResponse(
-        plugin: "minigame",
-        message: "가위, 바위, 보 중에 하나 골라줘용",
-      ),
+      plugin.PluginResponse(plugin: "minigame", message: "가위, 바위, 보 중에 하나 골라줘용"),
     ]
     True -> {
       let opponent_idx = int.random(3)

@@ -118,7 +118,9 @@ fn login_body(error_message: String) -> Element(Nil) {
                       ],
                       [text(".backup")],
                     ),
-                    text(" 을 뒤에 붙여줘용 (예: kira_caster.db → kira_caster.db.backup)"),
+                    text(
+                      " 을 뒤에 붙여줘용 (예: kira_caster.db → kira_caster.db.backup)",
+                    ),
                   ]),
                   html.li([], [
                     text("프로그램 다시 켜면 처음 설정 화면이 나오고, 비밀번호를 새로 정할 수 있당 ㅎㅎ"),

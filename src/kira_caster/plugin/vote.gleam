@@ -19,7 +19,9 @@ fn handle(repo: Repository, event: Event) -> List(Event) {
     plugin.Command(user:, name: "투표", args: [choice], role: _) ->
       handle_cast(repo, user, choice)
     plugin.Command(user: _, name: "투표", args: _, role: _) -> [
-      resp("이렇게 써줘용 !투표 시작 <주제> <선택지1> <선택지2> ... / !투표 <선택지> / !투표 결과 / !투표 종료"),
+      resp(
+        "이렇게 써줘용 !투표 시작 <주제> <선택지1> <선택지2> ... / !투표 <선택지> / !투표 결과 / !투표 종료",
+      ),
     ]
     _ -> []
   }

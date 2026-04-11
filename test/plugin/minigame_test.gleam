@@ -101,10 +101,7 @@ pub fn rps_invalid_choice_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(
-        plugin: "minigame",
-        message: "가위, 바위, 보 중에 하나 골라줘용",
-      ),
+      plugin.PluginResponse(plugin: "minigame", message: "가위, 바위, 보 중에 하나 골라줘용"),
     ]
 }
 

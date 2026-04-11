@@ -19,10 +19,7 @@ pub fn moderator_add_command_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(
-        plugin: "custom_command",
-        message: "'인사' 명령 등록했당!",
-      ),
+      plugin.PluginResponse(plugin: "custom_command", message: "'인사' 명령 등록했당!"),
     ]
 }
 
@@ -63,10 +60,7 @@ pub fn moderator_delete_command_test() {
     )
   assert events
     == [
-      plugin.PluginResponse(
-        plugin: "custom_command",
-        message: "'인사' 명령 삭제했당!",
-      ),
+      plugin.PluginResponse(plugin: "custom_command", message: "'인사' 명령 삭제했당!"),
     ]
 }
 

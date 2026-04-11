@@ -8,7 +8,7 @@ pub fn handle_dashboard() -> Response {
     title: "kira_caster 관리 대시보드",
     head: dashboard_head(),
     body: dashboard_body(),
-    tail: "",
+    tail: code_editor_script(),
   )
 }
 
@@ -17,6 +17,7 @@ fn dashboard_head() -> String {
   <> "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>"
   <> "<link href=\"https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Roboto:wght@400;500&display=swap\" rel=\"stylesheet\">"
   <> "<style>"
+  <> "@font-face { font-family: 'CloudSansCode'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408@1.0/goorm-sans-code.woff2') format('woff2'); font-weight: normal; font-display: swap; }"
   <> dashboard_css()
   <> "</style>"
 }
@@ -26,6 +27,68 @@ fn dashboard_body() -> Element(Nil) {
     server_component.script(),
     server_component.element([server_component.route("/ws/dashboard")], []),
   ])
+}
+
+fn code_editor_script() -> String {
+  "<script type='module'>
+import {EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, placeholder as cmPlaceholder} from 'https://esm.sh/@codemirror/view@6';
+import {EditorState} from 'https://esm.sh/@codemirror/state@6';
+import {syntaxHighlighting, defaultHighlightStyle, indentOnInput, bracketMatching, foldGutter, foldKeymap} from 'https://esm.sh/@codemirror/language@6';
+import {defaultKeymap, history, historyKeymap} from 'https://esm.sh/@codemirror/commands@6';
+import {closeBrackets, closeBracketsKeymap, autocompletion, completionKeymap} from 'https://esm.sh/@codemirror/autocomplete@6';
+import {searchKeymap, highlightSelectionMatches} from 'https://esm.sh/@codemirror/search@6';
+import {rust} from 'https://esm.sh/@codemirror/lang-rust@6';
+var basicSetup = [
+  lineNumbers(), highlightActiveLineGutter(), highlightSpecialChars(), history(),
+  foldGutter(), drawSelection(), dropCursor(), EditorState.allowMultipleSelections.of(true),
+  indentOnInput(), syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
+  bracketMatching(), closeBrackets(), autocompletion(), rectangularSelection(),
+  crosshairCursor(), highlightActiveLine(), highlightSelectionMatches(),
+  keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...searchKeymap, ...historyKeymap, ...foldKeymap, ...completionKeymap]),
+];
+class CodeEditorElement extends HTMLElement {
+  constructor() { super(); this._value = ''; this._updating = false; }
+  connectedCallback() {
+    if (Object.prototype.hasOwnProperty.call(this, 'value')) { this._value = this.value; delete this.value; }
+    this.addEventListener('input', (e) => { if (e.target !== this) e.stopPropagation(); }, true);
+    this.style.display = 'block';
+    this.style.marginTop = '10px';
+    var root = this.getRootNode();
+    var ph = this.getAttribute('placeholder') || '';
+    var exts = [
+      ...basicSetup,
+      rust(),
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged && !this._updating) {
+          this._value = update.state.doc.toString();
+          this.dispatchEvent(new Event('input', {bubbles: true}));
+        }
+      }),
+      EditorView.theme({
+        '&': { border: '1px solid #E9EAEE', borderRadius: '8px', fontSize: '14px' },
+        '& .cm-content, & .cm-gutters': { fontFamily: \"'CloudSansCode', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace\" },
+        '&.cm-focused': { outline: 'none', borderColor: '#FD719B' },
+        '.cm-scroller': { minHeight: '200px', overflow: 'auto' },
+        '.cm-gutters': { borderRight: '1px solid #E9EAEE', background: '#fafafa' },
+        '.cm-activeLine': { background: 'rgba(253,113,155,0.04)' },
+        '.cm-activeLineGutter': { background: 'rgba(253,113,155,0.08)' },
+      }),
+    ];
+    if (ph) exts.push(cmPlaceholder(ph));
+    this.editor = new EditorView({ doc: this._value, extensions: exts, parent: this, root: root });
+  }
+  disconnectedCallback() { if (this.editor) { this.editor.destroy(); this.editor = null; } }
+  get value() { return this.editor ? this.editor.state.doc.toString() : this._value; }
+  set value(v) {
+    this._value = v || '';
+    if (!this.editor || this.editor.hasFocus || this._value === this.editor.state.doc.toString()) return;
+    this._updating = true;
+    this.editor.dispatch({ changes: {from: 0, to: this.editor.state.doc.length, insert: this._value} });
+    this._updating = false;
+  }
+}
+customElements.define('code-editor', CodeEditorElement);
+</script>"
 }
 
 fn dashboard_css() -> String {

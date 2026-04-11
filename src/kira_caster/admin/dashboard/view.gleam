@@ -1,5 +1,6 @@
 import gleam/dynamic/decode
 import gleam/int
+import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
@@ -411,16 +412,20 @@ fn commands_view(model: Model) -> Element(Msg) {
           ),
         ])
       model.GleamCmd ->
-        html.div([attribute.class("form-row")], [
-          html.textarea(
+        fragment([
+          element.element(
+            "code-editor",
             [
-              attribute.placeholder("Gleam 소스 코드를 여기에"),
+              attribute.property("value", json.string(model.cmd_source)),
+              attr("placeholder", "Gleam 소스 코드를 여기에"),
               event.on_input(model.UpdateCmdSource),
             ],
-            model.cmd_source,
+            [],
           ),
-          html.button([event.on_click(model.AddGleamCmd)], [
-            text("컴파일하고 추가하긔"),
+          html.div([attribute.class("form-row")], [
+            html.button([event.on_click(model.AddGleamCmd)], [
+              text("컴파일하고 추가하긔"),
+            ]),
           ]),
         ])
     },

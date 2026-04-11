@@ -9,9 +9,9 @@ RELEASE_DIR="kira_caster-${TARGET}"
 echo "=== kira_caster 릴리스 패키징 ==="
 echo "Target: ${TARGET}"
 
-# 1. Gleam 빌드 확인
-if [ ! -d "build/dev/erlang" ]; then
-  echo "빌드 디렉토리가 없습니다. gleam build를 먼저 실행하세요."
+# 1. Gleam shipment 확인
+if [ ! -d "build/erlang-shipment" ]; then
+  echo "빌드 디렉토리가 없습니다. gleam export erlang-shipment을 먼저 실행하세요."
   exit 1
 fi
 
@@ -47,7 +47,10 @@ for lib in $REQUIRED_LIBS; do
 done
 
 # 6. 앱 BEAM 파일 복사
-cp -r build/dev/erlang/* "${RELEASE_DIR}/erlang/"
+cp -r build/erlang-shipment/* "${RELEASE_DIR}/erlang/"
+# entrypoint 스크립트는 erlang/ 하위가 아닌 루트에 있어야 하므로 이동
+mv "${RELEASE_DIR}/erlang/entrypoint.sh" "${RELEASE_DIR}/" 2>/dev/null || true
+mv "${RELEASE_DIR}/erlang/entrypoint.ps1" "${RELEASE_DIR}/" 2>/dev/null || true
 
 # 7. 설정 파일 복사
 cp gleam.toml "${RELEASE_DIR}/"

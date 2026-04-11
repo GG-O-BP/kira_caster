@@ -28,18 +28,27 @@ jobs:
           gleam-version: "1.15.2"
           rebar3-version: "3"
 
-      - name: Install SQLite (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
-
-      - name: Install SQLite (macOS)
-        if: runner.os == 'macOS'
-        run: brew install sqlite
-
       - run: gleam deps download
-      - run: gleam build
-        env:
-          ESQLITE_USE_SYSTEM: "1"
+
+      - name: Fix rebar3 cp same-file issue (esqlite pc plugin)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p /tmp/bin_override
+          cat > /tmp/bin_override/cp << 'EOF'
+          #!/bin/bash
+          /bin/cp "$@" 2>/tmp/cp_err_last
+          RC=$?
+          if [ $RC -ne 0 ] && grep -q "are the same file" /tmp/cp_err_last; then
+            exit 0
+          fi
+          cat /tmp/cp_err_last >&2
+          exit $RC
+          EOF
+          chmod +x /tmp/bin_override/cp
+          echo "/tmp/bin_override" >> "$GITHUB_PATH"
+
+      - name: Export Erlang shipment
+        run: gleam export erlang-shipment
 
       - name: Package release with bundled ERTS
         if: runner.os != 'Windows'

@@ -77,6 +77,7 @@ fn dashboard_css() -> String {
     button:hover { opacity: 0.85; }
     button.danger { background: var(--color-error); }
     button.success { background: var(--color-success); }
+    button.primary { background: var(--gradient-main); }
     input, textarea { padding: 8px 12px; background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: var(--radius-input); font-family: inherit; }
     input:focus, textarea:focus { outline: none; border-color: var(--color-primary); }
     select { padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-input); font-family: inherit; }

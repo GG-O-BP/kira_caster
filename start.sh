@@ -33,8 +33,9 @@ check_port() {
       echo ""
       echo "해결 방법:"
       echo "  1. 다른 프로그램이 같은 포트를 사용하고 있는지 확인하세요"
-      echo "  2. .env 파일에서 KIRA_ADMIN_PORT를 다른 번호로 변경하세요"
-      echo "     예: KIRA_ADMIN_PORT=8081"
+      echo "  2. 포트 번호를 변경하려면 프로그램 폴더의 .env 파일을 열고"
+      echo "     KIRA_ADMIN_PORT=8081 로 수정한 뒤 저장하세요"
+      echo "     (.env 파일이 없으면 .env.example을 .env로 복사한 후 수정하세요)"
       exit 1
     fi
   elif command -v lsof &>/dev/null; then
@@ -43,8 +44,9 @@ check_port() {
       echo ""
       echo "해결 방법:"
       echo "  1. 다른 프로그램이 같은 포트를 사용하고 있는지 확인하세요"
-      echo "  2. .env 파일에서 KIRA_ADMIN_PORT를 다른 번호로 변경하세요"
-      echo "     예: KIRA_ADMIN_PORT=8081"
+      echo "  2. 포트 번호를 변경하려면 프로그램 폴더의 .env 파일을 열고"
+      echo "     KIRA_ADMIN_PORT=8081 로 수정한 뒤 저장하세요"
+      echo "     (.env 파일이 없으면 .env.example을 .env로 복사한 후 수정하세요)"
       exit 1
     fi
   fi

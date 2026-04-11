@@ -9,7 +9,7 @@ pub fn handle_login(error_message: String) -> Response {
     title: "kira_caster 로그인",
     head: login_head(),
     body: login_body(error_message),
-    tail: "",
+    tail: "<script>function togglePw(){var i=document.getElementById('login-pw');var b=event.target;if(i){if(i.type==='password'){i.type='text';b.textContent='숨기기'}else{i.type='password';b.textContent='보기'}}}</script>",
   )
 }
 
@@ -35,13 +35,33 @@ fn login_body(error_message: String) -> Element(Nil) {
           msg -> html.div([attribute.class("login-error")], [text(msg)])
         },
         html.form([attr("method", "POST"), attr("action", "/login")], [
-          html.input([
-            attribute.type_("password"),
-            attr("name", "password"),
-            attribute.placeholder("비밀번호"),
-            attr("autofocus", ""),
-            attr("required", ""),
-          ]),
+          html.div(
+            [
+              attr("style", "display:flex;gap:8px;align-items:center"),
+            ],
+            [
+              html.input([
+                attribute.type_("password"),
+                attr("name", "password"),
+                attr("id", "login-pw"),
+                attribute.placeholder("비밀번호"),
+                attr("autofocus", ""),
+                attr("required", ""),
+                attr("style", "flex:1"),
+              ]),
+              html.button(
+                [
+                  attribute.type_("button"),
+                  attr("onclick", "togglePw()"),
+                  attr(
+                    "style",
+                    "padding:8px 14px;font-size:0.85em;white-space:nowrap",
+                  ),
+                ],
+                [text("보기")],
+              ),
+            ],
+          ),
           html.button([attribute.type_("submit")], [text("로그인")]),
         ]),
         html.div([attr("style", "margin-top:20px;text-align:center")], [
@@ -56,28 +76,48 @@ fn login_body(error_message: String) -> Element(Nil) {
               ],
               [text("비밀번호를 잊으셨나요?")],
             ),
-            html.p(
+            html.div(
               [
                 attr(
                   "style",
-                  "font-size:0.82em;color:#888;margin-top:8px;line-height:1.6;text-align:left",
+                  "font-size:0.82em;color:#888;margin-top:8px;line-height:1.8;text-align:left",
                 ),
               ],
               [
-                text("비밀번호를 재설정하려면 프로그램을 종료한 후 같은 폴더에 있는 "),
-                html.code(
-                  [
-                    attr(
-                      "style",
-                      "background:rgba(253,113,155,0.1);padding:2px 6px;border-radius:4px",
+                html.p([attr("style", "margin-bottom:6px")], [
+                  text("비밀번호를 초기화하는 방법:"),
+                ]),
+                html.ol([attr("style", "padding-left:20px;margin-bottom:8px")], [
+                  html.li([], [text("프로그램을 종료하세요")]),
+                  html.li([], [
+                    text("같은 폴더에 있는 "),
+                    html.code(
+                      [
+                        attr(
+                          "style",
+                          "background:rgba(253,113,155,0.1);padding:2px 6px;border-radius:4px",
+                        ),
+                      ],
+                      [text("kira_caster.db")],
                     ),
-                  ],
-                  [text("kira_caster.db")],
-                ),
-                text(" 파일을 삭제하고 다시 시작하세요. 초기 설정 화면이 다시 나타납니다."),
-                html.br([]),
-                html.strong([attr("style", "color:var(--color-error)")], [
-                  text("주의: 저장된 모든 설정과 데이터가 초기화됩니다."),
+                    text(" 파일의 이름을 "),
+                    html.code(
+                      [
+                        attr(
+                          "style",
+                          "background:rgba(253,113,155,0.1);padding:2px 6px;border-radius:4px",
+                        ),
+                      ],
+                      [text("kira_caster.db.backup")],
+                    ),
+                    text("으로 변경하세요"),
+                  ]),
+                  html.li([], [
+                    text("프로그램을 다시 시작하면 초기 설정 화면이 나타납니다"),
+                  ]),
+                ]),
+                html.p([attr("style", "color:#aaa;font-size:0.95em")], [
+                  text("원래 파일(.backup)은 남아있으니 필요하면 되돌릴 수 있습니다."),
                 ]),
               ],
             ),
@@ -111,8 +151,8 @@ fn login_css() -> String {
     .login-subtitle { color: var(--color-text); font-size: 0.9em; margin-bottom: 24px; line-height: 1.5; }
     .login-error { background: rgba(247,112,97,0.1); color: var(--color-error); padding: 10px 14px; border-radius: var(--radius-input); margin-bottom: 16px; font-size: 0.9em; font-weight: 600; }
     form { display: flex; flex-direction: column; gap: 12px; }
-    input[type='password'] { padding: 12px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-input); font-family: inherit; font-size: 1em; text-align: center; }
-    input[type='password']:focus { outline: none; border-color: var(--color-primary); }
+    input[type='password'], input[type='text'] { padding: 12px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-input); font-family: inherit; font-size: 1em; text-align: center; }
+    input[type='password']:focus, input[type='text']:focus { outline: none; border-color: var(--color-primary); }
     button { padding: 12px; background: var(--gradient-secondary); color: #fff; border: none; border-radius: var(--radius-pill); cursor: pointer; font-family: inherit; font-weight: 600; font-size: 1em; transition: opacity .2s; }
     button:hover { opacity: 0.85; }
   "

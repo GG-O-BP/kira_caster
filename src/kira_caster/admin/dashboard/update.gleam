@@ -424,5 +424,13 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(..model, stream_key_visible: !model.stream_key_visible),
       effect.none(),
     )
+
+    model.ToggleSecretVisible(key) -> {
+      let updated = case list.contains(model.show_secrets, key) {
+        True -> list.filter(model.show_secrets, fn(k) { k != key })
+        False -> [key, ..model.show_secrets]
+      }
+      #(Model(..model, show_secrets: updated), effect.none())
+    }
   }
 }

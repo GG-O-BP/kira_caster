@@ -53,7 +53,7 @@ pub fn schedule_refresh() -> Effect(Msg) {
 
 pub fn dismiss_toast_after(id: Int) -> Effect(Msg) {
   async(fn(dispatch) {
-    process.sleep(3000)
+    process.sleep(5000)
     dispatch(model.DismissToast(id))
   })
 }
@@ -546,11 +546,27 @@ pub fn save_setting(
       }
       Error(_) ->
         dispatch(model.ShowToast(
-          "설정을 저장할 수 없습니다. 입력한 값이 올바른지 확인해주세요",
+          "'" <> setting_label(key) <> "' 설정을 저장할 수 없습니다. 입력한 값을 확인해주세요",
           model.ErrorToast,
         ))
     }
   })
+}
+
+fn setting_label(key: String) -> String {
+  case key {
+    "admin_key" -> "관리자 비밀번호"
+    "cime_client_id" -> "씨미 앱 ID"
+    "cime_client_secret" -> "씨미 앱 비밀키"
+    "youtube_api_key" -> "YouTube API 키"
+    "cooldown_ms" -> "명령어 쿨다운"
+    "attendance_points" -> "출석 포인트"
+    "dice_win_points" -> "주사위 승리 포인트"
+    "dice_loss_points" -> "주사위 패배 포인트"
+    "rps_win_points" -> "가위바위보 승리 포인트"
+    "rps_loss_points" -> "가위바위보 패배 포인트"
+    other -> other
+  }
 }
 
 @external(erlang, "kira_caster_ffi", "restart_application")

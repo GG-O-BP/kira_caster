@@ -61,7 +61,7 @@ fn setup_done_body() -> Element(Nil) {
 }
 
 fn setup_script() -> String {
-  "<script>function copyUri(btn){var t=document.getElementById('redirect-uri');if(t){navigator.clipboard.writeText(t.textContent).then(function(){btn.textContent='복사됨!';setTimeout(function(){btn.textContent='복사'},2000)}).catch(function(){var r=document.createRange();r.selectNodeContents(t);var s=window.getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');btn.textContent='복사됨!';setTimeout(function(){btn.textContent='복사'},2000)})}}</script>"
+  "<script>function copyUri(btn){var t=document.getElementById('redirect-uri');if(t){navigator.clipboard.writeText(t.textContent).then(function(){btn.textContent='복사됨!';setTimeout(function(){btn.textContent='복사'},2000)}).catch(function(){var r=document.createRange();r.selectNodeContents(t);var s=window.getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');btn.textContent='복사됨!';setTimeout(function(){btn.textContent='복사'},2000)})}}function togglePw(id,btn){var i=document.getElementById(id);if(i){if(i.type==='password'){i.type='text';btn.textContent='숨기기'}else{i.type='password';btn.textContent='보기'}}}</script>"
 }
 
 fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
@@ -83,11 +83,31 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
             html.p([attribute.class("setup-hint")], [
               text("대시보드에 접속할 때 사용할 비밀번호입니다. 비워두면 비밀번호 없이 누구나 접근할 수 있습니다."),
             ]),
-            html.input([
-              attribute.type_("password"),
-              attr("name", "admin_key"),
-              attribute.placeholder("비밀번호 (선택사항 - 비워둬도 됩니다)"),
-            ]),
+            html.div(
+              [
+                attr("style", "display:flex;gap:8px;align-items:center"),
+              ],
+              [
+                html.input([
+                  attribute.type_("password"),
+                  attr("name", "admin_key"),
+                  attr("id", "admin-key-input"),
+                  attribute.placeholder("비밀번호 (선택사항 - 비워둬도 됩니다)"),
+                  attr("style", "flex:1"),
+                ]),
+                html.button(
+                  [
+                    attribute.type_("button"),
+                    attr("onclick", "togglePw('admin-key-input',this)"),
+                    attr(
+                      "style",
+                      "padding:8px 14px;font-size:0.85em;margin-top:0;white-space:nowrap",
+                    ),
+                  ],
+                  [text("보기")],
+                ),
+              ],
+            ),
           ]),
           // Step 2: CIME settings
           html.div([attribute.class("setup-section")], [
@@ -103,19 +123,21 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
               ]),
               html.ol([attr("style", "padding-left:20px;line-height:1.8")], [
                 html.li([], [
-                  text("아래 버튼으로 씨미 개발자 센터에 접속하세요"),
+                  text("아래 '씨미 개발자 센터 열기' 버튼을 클릭하세요 (씨미 로그인이 필요합니다)"),
                 ]),
                 html.li([], [
-                  text("\"새 앱 만들기\"를 클릭하세요"),
+                  text("화면 오른쪽 위의 '새 앱 만들기' 버튼을 클릭하세요"),
                 ]),
                 html.li([], [
                   text("앱 이름을 자유롭게 입력하세요"),
                 ]),
                 html.li([], [
-                  text("Redirect URI에 아래 주소를 복사해서 붙여넣으세요"),
+                  text(
+                    "'Redirect URI' 칸에 아래 주소를 복사해서 붙여넣으세요 (봇이 로그인 후 돌아올 주소입니다)",
+                  ),
                 ]),
                 html.li([], [
-                  text("앱 생성 후 표시되는 앱 ID와 비밀키를 아래에 입력하세요"),
+                  text("앱을 만들면 '앱 ID'와 '비밀키'가 표시됩니다. 이 두 값을 아래 칸에 붙여넣으세요"),
                 ]),
               ]),
               html.div(
@@ -160,13 +182,33 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
             ]),
             html.input([
               attr("name", "cime_client_id"),
-              attribute.placeholder("앱 ID - 개발자 센터에서 복사"),
+              attribute.placeholder("앱 ID (Client ID) - 개발자 센터에서 복사한 값"),
             ]),
-            html.input([
-              attr("name", "cime_client_secret"),
-              attribute.placeholder("앱 비밀키 - 개발자 센터에서 복사"),
-              attribute.type_("password"),
-            ]),
+            html.div(
+              [
+                attr("style", "display:flex;gap:8px;align-items:center"),
+              ],
+              [
+                html.input([
+                  attr("name", "cime_client_secret"),
+                  attribute.placeholder("앱 비밀키 (Secret Key) - 개발자 센터에서 복사한 값"),
+                  attribute.type_("password"),
+                  attr("id", "cime-secret-input"),
+                  attr("style", "flex:1"),
+                ]),
+                html.button(
+                  [
+                    attribute.type_("button"),
+                    attr("onclick", "togglePw('cime-secret-input',this)"),
+                    attr(
+                      "style",
+                      "padding:8px 14px;font-size:0.85em;margin-top:0;white-space:nowrap",
+                    ),
+                  ],
+                  [text("보기")],
+                ),
+              ],
+            ),
             el("details", [], [
               el(
                 "summary",
@@ -180,7 +222,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
               ),
               html.p([attribute.class("setup-hint")], [
                 text(
-                  "씨미에서 봇을 사용하려면 '앱'을 등록해야 합니다. 앱 ID와 비밀키는 봇이 씨미에 로그인할 때 필요한 열쇠 같은 것입니다. 채널 정보는 연동 후 자동으로 가져옵니다.",
+                  "씨미에서 봇을 사용하려면 '앱'을 등록해야 합니다. 마치 새 계정을 만드는 것과 비슷해요. 앱 ID와 비밀키는 봇의 아이디/비밀번호라고 생각하면 됩니다. Redirect URI는 로그인 성공 후 돌아올 주소예요 (자동으로 채워져 있으니 그대로 복사하면 됩니다). 채널 정보는 연동 후 자동으로 가져옵니다.",
                 ),
               ]),
             ]),

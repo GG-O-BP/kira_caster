@@ -153,6 +153,8 @@ pub type Model {
     ch_viewer_count: Int,
     stream_key: String,
     stream_key_visible: Bool,
+    // Secret visibility toggle (list of setting keys currently shown)
+    show_secrets: List(String),
   )
 }
 
@@ -249,6 +251,7 @@ pub type Msg {
   LiveStatusLoaded(Bool, String, Int)
   StreamKeyLoaded(String)
   ToggleStreamKey
+  ToggleSecretVisible(String)
 }
 
 // --- Model constructor ---
@@ -315,5 +318,6 @@ pub fn new(ctx: DashboardContext) -> Model {
     ch_viewer_count: 0,
     stream_key: "",
     stream_key_visible: False,
+    show_secrets: [],
   )
 }

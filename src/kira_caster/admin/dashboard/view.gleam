@@ -117,21 +117,35 @@ fn tab_btn(label: String, tab: Tab, active: Tab) -> Element(Msg) {
 // --- Active panel dispatch --------------------------------------------------
 
 fn active_panel(model: Model) -> Element(Msg) {
-  case model.active_tab {
-    model.Status -> status_view(model)
-    model.Users -> users_view(model)
-    model.Words -> words_view(model)
-    model.Commands -> commands_view(model)
-    model.Quizzes -> quizzes_view(model)
-    model.Votes -> votes_view(model)
-    model.Plugins -> plugins_view(model)
-    model.Settings -> settings_view(model)
-    model.Songs -> songs_view(model)
-    model.CimeAuth -> cime_auth_view(model)
-    model.Broadcast -> broadcast_view(model)
-    model.ChatSettings -> chat_settings_view(model)
-    model.BlockManage -> block_manage_view(model)
-    model.ChannelInfo -> channel_info_view(model)
+  let #(desc, content) = case model.active_tab {
+    model.Status -> #("", status_view(model))
+    model.Users -> #("채팅에 참여한 사용자들의 포인트와 출석 기록을 확인합니다", users_view(model))
+    model.Words -> #("채팅에서 자동으로 차단할 단어를 관리합니다", words_view(model))
+    model.Commands -> #("채팅에서 !명령어로 사용할 봇 응답을 설정합니다", commands_view(model))
+    model.Quizzes -> #(
+      "채팅 퀴즈 문제를 관리합니다. 정답을 맞히면 포인트를 받습니다",
+      quizzes_view(model),
+    )
+    model.Votes -> #("시청자 투표를 만들고 결과를 확인합니다", votes_view(model))
+    model.Plugins -> #("봇의 개별 기능을 켜고 끌 수 있습니다", plugins_view(model))
+    model.Settings -> #("봇의 동작 방식을 조정합니다", settings_view(model))
+    model.Songs -> #("시청자가 신청한 YouTube 노래 목록을 관리합니다", songs_view(model))
+    model.CimeAuth -> #("", cime_auth_view(model))
+    model.Broadcast -> #("", broadcast_view(model))
+    model.ChatSettings -> #("", chat_settings_view(model))
+    model.BlockManage -> #("", block_manage_view(model))
+    model.ChannelInfo -> #("", channel_info_view(model))
+  }
+  case desc {
+    "" -> content
+    d ->
+      fragment([
+        html.p(
+          [attr("style", "font-size:0.85em;color:#888;margin-bottom:12px")],
+          [text(d)],
+        ),
+        content,
+      ])
   }
 }
 
@@ -178,7 +192,7 @@ fn status_view(model: Model) -> Element(Msg) {
             [attr("style", "margin-bottom:12px;color:#888;line-height:1.5")],
             [
               text(
-                "씨미(ci.me)와 연결하지 않은 상태입니다. 대부분의 기능을 미리 체험할 수 있지만, 실제 채팅방에서 봇을 사용하려면 씨미 연동이 필요합니다.",
+                "현재 테스트 모드입니다. 실제 채팅방 연동 없이 봇의 기능을 미리 체험할 수 있습니다. 실제 채팅방에서 봇을 사용하려면 아래 '씨미 연동'에서 연결해주세요.",
               ),
             ],
           ),
@@ -348,13 +362,28 @@ fn commands_view(model: Model) -> Element(Msg) {
     ]),
     case model.cmd_type {
       model.TextCmd ->
-        html.div([attribute.class("form-row")], [
-          html.input([
-            attribute.placeholder("응답"),
-            attribute.value(model.cmd_response),
-            event.on_input(model.UpdateCmdResponse),
+        fragment([
+          html.div([attribute.class("form-row")], [
+            html.input([
+              attribute.placeholder("응답"),
+              attribute.value(model.cmd_response),
+              event.on_input(model.UpdateCmdResponse),
+            ]),
+            html.button([event.on_click(model.AddTextCmd)], [text("추가")]),
           ]),
-          html.button([event.on_click(model.AddTextCmd)], [text("추가")]),
+          html.div(
+            [
+              attr(
+                "style",
+                "font-size:0.8em;color:#aaa;margin-top:4px;padding-left:4px",
+              ),
+            ],
+            [
+              text(
+                "사용 가능한 변수: {{user}} = 사용자 이름, {{points}} = 보유 포인트, {{count}} = 출석 횟수",
+              ),
+            ],
+          ),
         ])
       model.GleamCmd ->
         html.div([attribute.class("form-row")], [
@@ -588,10 +617,34 @@ fn plugins_view(model: Model) -> Element(Msg) {
 
 fn settings_view(model: Model) -> Element(Msg) {
   let system_defs = [
-    #("admin_key", "관리자 비밀번호", "", True, "대시보드 접속 시 필요한 비밀번호"),
-    #("cime_client_id", "씨미 앱 ID", "", False, "씨미 개발자 센터에서 발급받은 앱 ID"),
-    #("cime_client_secret", "씨미 앱 비밀키", "", True, "씨미 개발자 센터에서 발급받은 앱 비밀키"),
-    #("youtube_api_key", "YouTube API 키", "", False, "신청곡 정보 조회용 (없어도 기본 동작)"),
+    #(
+      "admin_key",
+      "관리자 비밀번호",
+      "",
+      True,
+      "이 대시보드에 접속할 때 사용할 비밀번호 (비워두면 누구나 접근 가능)",
+    ),
+    #(
+      "cime_client_id",
+      "씨미 앱 ID",
+      "",
+      False,
+      "씨미 개발자 센터 > 내 앱에서 확인할 수 있는 앱 ID (Client ID)",
+    ),
+    #(
+      "cime_client_secret",
+      "씨미 앱 비밀키",
+      "",
+      True,
+      "씨미 개발자 센터 > 내 앱에서 확인할 수 있는 비밀키 (Secret Key)",
+    ),
+    #(
+      "youtube_api_key",
+      "YouTube API 키",
+      "",
+      False,
+      "YouTube 영상 제목/길이 자동 조회에 사용 (없으면 URL만 표시됨, 대부분 비워둬도 OK)",
+    ),
   ]
   let game_defs = [
     #(
@@ -599,7 +652,7 @@ fn settings_view(model: Model) -> Element(Msg) {
       "명령어 쿨다운",
       "5000",
       False,
-      "같은 명령어를 다시 쓸 수 있는 대기 시간 (1000 = 1초)",
+      "같은 명령어를 다시 쓸 수 있는 대기 시간 (예: 5000 = 5초)",
     ),
     #("attendance_points", "출석 포인트", "10", False, "하루 한 번 출석 시 받는 포인트"),
     #("dice_win_points", "주사위 승리 포인트", "50", False, "주사위 게임에서 이기면 받는 포인트"),
@@ -621,8 +674,8 @@ fn settings_view(model: Model) -> Element(Msg) {
     ),
     html.div([attr("style", "margin-top:12px")], [
       html.button(
-        [attribute.class("danger"), event.on_click(model.RestartApp)],
-        [text("재시작하여 적용")],
+        [attribute.class("primary"), event.on_click(model.RestartApp)],
+        [text("변경사항 적용 (재시작)")],
       ),
     ]),
     section_heading_top("게임 설정"),
@@ -648,6 +701,7 @@ fn setting_row(
   hint: String,
 ) -> Element(Msg) {
   let val = find_setting(model.editing_settings, key, default)
+  let is_visible = list.contains(model.show_secrets, key)
   html.div([attr("style", "margin-top:10px")], [
     html.div([attribute.class("form-row")], [
       html.label([attr("style", "min-width:180px;font-weight:600")], [
@@ -655,13 +709,29 @@ fn setting_row(
       ]),
       html.input([
         attribute.value(val),
-        case is_secret {
+        case is_secret && !is_visible {
           True -> attribute.type_("password")
           False -> attribute.type_("text")
         },
         event.on_input(fn(v) { model.UpdateSettingEdit(key, v) }),
         attr("style", "flex:1;min-width:120px"),
       ]),
+      case is_secret {
+        True ->
+          html.button(
+            [
+              attr("style", "min-width:56px"),
+              event.on_click(model.ToggleSecretVisible(key)),
+            ],
+            [
+              text(case is_visible {
+                True -> "숨기기"
+                False -> "보기"
+              }),
+            ],
+          )
+        False -> text("")
+      },
       html.button([event.on_click(model.SaveSetting(key, val))], [
         text("저장"),
       ]),
@@ -743,7 +813,9 @@ fn songs_view(model: Model) -> Element(Msg) {
     section_heading_top("곡 추가"),
     html.div([attribute.class("form-row")], [
       html.input([
-        attribute.placeholder("YouTube URL"),
+        attribute.placeholder(
+          "YouTube 영상 주소 (예: https://youtube.com/watch?v=...)",
+        ),
         attribute.value(model.song_url),
         event.on_input(model.UpdateSongUrl),
       ]),

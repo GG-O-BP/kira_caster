@@ -30,21 +30,19 @@ echo "ERTS: ${ERTS_VERSION}"
 
 # 3. 릴리스 디렉토리 구성
 rm -rf "$RELEASE_DIR"
-mkdir -p "${RELEASE_DIR}/erts/bin"
+mkdir -p "${RELEASE_DIR}/${ERTS_VERSION}/bin"
+mkdir -p "${RELEASE_DIR}/bin"
 mkdir -p "${RELEASE_DIR}/lib"
 mkdir -p "${RELEASE_DIR}/erlang"
 
-# 4. ERTS 바이너리 복사 (erl, erlexec, beam.smp 등)
-cp -r "${ERTS_DIR}/bin/"* "${RELEASE_DIR}/erts/bin/"
+# 4. ERTS 바이너리 복사 (erlexec, beam.smp 등)
+cp -r "${ERTS_DIR}/bin/"* "${RELEASE_DIR}/${ERTS_VERSION}/bin/"
 
-# 5. 필수 OTP 라이브러리 복사
-REQUIRED_LIBS="kernel stdlib compiler crypto ssl inets public_key asn1"
-for lib in $REQUIRED_LIBS; do
-  LIB_DIR=$(ls -d "${ERL_ROOT}/lib/${lib}-"* 2>/dev/null | head -1)
-  if [ -d "$LIB_DIR" ]; then
-    cp -r "$LIB_DIR" "${RELEASE_DIR}/lib/"
-  fi
-done
+# 4.1 OTP boot 파일 복사 (erlexec가 필요)
+cp "${ERL_ROOT}/bin/"*.boot "${RELEASE_DIR}/bin/" 2>/dev/null || true
+
+# 5. OTP 라이브러리 전체 복사
+cp -r "${ERL_ROOT}/lib/"* "${RELEASE_DIR}/lib/"
 
 # 6. 앱 BEAM 파일 복사
 cp -r build/erlang-shipment/* "${RELEASE_DIR}/erlang/"
@@ -73,7 +71,7 @@ if [ -f .env ]; then
   set -a; source .env; set +a
 fi
 
-PORT="${KIRA_ADMIN_PORT:-8080}"
+PORT="${KIRA_ADMIN_PORT:-9693}"
 echo "kira_caster 시작 중... http://localhost:$PORT"
 
 # 브라우저 자동 열기
@@ -84,8 +82,9 @@ elif command -v open &>/dev/null; then
 fi
 
 # 번들된 ERTS 사용
+ERTS_DIR=$(ls -d "$SCRIPT_DIR"/erts-* 2>/dev/null | head -1)
 export ROOTDIR="$SCRIPT_DIR"
-export BINDIR="$SCRIPT_DIR/erts/bin"
+export BINDIR="$ERTS_DIR/bin"
 export EMU=beam
 export PROGNAME=erl
 
@@ -95,10 +94,11 @@ for d in "$SCRIPT_DIR/erlang"/*/ebin; do
 done
 export ERL_LIBS
 
-exec "$BINDIR/erl" \
+exec "$BINDIR/erlexec" \
+  -boot "$ROOTDIR/bin/start" \
   -pa erlang/*/ebin \
   -noshell \
-  -eval "gleam@@main:run(kira_caster)"
+  -eval "kira_caster@@main:run(kira_caster)"
 LAUNCHER
 chmod +x "${RELEASE_DIR}/start.sh"
 
@@ -108,7 +108,7 @@ cat > "${RELEASE_DIR}/start.bat" << 'BATCH'
 chcp 65001 >nul
 cd /d "%~dp0"
 if exist .env (for /f "usebackq tokens=1,* delims==" %%a in (".env") do set "%%a=%%b")
-if not defined KIRA_ADMIN_PORT set KIRA_ADMIN_PORT=8080
+if not defined KIRA_ADMIN_PORT set KIRA_ADMIN_PORT=9693
 echo kira_caster starting on http://localhost:%KIRA_ADMIN_PORT%
 start "" "http://localhost:%KIRA_ADMIN_PORT%"
 erl -pa erlang/*/ebin -noshell -eval "gleam@@main:run(kira_caster)"

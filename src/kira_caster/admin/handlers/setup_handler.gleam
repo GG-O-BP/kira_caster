@@ -40,7 +40,7 @@ pub fn handle_setup_submit(req: Request, repo: Repository) -> Response {
       let _ =
         repo.set_setting(
           "cime_redirect_uri",
-          "http://localhost:8080/oauth/callback",
+          "http://localhost:9693/oauth/callback",
         )
       Nil
     }

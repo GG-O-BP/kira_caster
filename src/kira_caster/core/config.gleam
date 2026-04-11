@@ -31,7 +31,7 @@ pub fn default() -> Config {
     rps_win_points: 30,
     rps_loss_points: -10,
     max_reconnect_attempts: 5,
-    admin_port: 8080,
+    admin_port: 9693,
     admin_key: "",
     secret_key_base: "kira_caster_default_secret_key_please_change_in_production",
     youtube_api_key: "",

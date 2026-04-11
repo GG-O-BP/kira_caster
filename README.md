@@ -55,7 +55,7 @@ cp .env.example .env     # 설정 파일 복사 (원하면 편집)
 docker compose up         # 실행!
 ```
 
-브라우저에서 `http://localhost:8080` 접속하면 설정 마법사가 나와!
+브라우저에서 `http://localhost:9693` 접속하면 설정 마법사가 나와!
 
 ### 방법 3: 소스에서 직접 실행
 
@@ -100,7 +100,7 @@ gleam build           # 빌드하기
 |----------|------|--------|
 | `KIRA_DB_PATH` | 데이터베이스 파일 경로 | `kira_caster.db` |
 | `KIRA_COOLDOWN_MS` | 명령어 쿨타임 (밀리초) | `5000` |
-| `KIRA_ADMIN_PORT` | 대시보드 포트 | `8080` |
+| `KIRA_ADMIN_PORT` | 대시보드 포트 | `9693` |
 | `KIRA_ADMIN_KEY` | 대시보드 비밀번호 (비워두면 누구나 접근 가능) | `` |
 | `KIRA_SECRET_KEY` | 서버 암호화 키 | 기본값 있음 |
 | `KIRA_ATTENDANCE_POINTS` | 출석 보상 포인트 | `10` |
@@ -111,7 +111,7 @@ gleam build           # 빌드하기
 | `KIRA_YOUTUBE_API_KEY` | YouTube Data API v3 키 (없으면 제목 대신 영상 ID 사용) | `` |
 | `CIME_CLIENT_ID` | 씨미 앱 Client ID (설정하면 씨미 연동 활성화!) | `` |
 | `CIME_CLIENT_SECRET` | 씨미 앱 Client Secret | `` |
-| `CIME_REDIRECT_URI` | OAuth 콜백 URL | `http://localhost:8080/oauth/callback` |
+| `CIME_REDIRECT_URI` | OAuth 콜백 URL | `http://localhost:9693/oauth/callback` |
 | `CIME_CHANNEL_ID` | 봇이 연결할 채널 ID (씨미 연동 후 자동 조회됨!) | `` |
 
 > 위 환경변수를 설정하지 않아도 설정 마법사나 대시보드에서 전부 설정할 수 있어! 환경변수 없이 시작해도 아무 문제 없어!
@@ -183,7 +183,7 @@ gleam build           # 빌드하기
 ### OBS 설정
 
 1. OBS에서 **브라우저 소스** 추가
-2. URL에 `http://localhost:8080/player` 입력
+2. URL에 `http://localhost:9693/player` 입력
 3. 곡이 재생되면 자동으로 영상이 나오고, 끝나면 다음 곡으로 넘어가!
 
 ### 대시보드 "신청곡" 탭
@@ -300,60 +300,60 @@ pub fn handle(user: String, args: List(String)) -> String {
 
 ```sh
 # 상태 확인
-curl http://localhost:8080/status
+curl http://localhost:9693/status
 
 # 유저 목록
-curl http://localhost:8080/users
+curl http://localhost:9693/users
 
 # 금칙어 관리
-curl http://localhost:8080/banned-words
-curl -X POST http://localhost:8080/banned-words -H "Content-Type: application/json" -d '{"word":"나쁜말"}'
-curl -X DELETE http://localhost:8080/banned-words -H "Content-Type: application/json" -d '{"word":"나쁜말"}'
+curl http://localhost:9693/banned-words
+curl -X POST http://localhost:9693/banned-words -H "Content-Type: application/json" -d '{"word":"나쁜말"}'
+curl -X DELETE http://localhost:9693/banned-words -H "Content-Type: application/json" -d '{"word":"나쁜말"}'
 
 # 커스텀 명령어 관리
-curl http://localhost:8080/commands
-curl -X POST http://localhost:8080/commands -H "Content-Type: application/json" -d '{"name":"인사","response":"{{user}}님 안녕!"}'
-curl -X DELETE http://localhost:8080/commands -H "Content-Type: application/json" -d '{"name":"인사"}'
+curl http://localhost:9693/commands
+curl -X POST http://localhost:9693/commands -H "Content-Type: application/json" -d '{"name":"인사","response":"{{user}}님 안녕!"}'
+curl -X DELETE http://localhost:9693/commands -H "Content-Type: application/json" -d '{"name":"인사"}'
 
 # 고급 명령어 (Gleam)
-curl -X POST http://localhost:8080/commands/advanced -H "Content-Type: application/json" -d '{"name":"greet","source_code":"pub fn handle(user: String, _args: List(String)) -> String { user <> \"님!\" }"}'
-curl -X POST http://localhost:8080/commands/compile -H "Content-Type: application/json" -d '{"name":"greet"}'
+curl -X POST http://localhost:9693/commands/advanced -H "Content-Type: application/json" -d '{"name":"greet","source_code":"pub fn handle(user: String, _args: List(String)) -> String { user <> \"님!\" }"}'
+curl -X POST http://localhost:9693/commands/compile -H "Content-Type: application/json" -d '{"name":"greet"}'
 
 # 투표 관리
-curl http://localhost:8080/votes
-curl -X POST http://localhost:8080/votes -H "Content-Type: application/json" -d '{"topic":"좋아하는 색","options":["빨강","파랑"]}'
-curl -X DELETE http://localhost:8080/votes
+curl http://localhost:9693/votes
+curl -X POST http://localhost:9693/votes -H "Content-Type: application/json" -d '{"topic":"좋아하는 색","options":["빨강","파랑"]}'
+curl -X DELETE http://localhost:9693/votes
 
 # 퀴즈 관리
-curl http://localhost:8080/quizzes
-curl -X POST http://localhost:8080/quizzes -H "Content-Type: application/json" -d '{"question":"1+1=?","answer":"2","reward":10}'
-curl -X DELETE http://localhost:8080/quizzes -H "Content-Type: application/json" -d '{"question":"1+1=?"}'
+curl http://localhost:9693/quizzes
+curl -X POST http://localhost:9693/quizzes -H "Content-Type: application/json" -d '{"question":"1+1=?","answer":"2","reward":10}'
+curl -X DELETE http://localhost:9693/quizzes -H "Content-Type: application/json" -d '{"question":"1+1=?"}'
 
 # 플러그인 관리
-curl http://localhost:8080/plugins
-curl -X POST http://localhost:8080/plugins -H "Content-Type: application/json" -d '{"name":"attendance","enabled":false}'
+curl http://localhost:9693/plugins
+curl -X POST http://localhost:9693/plugins -H "Content-Type: application/json" -d '{"name":"attendance","enabled":false}'
 
 # 신청곡 관리 (인증 불필요!)
-curl http://localhost:8080/songs
-curl http://localhost:8080/songs/current
-curl -X POST http://localhost:8080/songs -H "Content-Type: application/json" -d '{"video_id":"dQw4w9WgXcQ","title":"Never Gonna Give You Up","duration_seconds":212}'
-curl -X DELETE http://localhost:8080/songs -H "Content-Type: application/json" -d '{"id":1}'
-curl -X POST http://localhost:8080/songs/next
-curl -X POST http://localhost:8080/songs/previous
-curl -X POST http://localhost:8080/songs/replay
-curl -X POST http://localhost:8080/songs/reorder -H "Content-Type: application/json" -d '{"id":2,"new_position":0}'
+curl http://localhost:9693/songs
+curl http://localhost:9693/songs/current
+curl -X POST http://localhost:9693/songs -H "Content-Type: application/json" -d '{"video_id":"dQw4w9WgXcQ","title":"Never Gonna Give You Up","duration_seconds":212}'
+curl -X DELETE http://localhost:9693/songs -H "Content-Type: application/json" -d '{"id":1}'
+curl -X POST http://localhost:9693/songs/next
+curl -X POST http://localhost:9693/songs/previous
+curl -X POST http://localhost:9693/songs/replay
+curl -X POST http://localhost:9693/songs/reorder -H "Content-Type: application/json" -d '{"id":2,"new_position":0}'
 ```
 
 ```sh
 # 씨미 연동 (CIME_CLIENT_ID 설정 시 활성화)
-curl http://localhost:8080/oauth/status
-curl http://localhost:8080/cime/live-status
-curl http://localhost:8080/cime/live-setting
-curl http://localhost:8080/cime/chat-settings
-curl http://localhost:8080/cime/blocked-users
-curl http://localhost:8080/cime/channel-info
-curl http://localhost:8080/cime/stream-key
-curl "http://localhost:8080/cime/categories?keyword=게임"
+curl http://localhost:9693/oauth/status
+curl http://localhost:9693/cime/live-status
+curl http://localhost:9693/cime/live-setting
+curl http://localhost:9693/cime/chat-settings
+curl http://localhost:9693/cime/blocked-users
+curl http://localhost:9693/cime/channel-info
+curl http://localhost:9693/cime/stream-key
+curl "http://localhost:9693/cime/categories?keyword=게임"
 ```
 
 `KIRA_ADMIN_KEY`(또는 설정 마법사에서 설정한 비밀번호)가 있으면 인증이 필요해져!
@@ -362,7 +362,7 @@ curl "http://localhost:8080/cime/categories?keyword=게임"
 - **API**: Bearer 토큰 사용
 
 ```sh
-curl -H "Authorization: Bearer 내비밀키" http://localhost:8080/users
+curl -H "Authorization: Bearer 내비밀키" http://localhost:9693/users
 ```
 
 ## 구현 현황

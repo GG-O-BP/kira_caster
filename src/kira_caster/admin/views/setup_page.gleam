@@ -165,7 +165,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
                         "flex:1;padding:6px 10px;background:rgba(253,113,155,0.1);border-radius:4px;font-size:0.88em",
                       ),
                     ],
-                    [text("http://localhost:8080/oauth/callback")],
+                    [text("http://localhost:9693/oauth/callback")],
                   ),
                   html.button(
                     [

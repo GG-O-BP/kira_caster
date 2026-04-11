@@ -16,7 +16,7 @@ if [ -f .env ]; then
   source .env
   set +a
 fi
-PORT="${KIRA_ADMIN_PORT:-8080}"
+PORT="${KIRA_ADMIN_PORT:-9693}"
 
 echo ""
 echo "====================================="

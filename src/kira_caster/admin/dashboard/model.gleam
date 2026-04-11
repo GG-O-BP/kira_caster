@@ -104,11 +104,13 @@ pub type Model {
     cmd_response: String,
     cmd_type: CmdType,
     cmd_source: String,
+    editing_cmd: Option(String),
     // Quizzes
     quizzes: List(#(String, String, Int)),
     quiz_question: String,
     quiz_answer: String,
     quiz_reward: String,
+    editing_quiz: Option(String),
     // Votes
     vote_active: Bool,
     vote_topic_display: String,
@@ -188,6 +190,8 @@ pub type Msg {
   AddTextCmd
   AddGleamCmd
   DeleteCmd(String)
+  EditCmd(String)
+  CancelEditCmd
   CompileCmd(String)
   CmdOpDone(Result(String, String))
   // Quizzes
@@ -197,6 +201,8 @@ pub type Msg {
   UpdateQuizR(String)
   AddQuiz
   DeleteQuiz(String)
+  EditQuiz(String)
+  CancelEditQuiz
   // Votes
   VoteLoaded(Bool, String, List(VoteResult))
   UpdateVoteTopic(String)
@@ -279,10 +285,12 @@ pub fn new(ctx: DashboardContext) -> Model {
     cmd_response: "",
     cmd_type: TextCmd,
     cmd_source: "",
+    editing_cmd: None,
     quizzes: [],
     quiz_question: "",
     quiz_answer: "",
     quiz_reward: "10",
+    editing_quiz: None,
     vote_active: False,
     vote_topic_display: "",
     vote_results: [],

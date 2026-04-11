@@ -1,3 +1,4 @@
+import gleam/list
 import kira_caster/storage/repository.{UserData}
 import kira_caster/storage/sqlight_repo
 
@@ -137,15 +138,11 @@ pub fn delete_command_test() {
 
 pub fn get_all_commands_test() {
   let assert Ok(repo) = sqlight_repo.new(":memory:")
-  let assert Ok(Nil) = repo.set_command("인사", "안녕!")
-  let assert Ok(Nil) = repo.set_command("규칙", "규칙을 지켜주세요")
-  let assert Ok(commands) = repo.get_all_commands()
-  assert {
-    case commands {
-      [_, _] -> True
-      _ -> False
-    }
-  }
+  let assert Ok(before) = repo.get_all_commands()
+  let assert Ok(Nil) = repo.set_command("테스트1", "안녕!")
+  let assert Ok(Nil) = repo.set_command("테스트2", "규칙을 지켜주세요")
+  let assert Ok(after) = repo.get_all_commands()
+  assert list.length(after) == list.length(before) + 2
 }
 
 pub fn set_command_upsert_test() {
@@ -158,30 +155,28 @@ pub fn set_command_upsert_test() {
 
 pub fn add_and_get_quizzes_test() {
   let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(before) = repo.get_quiz_count()
   let assert Ok(Nil) = repo.add_quiz("1+1=?", "2", 10)
   let assert Ok(Nil) = repo.add_quiz("수도는?", "서울", 20)
-  let assert Ok(quizzes) = repo.get_all_quizzes()
-  assert {
-    case quizzes {
-      [_, _] -> True
-      _ -> False
-    }
-  }
+  let assert Ok(after) = repo.get_quiz_count()
+  assert after == before + 2
 }
 
 pub fn delete_quiz_test() {
   let assert Ok(repo) = sqlight_repo.new(":memory:")
+  let assert Ok(before) = repo.get_quiz_count()
   let assert Ok(Nil) = repo.add_quiz("1+1=?", "2", 10)
   let assert Ok(Nil) = repo.delete_quiz("1+1=?")
-  let assert Ok(quizzes) = repo.get_all_quizzes()
-  assert quizzes == []
+  let assert Ok(after) = repo.get_quiz_count()
+  assert after == before
 }
 
 pub fn get_quiz_count_test() {
   let assert Ok(repo) = sqlight_repo.new(":memory:")
-  let assert Ok(0) = repo.get_quiz_count()
+  let assert Ok(base) = repo.get_quiz_count()
   let assert Ok(Nil) = repo.add_quiz("1+1=?", "2", 10)
-  let assert Ok(1) = repo.get_quiz_count()
+  let assert Ok(after) = repo.get_quiz_count()
+  assert after == base + 1
 }
 
 pub fn quiz_upsert_test() {
@@ -189,10 +184,12 @@ pub fn quiz_upsert_test() {
   let assert Ok(Nil) = repo.add_quiz("1+1=?", "2", 10)
   let assert Ok(Nil) = repo.add_quiz("1+1=?", "2", 20)
   let assert Ok(quizzes) = repo.get_all_quizzes()
-  case quizzes {
-    [#(_, _, 20)] -> Nil
-    _ -> panic as "Expected upserted quiz with reward 20"
-  }
+  let found =
+    list.find(quizzes, fn(q) {
+      let #(question, _, reward) = q
+      question == "1+1=?" && reward == 20
+    })
+  assert found != Error(Nil)
 }
 
 pub fn plugin_disabled_empty_test() {

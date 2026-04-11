@@ -395,7 +395,19 @@ fn commands_view(model: Model) -> Element(Msg) {
               attribute.value(model.cmd_response),
               event.on_input(model.UpdateCmdResponse),
             ]),
-            html.button([event.on_click(model.AddTextCmd)], [text("추가")]),
+            html.button([event.on_click(model.AddTextCmd)], [
+              text(case model.editing_cmd {
+                Some(_) -> "저장"
+                None -> "추가"
+              }),
+            ]),
+            case model.editing_cmd {
+              Some(_) ->
+                html.button([event.on_click(model.CancelEditCmd)], [
+                  text("취소"),
+                ])
+              None -> text("")
+            },
           ]),
           html.div(
             [
@@ -424,8 +436,18 @@ fn commands_view(model: Model) -> Element(Msg) {
           ),
           html.div([attribute.class("form-row")], [
             html.button([event.on_click(model.AddGleamCmd)], [
-              text("컴파일하고 추가하긔"),
+              text(case model.editing_cmd {
+                Some(_) -> "컴파일하고 저장하긔"
+                None -> "컴파일하고 추가하긔"
+              }),
             ]),
+            case model.editing_cmd {
+              Some(_) ->
+                html.button([event.on_click(model.CancelEditCmd)], [
+                  text("취소"),
+                ])
+              None -> text("")
+            },
           ]),
         ])
     },
@@ -437,12 +459,16 @@ fn commands_view(model: Model) -> Element(Msg) {
         [] -> [empty_row(4)]
         cmds ->
           list.map(cmds, fn(c) {
-            let #(name, cmd_type, response, _source) = c
+            let #(name, response, cmd_type, _source) = c
             html.tr([], [
               html.td([], [text(name)]),
               html.td([], [text(cmd_type)]),
               html.td([], [text(response)]),
               html.td([], [
+                html.button(
+                  [event.on_click(model.EditCmd(name))],
+                  [text("수정")],
+                ),
                 html.button(
                   [
                     attribute.class("danger"),
@@ -486,7 +512,17 @@ fn quizzes_view(model: Model) -> Element(Msg) {
         attribute.type_("number"),
         event.on_input(model.UpdateQuizR),
       ]),
-      html.button([event.on_click(model.AddQuiz)], [text("추가")]),
+      html.button([event.on_click(model.AddQuiz)], [
+        text(case model.editing_quiz {
+          Some(_) -> "저장"
+          None -> "추가"
+        }),
+      ]),
+      case model.editing_quiz {
+        Some(_) ->
+          html.button([event.on_click(model.CancelEditQuiz)], [text("취소")])
+        None -> text("")
+      },
     ]),
     html.table([], [
       html.thead([], [
@@ -504,6 +540,10 @@ fn quizzes_view(model: Model) -> Element(Msg) {
               ]),
               html.td([], [text(int.to_string(reward))]),
               html.td([], [
+                html.button(
+                  [event.on_click(model.EditQuiz(question))],
+                  [text("수정")],
+                ),
                 html.button(
                   [
                     attribute.class("danger"),

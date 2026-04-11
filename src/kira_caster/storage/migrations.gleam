@@ -1,5 +1,8 @@
 import gleam/dynamic/decode
+import gleam/list
 import gleam/result
+import gleam/string
+import kira_caster/core/quiz_data
 import kira_caster/storage/repository.{type StorageError, QueryError}
 import sqlight
 
@@ -101,7 +104,7 @@ pub fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
     False -> Ok(Nil)
   })
   use version6 <- result.try(get_schema_version(conn))
-  case version6 < 6 {
+  use _ <- result.try(case version6 < 6 {
     True -> {
       use _ <- result.try(exec(
         conn,
@@ -126,7 +129,116 @@ pub fn run_migrations(conn: sqlight.Connection) -> Result(Nil, StorageError) {
       set_schema_version(conn, 6)
     }
     False -> Ok(Nil)
+  })
+  use version7 <- result.try(get_schema_version(conn))
+  use _ <- result.try(case version7 < 7 {
+    True -> {
+      use _ <- result.try(seed_default_quizzes(conn))
+      set_schema_version(conn, 7)
+    }
+    False -> Ok(Nil)
+  })
+  use version8 <- result.try(get_schema_version(conn))
+  case version8 < 8 {
+    True -> {
+      use _ <- result.try(seed_sample_commands(conn))
+      set_schema_version(conn, 8)
+    }
+    False -> Ok(Nil)
   }
+}
+
+fn seed_default_quizzes(conn: sqlight.Connection) -> Result(Nil, StorageError) {
+  quiz_data.all()
+  |> list.try_each(fn(q) {
+    let answer = string.join(q.answers, ",")
+    sqlight.query(
+      "INSERT OR IGNORE INTO quizzes (question, answer, reward) VALUES (?, ?, ?)",
+      on: conn,
+      with: [sqlight.text(q.question), sqlight.text(answer), sqlight.int(q.reward)],
+      expecting: decode.success(Nil),
+    )
+    |> result.map_error(fn(e) { QueryError(e.message) })
+    |> result.replace(Nil)
+  })
+}
+
+fn seed_sample_commands(
+  conn: sqlight.Connection,
+) -> Result(Nil, StorageError) {
+  let text_sql =
+    "INSERT OR IGNORE INTO custom_commands (name, response, command_type) VALUES (?, ?, 'text')"
+  let gleam_sql =
+    "INSERT OR IGNORE INTO custom_commands (name, response, command_type, source_code) VALUES (?, ?, 'gleam', ?)"
+  // 1. 단순 텍스트 (변수 없음)
+  use _ <- result.try(
+    sqlight.query(text_sql, on: conn, with: [
+      sqlight.text("인사"),
+      sqlight.text(
+        "반갑습니다~ 채팅 매너를 지키면서 즐거운 방송 시간 보내봐용!",
+      ),
+    ], expecting: decode.success(Nil))
+    |> result.map_error(fn(e) { QueryError(e.message) })
+    |> result.replace(Nil),
+  )
+  // 2. 템플릿 (변수 + 조건문)
+  use _ <- result.try(
+    sqlight.query(text_sql, on: conn, with: [
+      sqlight.text("내정보"),
+      sqlight.text(
+        "{{user}}님 | 포인트: {{points}} | 출석: {{attendance}}회{{if points}} \u{2728}{{else}} (첫 출석을 해보세용!){{end}}",
+      ),
+    ], expecting: decode.success(Nil))
+    |> result.map_error(fn(e) { QueryError(e.message) })
+    |> result.replace(Nil),
+  )
+  // 3. 고급 Gleam (주사위)
+  sqlight.query(gleam_sql, on: conn, with: [
+    sqlight.text("dice"),
+    sqlight.text("주사위 명령어이에용~ (컴파일이 필요해용)"),
+    sqlight.text(dice_sample_source()),
+  ], expecting: decode.success(Nil))
+  |> result.map_error(fn(e) { QueryError(e.message) })
+  |> result.replace(Nil)
+}
+
+fn dice_sample_source() -> String {
+  "import gleam/int
+import gleam/list
+import gleam/string
+
+pub fn handle(user: String, args: List(String)) -> String {
+  let sides =
+    args
+    |> list.first
+    |> fn(r) {
+      case r {
+        Ok(n) ->
+          n
+          |> int.parse
+          |> fn(p) {
+            case p {
+              Ok(v) if v > 1 -> v
+              _ -> 6
+            }
+          }
+        _ -> 6
+      }
+    }
+
+  let roll = int.random(sides) + 1
+
+  let grade = case roll == sides, roll == 1 {
+    True, _ -> \" *** CRITICAL! ***\"
+    _, True -> \" ... fumble\"
+    _, _ -> \"\"
+  }
+
+  [user, \" rolled d\", sides |> int.to_string, \" -> \"]
+  |> string.concat
+  |> string.append(roll |> int.to_string)
+  |> string.append(grade)
+}"
 }
 
 fn get_schema_version(conn: sqlight.Connection) -> Result(Int, StorageError) {

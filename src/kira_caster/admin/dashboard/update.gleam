@@ -113,10 +113,17 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       case model.cmd_name, model.cmd_response {
         "", _ -> #(model, effect.none())
         _, "" -> #(model, effect.none())
-        n, r -> #(
-          Model(..model, cmd_name: "", cmd_response: ""),
-          effects.add_command(model.ctx.repo, n, r),
-        )
+        n, r -> {
+          let delete_old = case model.editing_cmd {
+            option.Some(old) if old != n ->
+              effects.delete_command(model.ctx.repo, old)
+            _ -> effect.none()
+          }
+          #(
+            Model(..model, cmd_name: "", cmd_response: "", editing_cmd: option.None),
+            effect.batch([delete_old, effects.add_command(model.ctx.repo, n, r)]),
+          )
+        }
       }
     }
 
@@ -124,14 +131,63 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       case model.cmd_name, model.cmd_source {
         "", _ -> #(model, effect.none())
         _, "" -> #(model, effect.none())
-        n, s -> #(
-          Model(..model, cmd_name: "", cmd_source: ""),
-          effects.add_advanced_command(model.ctx.repo, n, s),
-        )
+        n, s -> {
+          let delete_old = case model.editing_cmd {
+            option.Some(old) if old != n ->
+              effects.delete_command(model.ctx.repo, old)
+            _ -> effect.none()
+          }
+          #(
+            Model(..model, cmd_name: "", cmd_source: "", editing_cmd: option.None),
+            effect.batch([
+              delete_old,
+              effects.add_advanced_command(model.ctx.repo, n, s),
+            ]),
+          )
+        }
       }
     }
 
     model.DeleteCmd(n) -> #(model, effects.delete_command(model.ctx.repo, n))
+
+    model.EditCmd(name) -> {
+      case list.find(model.commands, fn(c) { c.0 == name }) {
+        Ok(#(n, r, t, src)) -> {
+          let cmd_type = case t {
+            "gleam" -> model.GleamCmd
+            _ -> model.TextCmd
+          }
+          let source = case src {
+            option.Some(s) -> s
+            option.None -> ""
+          }
+          #(
+            Model(
+              ..model,
+              cmd_name: n,
+              cmd_type: cmd_type,
+              cmd_response: r,
+              cmd_source: source,
+              editing_cmd: option.Some(n),
+            ),
+            effect.none(),
+          )
+        }
+        Error(_) -> #(model, effect.none())
+      }
+    }
+
+    model.CancelEditCmd -> #(
+      Model(
+        ..model,
+        cmd_name: "",
+        cmd_response: "",
+        cmd_source: "",
+        cmd_type: model.TextCmd,
+        editing_cmd: option.None,
+      ),
+      effect.none(),
+    )
 
     // TODO: compile support
     model.CompileCmd(_n) -> #(model, effect.none())
@@ -159,15 +215,56 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             Ok(r) -> r
             Error(_) -> 10
           }
+          let delete_old = case model.editing_quiz {
+            option.Some(old) if old != q ->
+              effects.delete_quiz(model.ctx.repo, old)
+            _ -> effect.none()
+          }
           #(
-            Model(..model, quiz_question: "", quiz_answer: ""),
-            effects.add_quiz(model.ctx.repo, q, a, reward),
+            Model(
+              ..model,
+              quiz_question: "",
+              quiz_answer: "",
+              quiz_reward: "10",
+              editing_quiz: option.None,
+            ),
+            effect.batch([
+              delete_old,
+              effects.add_quiz(model.ctx.repo, q, a, reward),
+            ]),
           )
         }
       }
     }
 
     model.DeleteQuiz(q) -> #(model, effects.delete_quiz(model.ctx.repo, q))
+
+    model.EditQuiz(question) -> {
+      case list.find(model.quizzes, fn(q) { q.0 == question }) {
+        Ok(#(q, a, r)) -> #(
+          Model(
+            ..model,
+            quiz_question: q,
+            quiz_answer: a,
+            quiz_reward: int.to_string(r),
+            editing_quiz: option.Some(q),
+          ),
+          effect.none(),
+        )
+        Error(_) -> #(model, effect.none())
+      }
+    }
+
+    model.CancelEditQuiz -> #(
+      Model(
+        ..model,
+        quiz_question: "",
+        quiz_answer: "",
+        quiz_reward: "10",
+        editing_quiz: option.None,
+      ),
+      effect.none(),
+    )
 
     // --- Votes ---
     model.VoteLoaded(active, topic, results) -> #(

@@ -81,7 +81,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
           html.div([attribute.class("setup-section")], [
             html.h3([], [text("1. 관리자 비밀번호 정하기")]),
             html.p([attribute.class("setup-hint")], [
-              text("대시보드 들어갈 때 쓸 비밀번호야용"),
+              text("대시보드 들어갈 때 쓸 비밀번호야"),
             ]),
             html.p(
               [
@@ -146,7 +146,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
                   text("'Redirect URI' 칸에 아래 주소를 복사해서 넣어줘용"),
                 ]),
                 html.li([], [
-                  text("앱 만들면 '앱 ID'랑 '비밀키'가 나오거든용 그거 아래 칸에 넣어주면 돼용"),
+                  text("앱 만들면 'Client ID'랑 'Client Secret'이 나오거든용 그거 아래 칸에 넣어주면 돼용"),
                 ]),
               ]),
               html.div(
@@ -191,7 +191,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
             ]),
             html.input([
               attr("name", "cime_client_id"),
-              attribute.placeholder("앱 ID - 개발자 센터에서 복사한 거"),
+              attribute.placeholder("Client ID - 개발자 센터에서 복사한 거"),
             ]),
             html.div(
               [
@@ -200,7 +200,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
               [
                 html.input([
                   attr("name", "cime_client_secret"),
-                  attribute.placeholder("앱 비밀키 - 개발자 센터에서 복사한 거"),
+                  attribute.placeholder("Client Secret - 개발자 센터에서 복사한 거"),
                   attribute.type_("password"),
                   attr("id", "cime-secret-input"),
                   attr("style", "flex:1"),
@@ -231,7 +231,7 @@ fn setup_body(message: String, _is_success: Bool) -> Element(Nil) {
               ),
               html.p([attribute.class("setup-hint")], [
                 text(
-                  "씨미에서 봇 쓰려면 '앱'을 만들어야 하거든용 새 계정 만드는 거랑 비슷해용 ㅎㅎ 앱 ID랑 비밀키는 봇의 아이디/비밀번호라고 생각하면 돼용! 위에 주소(Redirect URI)는 그냥 복사해서 붙여넣기만 하면 되고, 채널 정보는 연결하면 알아서 가져와용",
+                  "씨미에서 봇 쓰려면 '앱'을 만들어야 하거든용 새 계정 만드는 거랑 비슷해용 ㅎㅎ Client ID랑 Client Secret은 봇의 아이디/비밀번호라고 생각하면 돼용! 위에 주소(Redirect URI)는 그냥 복사해서 붙여넣기만 하면 되고, 채널 정보는 연결하면 알아서 가져와용",
                 ),
               ]),
             ]),

@@ -556,8 +556,8 @@ pub fn save_setting(
 fn setting_label(key: String) -> String {
   case key {
     "admin_key" -> "관리자 비밀번호"
-    "cime_client_id" -> "씨미 앱 ID"
-    "cime_client_secret" -> "씨미 앱 비밀키"
+    "cime_client_id" -> "씨미 Client ID"
+    "cime_client_secret" -> "씨미 Client Secret"
     "youtube_api_key" -> "YouTube API 키"
     "cooldown_ms" -> "명령어 쿨다운"
     "attendance_points" -> "출석 포인트"

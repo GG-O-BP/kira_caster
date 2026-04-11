@@ -68,7 +68,7 @@ fn handle_cast(repo: Repository, user: String, choice: String) -> List(Event) {
           resp(
             "'"
             <> choice
-            <> "'은(는) 없는 선택지야용 선택지: "
+            <> "'은(는) 없는 선택지야 선택지: "
             <> string.join(options, ", "),
           ),
         ]

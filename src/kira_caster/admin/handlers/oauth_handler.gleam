@@ -45,7 +45,7 @@ pub fn handle_callback(
           oauth_result_page(
             False,
             "씨미 연동 실패 ㅠㅠ",
-            "앗 씨미 인증이 안 됐어 ㅠㅠ 씨미 개발자 센터(developers.ci.me)에서 앱 ID랑 비밀키가 맞는지 확인해줘용 대시보드 '설정' 탭에서 고치고 '변경사항 적용' 누른 다음에 다시 해봐용!",
+            "앗 씨미 인증이 안 됐어 ㅠㅠ 씨미 개발자 센터(developers.ci.me)에서 Client ID랑 Client Secret이 맞는지 확인해줘용 대시보드 '설정' 탭에서 고치고 '변경사항 적용' 누른 다음에 다시 해봐용!",
           )
       }
     }
@@ -59,7 +59,7 @@ pub fn handle_callback(
       oauth_result_page(
         False,
         "씨미 연동 준비가 필요해용",
-        "먼저 대시보드 '설정' 탭에서 씨미 앱 ID랑 비밀키 넣고 '변경사항 적용' 버튼 눌러줘용 그다음에 '씨미 연동' 탭에서 연결할 수 있당!",
+        "먼저 대시보드 '설정' 탭에서 씨미 Client ID랑 Client Secret 넣고 '변경사항 적용' 버튼 눌러줘용 그다음에 '씨미 연동' 탭에서 연결할 수 있당!",
       )
   }
 }

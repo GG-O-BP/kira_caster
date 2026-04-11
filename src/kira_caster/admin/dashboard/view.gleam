@@ -207,7 +207,7 @@ fn status_view(model: Model) -> Element(Msg) {
             [attr("style", "margin-bottom:12px;color:#888;line-height:1.5")],
             [
               text(
-                "지금은 테스트 모드야용 채팅방 연결 없이 봇 기능 미리 써볼 수 있당 ㅎㅎ 진짜 채팅방에서 쓰려면 아래 '씨미 연동'에서 연결해줘용",
+                "지금은 테스트 모드야 채팅방 연결 없이 봇 기능 미리 써볼 수 있당 ㅎㅎ 진짜 채팅방에서 쓰려면 아래 '씨미 연동'에서 연결해줘용",
               ),
             ],
           ),
@@ -647,21 +647,21 @@ fn settings_view(model: Model) -> Element(Msg) {
       "관리자 비밀번호",
       "",
       True,
-      "이 관리 화면 들어갈 때 쓰는 비밀번호야용 안 정하면 아무나 들어올 수 있으니까 꼭 정해줘잉",
+      "이 관리 화면 들어갈 때 쓰는 비밀번호야 안 정하면 아무나 들어올 수 있으니까 꼭 정해줘잉",
     ),
     #(
       "cime_client_id",
-      "씨미 앱 ID",
+      "씨미 Client ID",
       "",
       False,
-      "씨미 개발자 센터(developers.ci.me)에서 앱 만들면 나오는 ID야용",
+      "씨미 개발자 센터(developers.ci.me)에서 앱 만들면 나오는 Client ID야",
     ),
     #(
       "cime_client_secret",
-      "씨미 앱 비밀키",
+      "씨미 Client Secret",
       "",
       True,
-      "씨미 개발자 센터에서 앱 만들면 나오는 비밀키야용 절대 다른 사람한테 주면 안 돼용!!",
+      "씨미 개발자 센터에서 앱 만들면 나오는 Client Secret이야 절대 다른 사람한테 주면 안 돼용!!",
     ),
     #(
       "youtube_api_key",
@@ -679,22 +679,22 @@ fn settings_view(model: Model) -> Element(Msg) {
       False,
       "같은 명령어 다시 쓸 때까지 기다리는 시간이에용 숫자가 크면 더 천천히 쓸 수 있당",
     ),
-    #("attendance_points", "출석 보상", "10", False, "하루 한 번 출석하면 받는 포인트야용"),
-    #("dice_win_points", "주사위 이김 보상", "50", False, "주사위 이기면 받는 포인트야용"),
+    #("attendance_points", "출석 보상", "10", False, "하루 한 번 출석하면 받는 포인트야"),
+    #("dice_win_points", "주사위 이김 보상", "50", False, "주사위 이기면 받는 포인트야"),
     #(
       "dice_loss_points",
       "주사위 짐 감점",
       "-20",
       False,
-      "주사위 지면 깎이는 포인트야용 음수(-)로 넣어줘용",
+      "주사위 지면 깎이는 포인트야 음수(-)로 넣어줘용",
     ),
-    #("rps_win_points", "가위바위보 이김 보상", "30", False, "가위바위보 이기면 받는 포인트야용"),
+    #("rps_win_points", "가위바위보 이김 보상", "30", False, "가위바위보 이기면 받는 포인트야"),
     #(
       "rps_loss_points",
       "가위바위보 짐 감점",
       "-10",
       False,
-      "가위바위보 지면 깎이는 포인트야용 음수(-)로 넣어줘용",
+      "가위바위보 지면 깎이는 포인트야 음수(-)로 넣어줘용",
     ),
   ]
   fragment([

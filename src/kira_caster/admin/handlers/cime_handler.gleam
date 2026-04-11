@@ -376,7 +376,7 @@ fn service_unavailable() -> Response {
         #(
           "message",
           json.string(
-            "씨미 연동이 아직 설정되지 않았습니다. '설정' 탭에서 씨미 앱 ID와 비밀키를 입력한 뒤 '변경사항 적용' 버튼을 눌러주세요",
+            "씨미 연동이 아직 설정되지 않았습니다. '설정' 탭에서 씨미 Client ID와 Client Secret을 입력한 뒤 '변경사항 적용' 버튼을 눌러주세요",
           ),
         ),
       ]),

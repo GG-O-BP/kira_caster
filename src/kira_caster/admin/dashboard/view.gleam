@@ -628,15 +628,26 @@ fn votes_view(model: Model) -> Element(Msg) {
 fn plugins_view(model: Model) -> Element(Msg) {
   html.table([], [
     html.thead([], [
-      html.tr([], [th("이름"), th("설명"), th("상태"), th("")]),
+      html.tr([], [th("이름"), th("설명"), th("명령어"), th("상태"), th("")]),
     ]),
     html.tbody([], case model.plugins {
-      [] -> [empty_row(4)]
+      [] -> [empty_row(5)]
       plugins ->
         list.map(plugins, fn(p) {
           html.tr([], [
             html.td([], [text(p.name)]),
             html.td([], [text(p.description)]),
+            html.td([], case p.commands {
+              [] -> [
+                html.span([attr("style", "color:var(--color-border)")], [
+                  text("-"),
+                ]),
+              ]
+              cmds ->
+                list.map(cmds, fn(c) {
+                  html.span([attribute.class("tag")], [text(c)])
+                })
+            }),
             html.td([], [
               html.span(
                 [

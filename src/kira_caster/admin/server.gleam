@@ -61,6 +61,7 @@ fn handle_dashboard_ws(req, ctx: router.RouterContext) {
       get_token: ctx.get_token,
       bus: ctx.bus,
       ws_manager: ctx.ws_manager,
+      token_manager: ctx.token_manager,
     )
 
   let app = dashboard_app.create()

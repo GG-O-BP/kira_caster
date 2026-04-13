@@ -169,13 +169,14 @@ fn exchange_code(
   code: String,
 ) -> Result(TokenResponse, CimeError) {
   let body =
-    "grantType=AUTHORIZATION_CODE&clientId="
-    <> client_id
-    <> "&clientSecret="
-    <> client_secret
-    <> "&code="
-    <> code
-  use raw <- result.try(http_client.post_form("/auth/v1/token", body))
+    json.object([
+      #("grantType", json.string("authorization_code")),
+      #("clientId", json.string(client_id)),
+      #("clientSecret", json.string(client_secret)),
+      #("code", json.string(code)),
+    ])
+    |> json.to_string
+  use raw <- result.try(http_client.post_json("/auth/v1/token", body))
   decoders.decode_content(raw, decoders.token_response_decoder())
 }
 
@@ -185,13 +186,14 @@ fn do_refresh_token(
   refresh: String,
 ) -> Result(TokenResponse, CimeError) {
   let body =
-    "grantType=REFRESH_TOKEN&clientId="
-    <> client_id
-    <> "&clientSecret="
-    <> client_secret
-    <> "&refreshToken="
-    <> refresh
-  use raw <- result.try(http_client.post_form("/auth/v1/token", body))
+    json.object([
+      #("grantType", json.string("refresh_token")),
+      #("clientId", json.string(client_id)),
+      #("clientSecret", json.string(client_secret)),
+      #("refreshToken", json.string(refresh)),
+    ])
+    |> json.to_string
+  use raw <- result.try(http_client.post_json("/auth/v1/token", body))
   decoders.decode_content(raw, decoders.token_response_decoder())
 }
 
@@ -202,15 +204,14 @@ fn do_revoke_token(
   token_type_hint: String,
 ) -> Result(Nil, CimeError) {
   let body =
-    "clientId="
-    <> client_id
-    <> "&clientSecret="
-    <> client_secret
-    <> "&token="
-    <> token
-    <> "&tokenTypeHint="
-    <> token_type_hint
-  use _ <- result.try(http_client.post_form("/auth/v1/token/revoke", body))
+    json.object([
+      #("clientId", json.string(client_id)),
+      #("clientSecret", json.string(client_secret)),
+      #("token", json.string(token)),
+      #("tokenTypeHint", json.string(token_type_hint)),
+    ])
+    |> json.to_string
+  use _ <- result.try(http_client.post_json("/auth/v1/token/revoke", body))
   Ok(Nil)
 }
 

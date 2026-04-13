@@ -411,8 +411,16 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       effect.none(),
     )
 
-    // TODO: disconnect
-    model.CimeDisconnect -> #(model, effect.none())
+    model.CimeDisconnect -> #(
+      Model(
+        ..model,
+        cime_authenticated: False,
+        cime_expires_at: "",
+        cime_channel_name: "",
+        connection_state: model.CsDisconnected,
+      ),
+      effects.cime_disconnect(model.ctx),
+    )
 
     // --- Broadcast ---
     model.BroadcastLoaded(title, tags, cat) -> #(

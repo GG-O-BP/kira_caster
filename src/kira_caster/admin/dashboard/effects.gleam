@@ -7,8 +7,10 @@ import kira_caster/admin/dashboard/model.{
   type DashboardContext, type Msg, type Tab,
 }
 import kira_caster/event_bus
+import kira_caster/platform/cime/token_manager
 import kira_caster/platform/cime/ws_manager
 import kira_caster/platform/ws
+import kira_caster/plugin/advanced_command
 import kira_caster/storage/repository.{type Repository}
 import kira_caster/util/time
 import lustre/effect.{type Effect}
@@ -179,29 +181,40 @@ fn load_votes(repo: Repository) -> Effect(Msg) {
 fn load_plugins(repo: Repository) -> Effect(Msg) {
   async(fn(dispatch) {
     let all_plugins = [
-      #("attendance", "출석 체크 (하루 1번, 포인트 받긔)"),
-      #("points", "포인트 확인이랑 순위 보긔"),
-      #("minigame", "미니게임 (주사위, 가위바위보 ㅎㅎ)"),
-      #("filter", "채팅 필터 (금칙어 자동으로 잡아줌!)"),
-      #("custom_command", "커스텀 명령어"),
-      #("uptime", "봇 얼마나 켜져있나 보긔"),
-      #("vote", "투표 시스템"),
-      #("roulette", "룰렛 (운빨 포인트 ㅋㅋ)"),
-      #("quiz", "퀴즈 (정답 맞춰보긔)"),
-      #("timer", "타이머 (알림 울려줌!)"),
-      #("song_request", "신청곡 (YouTube 틀어줌)"),
-      #("donation_alert", "후원 알림 (채팅/영상 후원)"),
-      #("subscription_alert", "구독 알림"),
-      #("broadcast_control", "방송 제어 (제목/태그/카테고리)"),
-      #("block", "차단 관리 (유저 차단/풀기)"),
-      #("follower", "팔로워 추적 (새 팔로워 환영해줌 ㅎㅎ)"),
+      #("attendance", "출석 체크 (하루 1번, 포인트 받긔)", ["!출석"]),
+      #("points", "포인트 확인이랑 순위 보긔", ["!포인트", "!포인트 순위"]),
+      #("minigame", "미니게임 (주사위, 가위바위보 ㅎㅎ)", ["!게임 주사위", "!게임 가위바위보"]),
+      #("filter", "채팅 필터 (금칙어 자동으로 잡아줌!)", ["!필터 추가", "!필터 삭제", "!필터 목록"]),
+      #("custom_command", "커스텀 명령어", [
+        "!명령 추가", "!명령 삭제", "!명령 목록", "!명령 고급추가", "!명령 고급삭제",
+      ]),
+      #("uptime", "봇 얼마나 켜져있나 보긔", ["!업타임"]),
+      #("vote", "투표 시스템", ["!투표 시작", "!투표", "!투표 결과", "!투표 종료"]),
+      #("roulette", "룰렛 (운빨 포인트 ㅋㅋ)", ["!룰렛"]),
+      #("quiz", "퀴즈 (정답 맞춰보긔)", ["!퀴즈 시작", "!퀴즈"]),
+      #("timer", "타이머 (알림 울려줌!)", ["!타이머"]),
+      #("song_request", "신청곡 (YouTube 틀어줌)", [
+        "!노래", "!노래 목록", "!노래 현재", "!노래 스킵", "!노래 삭제", "!노래 비우기", "!노래 공지",
+      ]),
+      #("donation_alert", "후원 알림 (채팅/영상 후원)", ["!후원순위"]),
+      #("subscription_alert", "구독 알림", []),
+      #("broadcast_control", "방송 제어 (제목/태그/카테고리)", [
+        "!제목", "!태그", "!카테고리", "!슬로우모드", "!팔로워전용", "!공지", "!방송상태", "!라이브",
+      ]),
+      #("block", "차단 관리 (유저 차단/풀기)", ["!차단", "!차단해제", "!차단목록"]),
+      #("follower", "팔로워 추적 (새 팔로워 환영해줌 ㅎㅎ)", ["!팔로워"]),
     ]
     case repo.get_disabled_plugins() {
       Ok(disabled) -> {
         let plugins =
           list.map(all_plugins, fn(p) {
             let enabled = !list.contains(disabled, p.0)
-            model.PluginInfo(name: p.0, description: p.1, enabled: enabled)
+            model.PluginInfo(
+              name: p.0,
+              description: p.1,
+              enabled:,
+              commands: p.2,
+            )
           })
         dispatch(model.PluginsLoaded(plugins))
       }
@@ -251,8 +264,55 @@ fn load_songs(repo: Repository) -> Effect(Msg) {
   })
 }
 
-fn load_auth_status(_ctx: DashboardContext) -> Effect(Msg) {
-  async(fn(dispatch) { dispatch(model.AuthStatusLoaded(False, "", "")) })
+pub fn cime_disconnect(ctx: DashboardContext) -> Effect(Msg) {
+  async(fn(dispatch) {
+    case ctx.ws_manager {
+      Some(ws) -> ws_manager.disconnect(ws)
+      None -> Nil
+    }
+    case ctx.token_manager {
+      Some(mgr) -> {
+        let _ = token_manager.revoke_and_clear(mgr)
+        Nil
+      }
+      None -> Nil
+    }
+    dispatch(model.ShowToast("씨미 연결 끊었당!", model.SuccessToast))
+  })
+}
+
+fn load_auth_status(ctx: DashboardContext) -> Effect(Msg) {
+  async(fn(dispatch) {
+    let #(authenticated, expires_str, channel_name) = case ctx.token_manager {
+      Some(mgr) -> {
+        let status = token_manager.get_status(mgr)
+        case status.authenticated {
+          True -> {
+            let expires_str = case status.expires_at {
+              0 -> ""
+              ms -> time.format_ms(ms)
+            }
+            let channel_name = case ctx.cime_api, ctx.get_token {
+              Some(api), Some(get_tok) ->
+                case get_tok() {
+                  Ok(token) ->
+                    case api.get_me(token) {
+                      Ok(me) -> me.channel_name
+                      Error(_) -> ""
+                    }
+                  Error(_) -> ""
+                }
+              _, _ -> ""
+            }
+            #(True, expires_str, channel_name)
+          }
+          False -> #(False, "", "")
+        }
+      }
+      None -> #(False, "", "")
+    }
+    dispatch(model.AuthStatusLoaded(authenticated, expires_str, channel_name))
+  })
 }
 
 fn load_broadcast(ctx: DashboardContext) -> Effect(Msg) {
@@ -446,11 +506,24 @@ pub fn add_advanced_command(
   name: String,
   source: String,
 ) -> Effect(Msg) {
-  crud(
-    fn() { repo.set_advanced_command(name, source, "컴파일 오류") },
-    "고급 명령어 추가했당!",
-    "앗 고급 명령어 저장이 안 됐어 ㅠㅠ 소스 코드 확인해줘용",
-  )
+  async(fn(dispatch) {
+    case advanced_command.compile_and_load(name, source) {
+      Ok(Nil) -> {
+        let _ = repo.set_advanced_command(name, source, "컴파일됨")
+        dispatch(model.ShowToast(
+          "'" <> name <> "' 컴파일하고 저장했당!",
+          model.SuccessToast,
+        ))
+        dispatch(model.OpDone(Ok(Nil)))
+      }
+      Error(e) -> {
+        let msg = advanced_command.error_to_string(e)
+        let _ = repo.set_advanced_command(name, source, msg)
+        dispatch(model.ShowToast("앗 컴파일 실패했어 ㅠㅠ " <> msg, model.ErrorToast))
+        dispatch(model.OpDone(Ok(Nil)))
+      }
+    }
+  })
 }
 
 pub fn add_quiz(

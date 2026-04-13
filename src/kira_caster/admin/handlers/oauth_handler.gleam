@@ -6,6 +6,7 @@ import kira_caster/core/config.{type Config}
 import kira_caster/logger
 import kira_caster/platform/cime/api.{type CimeApi}
 import kira_caster/platform/cime/token_manager.{type TokenMessage}
+import kira_caster/platform/cime/ws_manager.{type WsMessage}
 import kira_caster/storage/repository.{type Repository}
 import lustre/attribute.{attribute as attr}
 import lustre/element.{fragment, text}
@@ -27,6 +28,7 @@ pub fn handle_callback(
   token_mgr: Option(Subject(TokenMessage)),
   cime_api: Option(CimeApi),
   repo: Repository,
+  ws_mgr: Option(Subject(WsMessage)),
 ) -> Response {
   let code = wisp.get_query(req) |> find_param("code")
   case code, token_mgr {
@@ -35,6 +37,11 @@ pub fn handle_callback(
         Ok(Nil) -> {
           // Auto-fetch channel ID after successful auth
           auto_fetch_channel_id(mgr, cime_api, repo)
+          // Trigger WS reconnect so chat events start flowing
+          case ws_mgr {
+            Some(ws) -> ws_manager.connect(ws)
+            None -> Nil
+          }
           oauth_result_page(
             True,
             "씨미 연동 완료당!",

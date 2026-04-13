@@ -51,11 +51,11 @@ pub fn post_json_with_bearer(
   send_and_extract(req)
 }
 
-pub fn post_form(path: String, body: String) -> Result(String, CimeError) {
+pub fn post_json(path: String, body: String) -> Result(String, CimeError) {
   use req <- result.try(build_request(api_path <> path, http.Post))
   let req =
     req
-    |> request.set_header("content-type", "application/x-www-form-urlencoded")
+    |> request.set_header("content-type", "application/json")
     |> request.set_body(body)
   send_and_extract(req)
 }
@@ -118,7 +118,11 @@ pub fn post_with_bearer_query(
 ) -> Result(String, CimeError) {
   let full_path = build_path(api_path <> path, query)
   use req <- result.try(build_request(full_path, http.Post))
-  let req = request.set_header(req, "authorization", "Bearer " <> token)
+  let req =
+    req
+    |> request.set_header("authorization", "Bearer " <> token)
+    |> request.set_header("content-type", "application/json")
+    |> request.set_body("{}")
   send_and_extract(req)
 }
 
@@ -153,7 +157,7 @@ fn send_and_extract(req: request.Request(String)) -> Result(String, CimeError) {
 
 fn handle_response(resp: response.Response(String)) -> Result(String, CimeError) {
   case resp.status {
-    200 | 201 -> Ok(resp.body)
+    status if status >= 200 && status < 300 -> Ok(resp.body)
     status -> {
       let message = extract_error_message(resp.body)
       Error(ApiError(status:, message:))

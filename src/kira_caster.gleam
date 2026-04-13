@@ -11,6 +11,7 @@ import kira_caster/logger
 import kira_caster/platform/cime/api.{type CimeApi}
 import kira_caster/platform/cime_adapter
 import kira_caster/platform/mock_adapter
+import kira_caster/plugin/advanced_command
 import kira_caster/plugin/attendance
 import kira_caster/plugin/block
 import kira_caster/plugin/broadcast_control
@@ -59,6 +60,9 @@ fn start() -> Result(Nil, String) {
 
   // DB에 저장된 설정을 config에 병합 (DB 설정이 우선, 없으면 환경변수/기본값)
   let config = config_loader.apply_db_settings(base_config, repo)
+
+  // Compile seeded/persisted advanced (gleam) commands so they respond in chat
+  load_advanced_commands(repo)
 
   use #(_sup, bus, bus_name) <- result.try(
     supervisor.start(config)
@@ -209,6 +213,39 @@ fn start() -> Result(Nil, String) {
   process.sleep(100)
   process.sleep_forever()
   Ok(Nil)
+}
+
+fn load_advanced_commands(repo: repository.Repository) -> Nil {
+  case advanced_command.ensure_project() {
+    Ok(Nil) -> {
+      logger.warn("고급 명령 프로젝트 준비 완료, 컴파일 시작")
+      case repo.get_all_commands_detailed() {
+        Ok(commands) -> {
+          list.each(commands, fn(cmd) {
+            let #(name, _response, cmd_type, source) = cmd
+            case cmd_type, source {
+              "gleam", Some(src) ->
+                case advanced_command.compile_and_load(name, src) {
+                  Ok(Nil) -> logger.warn("고급 명령 '" <> name <> "' 로드 완료")
+                  Error(e) ->
+                    logger.warn(
+                      "고급 명령 '"
+                      <> name
+                      <> "' 컴파일 실패: "
+                      <> advanced_command.error_to_string(e),
+                    )
+                }
+              _, _ -> Nil
+            }
+          })
+          Nil
+        }
+        Error(_) -> logger.warn("고급 명령 DB 조회 실패")
+      }
+    }
+    Error(e) ->
+      logger.warn("고급 명령 프로젝트 준비 실패: " <> advanced_command.error_to_string(e))
+  }
 }
 
 fn register_cime_plugins(

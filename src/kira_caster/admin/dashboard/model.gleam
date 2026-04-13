@@ -3,6 +3,7 @@ import gleam/option.{type Option, None}
 import kira_caster/core/config.{type Config}
 import kira_caster/event_bus.{type EventBusMessage}
 import kira_caster/platform/cime/api.{type CimeApi}
+import kira_caster/platform/cime/token_manager.{type TokenMessage}
 import kira_caster/platform/cime/ws_manager.{type WsMessage}
 import kira_caster/storage/repository.{
   type Repository, type SongData, type UserData,
@@ -44,7 +45,12 @@ pub type CmdType {
 }
 
 pub type PluginInfo {
-  PluginInfo(name: String, description: String, enabled: Bool)
+  PluginInfo(
+    name: String,
+    description: String,
+    enabled: Bool,
+    commands: List(String),
+  )
 }
 
 pub type VoteResult {
@@ -75,6 +81,7 @@ pub type DashboardContext {
     get_token: Option(fn() -> Result(String, String)),
     bus: Option(Subject(EventBusMessage)),
     ws_manager: Option(Subject(WsMessage)),
+    token_manager: Option(Subject(TokenMessage)),
   )
 }
 

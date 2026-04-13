@@ -51,6 +51,7 @@ pub fn handle_request(req: Request, ctx: RouterContext) -> Response {
         ctx.token_manager,
         ctx.cime_api,
         ctx.repo,
+        ctx.ws_manager,
       )
     // Setup wizard (unauthenticated, first-run only)
     ["setup"] -> handle_setup_route(req, ctx)

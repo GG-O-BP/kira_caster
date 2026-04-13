@@ -143,7 +143,7 @@ fn handle_message(
     RevokeAndClear(reply) -> {
       case state.access_token {
         Some(token) -> {
-          let _ = state.api.revoke_token(token, "ACCESS_TOKEN")
+          let _ = state.api.revoke_token(token, "access_token")
           Nil
         }
         None -> Nil

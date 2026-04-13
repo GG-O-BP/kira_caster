@@ -1,6 +1,7 @@
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/erlang/process.{type Subject}
+import gleam/int
 import gleam/json
 import gleam/option.{type Option, None, Some}
 import gleam/otp/actor
@@ -10,7 +11,9 @@ import kira_caster/core/permission
 import kira_caster/event_bus.{type EventBusMessage}
 import kira_caster/logger
 import kira_caster/platform/cime/api.{type CimeApi}
+import kira_caster/platform/cime/role_resolver.{type RoleCache}
 import kira_caster/platform/cime/token_manager.{type TokenMessage}
+import kira_caster/platform/cime/types
 import kira_caster/platform/ws
 import kira_caster/plugin/plugin
 import kira_caster/util/time
@@ -34,6 +37,13 @@ pub type WsMessage {
   WsDisconnected(reason: String)
   Reconnect
   GetConnectionStatus(reply: Subject(ConnectionStatus))
+  ChatReceived(
+    user: String,
+    content: String,
+    channel_id: String,
+    sender_id: String,
+  )
+  RefreshRoles
 }
 
 pub type ConnectionStatus {
@@ -57,6 +67,7 @@ pub type WsSessionState {
     session_created_at: Int,
     ws_connected_at: Int,
     max_reconnect: Int,
+    role_cache: RoleCache,
   )
 }
 
@@ -81,6 +92,7 @@ pub fn start(
         session_created_at: 0,
         ws_connected_at: 0,
         max_reconnect:,
+        role_cache: role_resolver.empty_cache(),
       )
     actor.initialised(state)
     |> actor.returning(subject)
@@ -103,6 +115,8 @@ fn handle_message(
           process.send_after(new_state.subject, 55_000, SendPing)
           // Start lifecycle check timer (every 60 seconds)
           process.send_after(new_state.subject, 60_000, CheckLifecycle)
+          // Kick off immediate role cache refresh
+          process.send(new_state.subject, RefreshRoles)
           actor.continue(new_state)
         }
         Error(reason) -> {
@@ -119,7 +133,7 @@ fn handle_message(
     }
 
     WsReceived(data) -> {
-      parse_and_dispatch(data, state.event_bus)
+      parse_and_dispatch(data, state.event_bus, state.subject)
       actor.continue(state)
     }
 
@@ -255,62 +269,103 @@ fn handle_message(
         }
       }
     }
+
+    ChatReceived(user:, content:, channel_id:, sender_id:) -> {
+      let role = resolve_chat_role(state, channel_id, sender_id)
+      case string.starts_with(content, "!") {
+        True ->
+          case parse_command(content) {
+            Ok(#(name, args)) ->
+              event_bus.dispatch(
+                state.event_bus,
+                plugin.Command(user:, name:, args:, role:),
+              )
+            Error(_) -> Nil
+          }
+        False ->
+          event_bus.dispatch(
+            state.event_bus,
+            plugin.ChatMessage(
+              user:,
+              content:,
+              channel: channel_id,
+              channel_id: Some(sender_id),
+            ),
+          )
+      }
+      actor.continue(state)
+    }
+
+    RefreshRoles -> {
+      case token_manager.get_access_token(state.token_manager) {
+        Ok(token) -> {
+          let now = time.now_ms()
+          let new_cache =
+            role_resolver.refresh(state.role_cache, state.api, token, now)
+          process.send_after(state.subject, 300_000, RefreshRoles)
+          actor.continue(WsSessionState(..state, role_cache: new_cache))
+        }
+        Error(_) -> {
+          // No token yet, retry shortly
+          process.send_after(state.subject, 30_000, RefreshRoles)
+          actor.continue(state)
+        }
+      }
+    }
+  }
+}
+
+fn resolve_chat_role(
+  state: WsSessionState,
+  channel_id: String,
+  sender_id: String,
+) -> permission.Role {
+  case sender_id == channel_id {
+    True -> permission.Broadcaster
+    False -> role_resolver.resolve_role(state.role_cache, sender_id)
   }
 }
 
 fn do_connect(state: WsSessionState) -> Result(WsSessionState, String) {
-  // Get access token
   use token <- result.try(token_manager.get_access_token(state.token_manager))
 
-  // Create session if needed
-  let now = time.now_ms()
-  use #(_session_key, session_created_at) <- result.try(case state.session_key {
-    Some(key) -> Ok(#(key, state.session_created_at))
-    None -> {
-      use session_resp <- result.try(
-        state.api.create_user_session(token)
-        |> result.map_error(fn(_) { "Session creation failed" }),
-      )
-      // Extract session key from URL query string
-      let key = extract_session_key(session_resp.url)
-      Ok(#(key, now))
-    }
-  })
-
-  // Get WS URL from session
-  use ws_url <- result.try(case state.session_key {
-    None -> {
-      state.api.create_user_session(token)
-      |> result.map(fn(resp) { resp.url })
-      |> result.map_error(fn(_) { "Failed to get WS URL" })
-    }
-    Some(_) -> Ok("")
-  })
-
-  let _ws_url = ws_url
-
-  // Connect WebSocket
-  use token2 <- result.try(token_manager.get_access_token(state.token_manager))
   use session_resp <- result.try(
-    state.api.create_user_session(token2)
+    state.api.create_user_session(token)
     |> result.map_error(fn(_) { "Session creation failed" }),
   )
 
-  use conn <- result.try(
-    ws_connect_ffi(session_resp.url)
-    |> result.map_error(fn(e) { "WS connect failed: " <> e }),
-  )
-
   let actual_key = extract_session_key(session_resp.url)
+  let ws_url = session_resp.url
+  let now = time.now_ms()
+  let session_created_at = case state.session_key {
+    Some(_) -> state.session_created_at
+    None -> now
+  }
 
-  // Subscribe to events
-  use _ <- result.try(subscribe_events(state.api, token, actual_key))
-
-  // Start receiving messages in a separate process
+  // Spawn a dedicated process that owns the gun connection. Gun sends
+  // gun_ws frames to its owner, so the spawned process must be the one
+  // calling ws_connect_ffi — otherwise frames land in the actor mailbox
+  // and the receive loop never sees them.
   let bus = state.event_bus
-  let subject = state.subject
-  let ws_conn = conn
-  process.spawn(fn() { ws_receive_loop(ws_conn, bus, subject) })
+  let actor_subject = state.subject
+  let reply = process.new_subject()
+  process.spawn(fn() {
+    case ws_connect_ffi(ws_url) {
+      Ok(conn) -> {
+        process.send(reply, Ok(conn))
+        ws_receive_loop(conn, bus, actor_subject)
+      }
+      Error(e) -> process.send(reply, Error(e))
+    }
+  })
+
+  use conn <- result.try(case process.receive(reply, 15_000) {
+    Ok(Ok(conn)) -> Ok(conn)
+    Ok(Error(e)) -> Error("WS connect failed: " <> e)
+    Error(_) -> Error("WS connect timeout")
+  })
+
+  use _ <- result.try(subscribe_events(state.api, token, actual_key))
 
   Ok(
     WsSessionState(
@@ -342,17 +397,30 @@ fn subscribe_events(
 ) -> Result(Nil, String) {
   use _ <- result.try(
     api.subscribe_event(token, session_key, "chat")
-    |> result.map_error(fn(_) { "Failed to subscribe to chat" }),
+    |> result.map_error(fn(e) { "chat subscribe: " <> inspect_cime_error(e) }),
   )
   use _ <- result.try(
     api.subscribe_event(token, session_key, "donation")
-    |> result.map_error(fn(_) { "Failed to subscribe to donation" }),
+    |> result.map_error(fn(e) {
+      "donation subscribe: " <> inspect_cime_error(e)
+    }),
   )
   use _ <- result.try(
     api.subscribe_event(token, session_key, "subscription")
-    |> result.map_error(fn(_) { "Failed to subscribe to subscription" }),
+    |> result.map_error(fn(e) {
+      "subscription subscribe: " <> inspect_cime_error(e)
+    }),
   )
   Ok(Nil)
+}
+
+fn inspect_cime_error(e: types.CimeError) -> String {
+  case e {
+    types.HttpError(reason:) -> "HTTP " <> reason
+    types.ApiError(status:, message:) ->
+      "API " <> int.to_string(status) <> ": " <> message
+    types.JsonDecodeError(reason:) -> "JSON " <> reason
+  }
 }
 
 fn extract_session_key(url: String) -> String {
@@ -369,34 +437,27 @@ fn extract_session_key(url: String) -> String {
 fn ws_receive_loop(
   _conn: dynamic.Dynamic,
   bus: Subject(EventBusMessage),
-  _ws_subject: Subject(WsMessage),
+  ws_subject: Subject(WsMessage),
 ) -> Nil {
-  // This is a simplified receive loop.
-  // In practice, gun sends messages to the owning process.
-  // The actual implementation listens via process.select for gun_ws messages.
-  // For now, incoming messages are dispatched through the event bus.
   let selector =
     process.new_selector()
     |> process.select_other(fn(msg) { msg })
 
-  receive_loop(selector, bus)
+  receive_loop(selector, bus, ws_subject)
 }
 
 fn receive_loop(
   selector: process.Selector(dynamic.Dynamic),
   bus: Subject(EventBusMessage),
+  ws_subject: Subject(WsMessage),
 ) -> Nil {
   let msg = process.selector_receive_forever(selector)
-  // Try to decode as a gun_ws text frame
   case decode_gun_ws_frame(msg) {
     Ok(text) -> {
-      parse_and_dispatch(text, bus)
-      receive_loop(selector, bus)
+      parse_and_dispatch(text, bus, ws_subject)
+      receive_loop(selector, bus, ws_subject)
     }
-    Error(_) -> {
-      // Ignore non-text messages (pong, etc.)
-      receive_loop(selector, bus)
-    }
+    Error(_) -> receive_loop(selector, bus, ws_subject)
   }
 }
 
@@ -414,10 +475,14 @@ fn decode_gun_ws_frame(msg: dynamic.Dynamic) -> Result(String, Nil) {
   }
 }
 
-fn parse_and_dispatch(text: String, bus: Subject(EventBusMessage)) -> Nil {
+fn parse_and_dispatch(
+  text: String,
+  bus: Subject(EventBusMessage),
+  ws_subject: Subject(WsMessage),
+) -> Nil {
   // Parse JSON: {"event": "CHAT|DONATION|SUBSCRIPTION", "data": {...}}
   case parse_ws_event(text) {
-    Ok(#("CHAT", data)) -> dispatch_chat(data, bus)
+    Ok(#("CHAT", data)) -> forward_chat(data, ws_subject)
     Ok(#("DONATION", data)) -> dispatch_donation(data, bus)
     Ok(#("SUBSCRIPTION", data)) -> dispatch_subscription(data, bus)
     _ -> Nil
@@ -433,7 +498,7 @@ fn parse_ws_event(text: String) -> Result(#(String, String), Nil) {
   }
 }
 
-fn dispatch_chat(data: String, bus: Subject(EventBusMessage)) -> Nil {
+fn forward_chat(data: String, ws_subject: Subject(WsMessage)) -> Nil {
   let decoder = {
     use sender_channel_id <- decode.field(
       "data",
@@ -461,31 +526,11 @@ fn dispatch_chat(data: String, bus: Subject(EventBusMessage)) -> Nil {
   }
 
   case json.parse(data, decoder) {
-    Ok(#(user, content, channel, sender_id)) -> {
-      // Check if it's a command (starts with "!")
-      case string.starts_with(content, "!") {
-        True -> {
-          case parse_command(content) {
-            Ok(#(name, args)) ->
-              event_bus.dispatch(
-                bus,
-                plugin.Command(user:, name:, args:, role: permission.Viewer),
-              )
-            Error(_) -> Nil
-          }
-        }
-        False ->
-          event_bus.dispatch(
-            bus,
-            plugin.ChatMessage(
-              user:,
-              content:,
-              channel:,
-              channel_id: Some(sender_id),
-            ),
-          )
-      }
-    }
+    Ok(#(user, content, channel_id, sender_id)) ->
+      process.send(
+        ws_subject,
+        ChatReceived(user:, content:, channel_id:, sender_id:),
+      )
     Error(_) -> Nil
   }
 }

@@ -43,6 +43,18 @@ ensure_custom_project() ->
     SrcDir = filename:join(Dir, "src"),
     GleamToml = filename:join(Dir, "gleam.toml"),
     ok = filelib:ensure_dir(filename:join(SrcDir, "dummy")),
+    %% Wipe any stale kira_cmd_*.gleam sources so a prior broken file does not
+    %% poison subsequent `gleam build` runs.
+    case file:list_dir(SrcDir) of
+        {ok, Files} ->
+            lists:foreach(fun(F) ->
+                case lists:prefix("kira_cmd_", F) andalso lists:suffix(".gleam", F) of
+                    true -> file:delete(filename:join(SrcDir, F));
+                    false -> ok
+                end
+            end, Files);
+        _ -> ok
+    end,
     case filelib:is_regular(GleamToml) of
         true -> {ok, nil};
         false ->
@@ -57,7 +69,7 @@ ensure_custom_project() ->
                     os:cmd(Cmd),
                     {ok, nil};
                 {error, Reason} ->
-                    {error, list_to_binary(io_lib:format("~p", [Reason]))}
+                    {error, unicode:characters_to_binary(io_lib:format("~p", [Reason]))}
             end
     end.
 
@@ -65,8 +77,8 @@ compile_gleam(Name, SourceCode) ->
     try
         do_compile_gleam(Name, SourceCode)
     catch
-        _:Reason ->
-            {error, list_to_binary(io_lib:format("~p", [Reason]))}
+        Class:Reason:Stack ->
+            {error, list_to_binary(io_lib:format("~p:~p at ~p", [Class, Reason, Stack]))}
     end.
 
 do_compile_gleam(Name, SourceCode) ->
@@ -77,15 +89,13 @@ do_compile_gleam(Name, SourceCode) ->
     ok = file:write_file(FilePath, SourceCode),
     Cmd = "cd " ++ Dir ++ " && gleam build 2>&1",
     Output = os:cmd(Cmd),
-    OutputBin = list_to_binary(Output),
-    %% Check if compilation succeeded
+    %% gleam output can contain unicode box chars — use unicode conversion
+    OutputBin = unicode:characters_to_binary(Output),
     case binary:match(OutputBin, <<"Compiled">>) of
         nomatch ->
-            %% Clean up failed file
             file:delete(FilePath),
             {error, OutputBin};
         _ ->
-            %% Find and load the .beam file
             EbinDir = filename:join([Dir, "build", "dev", "erlang",
                                      "kira_custom_commands", "ebin"]),
             ModAtom = binary_to_atom(ModName, utf8),
@@ -97,7 +107,7 @@ do_compile_gleam(Name, SourceCode) ->
                     {module, ModAtom} = code:load_binary(ModAtom, BeamFile, Binary),
                     {ok, nil};
                 {error, ReadErr} ->
-                    {error, list_to_binary(io_lib:format("beam load failed: ~p", [ReadErr]))}
+                    {error, unicode:characters_to_binary(io_lib:format("beam load failed: ~p", [ReadErr]))}
             end
     end.
 
